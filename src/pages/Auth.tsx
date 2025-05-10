@@ -114,7 +114,10 @@ const Auth = () => {
       });
       
       // Navigate back to login tab
-      document.querySelector('[data-state="inactive"][data-value="login"]')?.click();
+      const loginTab = document.querySelector('[data-state="inactive"][data-value="login"]') as HTMLElement;
+      if (loginTab) {
+        loginTab.click();
+      }
       
     } catch (error: any) {
       toast({
