@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -371,7 +370,7 @@ const RegisterForm: React.FC = () => {
               )}
               {!isCheckingPulseId && pulseIdAvailable !== null && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {pulseIdAvailable ? (
+                  {pulseIdAvailable === true ? (
                     <div className="h-4 w-4 bg-green-500 rounded-full"></div>
                   ) : (
                     <div className="h-4 w-4 bg-red-500 rounded-full"></div>
