@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -68,7 +67,7 @@ const ReservePulseID = () => {
   
   const proceedToSignup = () => {
     if (pulseIdAvailable) {
-      // Navigate to the signup page with the PulseID as a URL parameter
+      // Navigate directly to the auth page with the register tab selected and the PulseID prefilled
       navigate(`/auth?tab=register&pulseId=${pulseId}`);
     } else {
       toast({
@@ -179,7 +178,7 @@ const ReservePulseID = () => {
                     onClick={proceedToSignup}
                     disabled={!pulseIdAvailable || pulseId.length < 3}
                   >
-                    Reserve <ArrowRight className="ml-1 h-4 w-4" />
+                    Continue to Signup <ArrowRight className="ml-1 h-4 w-4" />
                   </Button>
                 </div>
               </div>
