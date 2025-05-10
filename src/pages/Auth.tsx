@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,6 +7,10 @@ import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -26,6 +29,7 @@ const Auth = () => {
   const [pulseIdSuggestions, setPulseIdSuggestions] = useState<string[]>([]);
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   const [registrationInProgress, setRegistrationInProgress] = useState(false);
+  const [lastCheckedPulseId, setLastCheckedPulseId] = useState('');
   
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
@@ -58,6 +62,8 @@ const Auth = () => {
       setIsCheckingPulseId(true);
       
       try {
+        console.log(`Checking availability for PulseID: ${pulseId}`);
+        
         // Check if PulseID exists in profiles table
         const { data, error } = await supabase
           .from('profiles')
@@ -65,9 +71,15 @@ const Auth = () => {
           .eq('username', pulseId)
           .maybeSingle();
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error checking PulseID:', error);
+          throw error;
+        }
         
         const isAvailable = !data;
+        console.log(`PulseID ${pulseId} is ${isAvailable ? 'available' : 'taken'}`);
+        
+        setLastCheckedPulseId(pulseId);
         setPulseIdAvailable(isAvailable);
         
         // Generate suggestions if not available
@@ -145,6 +157,23 @@ const Auth = () => {
     }
   };
 
+  const isPulseIdStillAvailable = async (id: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', id)
+        .maybeSingle();
+        
+      if (error) throw error;
+      
+      return !data; // Return true if no data is found (ID is available)
+    } catch (error) {
+      console.error('Error in final PulseID check:', error);
+      return false; // Assume not available on error (safer)
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -153,14 +182,57 @@ const Auth = () => {
       return;
     }
     
-    // Validate PulseID availability before proceeding
-    if (pulseIdAvailable === false) {
+    // Basic input validation
+    if (!pulseId || pulseId.length < 3) {
       toast({
-        title: "PulseID not available",
-        description: "Please choose a different PulseID or select one of our suggestions",
+        title: "Invalid PulseID",
+        description: "PulseID must be at least 3 characters",
         variant: "destructive",
       });
       return;
+    }
+    
+    if (!fullName || !registerEmail || !registerPassword) {
+      toast({
+        title: "Missing information",
+        description: "Please fill out all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate PulseID availability if we haven't just checked it
+    if (pulseIdAvailable === false || pulseId !== lastCheckedPulseId) {
+      toast({
+        title: "Verifying PulseID",
+        description: "Please wait while we verify your PulseID availability",
+      });
+      
+      // Force a fresh check of the PulseID
+      setIsCheckingPulseId(true);
+      const isStillAvailable = await isPulseIdStillAvailable(pulseId);
+      setIsCheckingPulseId(false);
+      
+      if (!isStillAvailable) {
+        setPulseIdAvailable(false);
+        
+        // Generate new suggestions
+        const suggestions = [
+          `${pulseId}${Math.floor(Math.random() * 100)}`,
+          `${pulseId}_${Math.floor(Math.random() * 100)}`,
+          `${pulseId}${Math.floor(Math.random() * 900) + 100}`,
+        ];
+        setPulseIdSuggestions(suggestions);
+        
+        toast({
+          title: "PulseID not available",
+          description: "This PulseID has been taken. Please choose another or select one of our suggestions.",
+          variant: "destructive",
+        });
+        return;
+      } else {
+        setPulseIdAvailable(true);
+      }
     }
     
     // Mark registration as in-progress to prevent further checks
@@ -168,16 +240,13 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // Verify PulseID availability one last time before submitting
-      const { data: existingUser, error: checkError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', pulseId)
-        .maybeSingle();
-        
-      if (checkError) throw checkError;
+      console.log('Starting registration for PulseID:', pulseId);
       
-      if (existingUser) {
+      // Final verification: PulseID still available right before sign-up?
+      const finalCheck = await isPulseIdStillAvailable(pulseId);
+      
+      if (!finalCheck) {
+        console.log('Final check failed - PulseID is now taken');
         // PulseID is taken, update state and notify user
         setPulseIdAvailable(false);
         
@@ -200,8 +269,45 @@ const Auth = () => {
         return;
       }
       
+      console.log('Final check passed - PulseID is still available');
+      
       // Clean up existing state
       cleanupAuthState();
+      
+      // Try to temporarily claim the username first
+      try {
+        // This is a temporary placeholder - we'll update it correctly once the user is created
+        const { error: reserveError } = await supabase
+          .from('profiles')
+          .insert({
+            id: 'temp_' + Date.now().toString(), // We'll update this with real user ID later
+            username: pulseId,
+          });
+          
+        if (reserveError) {
+          console.error('Failed to reserve username:', reserveError);
+          
+          // Check if it's a duplicate key error
+          if (reserveError.code === '23505') {
+            setPulseIdAvailable(false);
+            
+            toast({
+              title: "PulseID was just claimed",
+              description: "This PulseID was just taken. Please choose another one.",
+              variant: "destructive",
+            });
+            
+            setLoading(false);
+            setRegistrationInProgress(false);
+            return;
+          }
+        } else {
+          console.log('Successfully reserved username:', pulseId);
+        }
+      } catch (reserveError) {
+        console.error('Error in username reservation:', reserveError);
+        // Continue with registration even if reservation fails
+      }
       
       // Sign up with email/password
       const { data, error } = await supabase.auth.signUp({
@@ -210,16 +316,42 @@ const Auth = () => {
         options: {
           data: {
             full_name: fullName,
-            pulse_id: pulseId,
+            username: pulseId,
           },
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        // Clean up our temporary reservation if signup fails
+        try {
+          await supabase
+            .from('profiles')
+            .delete()
+            .eq('username', pulseId)
+            .eq('id', 'temp_' + Date.now().toString());
+        } catch (cleanupError) {
+          console.error('Failed to clean up temporary reservation:', cleanupError);
+        }
+        
+        throw error;
+      }
       
       // Manually update the profile with the PulseID immediately to claim it
       if (data.user) {
         try {
+          // First delete our temporary reservation
+          try {
+            await supabase
+              .from('profiles')
+              .delete()
+              .eq('username', pulseId)
+              .eq('id', 'temp_' + Date.now().toString());
+          } catch (cleanupError) {
+            console.error('Failed to clean up temporary reservation:', cleanupError);
+          }
+          
+          // Then update the real user profile
+          console.log('Updating profile for user:', data.user.id);
           const { error: updateError } = await supabase
             .from('profiles')
             .update({
@@ -230,6 +362,8 @@ const Auth = () => {
           if (updateError) {
             console.error('Failed to update profile:', updateError);
             // Don't throw here, we'll still consider signup successful
+          } else {
+            console.log('Successfully updated profile with username:', pulseId);
           }
         } catch (profileError) {
           console.error('Failed to update profile:', profileError);
@@ -249,6 +383,8 @@ const Auth = () => {
       }
       
     } catch (error: any) {
+      console.error('Registration error:', error);
+      
       toast({
         title: "Registration failed",
         description: error?.message || "Please check your information and try again",
@@ -292,6 +428,7 @@ const Auth = () => {
     setPulseId(suggestion);
     // Set as available since we generated this suggestion
     setPulseIdAvailable(true);
+    setLastCheckedPulseId(suggestion);
     setPulseIdSuggestions([]);
   };
   
