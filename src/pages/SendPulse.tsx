@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Mic, Pause, Send, Trash2, Waveform } from 'lucide-react';
+import { Mic, Pause, Send, Trash2, AudioWaveform } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -279,7 +279,7 @@ export default function SendPulse() {
                     </li>
                     <li className="flex items-start">
                       <div className="mr-2 mt-1 bg-voicemate-purple/20 p-1 rounded-full">
-                        <Waveform className="h-3 w-3 text-voicemate-purple" />
+                        <AudioWaveform className="h-3 w-3 text-voicemate-purple" />
                       </div>
                       <span>Find a quiet place with minimal background noise</span>
                     </li>
@@ -291,7 +291,7 @@ export default function SendPulse() {
                     </li>
                     <li className="flex items-start">
                       <div className="mr-2 mt-1 bg-voicemate-purple/20 p-1 rounded-full">
-                        <Waveform className="h-3 w-3 text-voicemate-purple" />
+                        <AudioWaveform className="h-3 w-3 text-voicemate-purple" />
                       </div>
                       <span>State your key points early in the recording</span>
                     </li>
