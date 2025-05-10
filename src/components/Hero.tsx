@@ -1,13 +1,10 @@
+
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 export default function Hero() {
-  const openModal = () => {
-    alert("🚧 Waitlist form coming soon. You'll be able to reserve your PulseID.");
-  };
-  
   // Creating an animated waveform effect
   const bars = Array(20).fill(0);
   
@@ -38,23 +35,31 @@ export default function Hero() {
         </motion.div>
 
         <motion.h1 
-          className="text-4xl md:text-6xl font-bold mb-6"
+          className="text-4xl md:text-6xl font-bold mb-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
         >
-          <span className="text-gradient">Reclaim Your Voice.</span>
-          <br />
-          <span className="text-gradient">Own Your Identity.</span>
+          <span className="text-gradient">🎙️ VoiceMate™</span>
         </motion.h1>
         
+        <motion.h2
+          className="text-2xl md:text-3xl font-medium mb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
+        >
+          <span className="text-gradient">Your Voice. Your Identity. Your Time.</span>
+        </motion.h2>
+        
         <motion.p 
-          className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto"
+          className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.8 }}
         >
-          No phone numbers. No missed calls. Just async voice messages that work for you.
+          VoiceMate™ is a voice-first, AI-powered communication platform that replaces the chaos of modern messaging — spam calls, missed texts, and cluttered inboxes — with something radically better:
+          <span className="font-semibold block mt-2">asynchronous, intelligent voice messaging that respects your time.</span>
         </motion.p>
 
         {/* Animated waveform */}

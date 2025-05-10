@@ -16,6 +16,39 @@ const useVariants = {
 };
 
 export default function UseCases() {
+  const useCases = [
+    {
+      icon: "👤",
+      title: "Individuals",
+      description: "Reclaim your time without disappearing. Receive real messages from real people — on your schedule."
+    },
+    {
+      icon: "👨‍🎓",
+      title: "Students",
+      description: "Block distractions during class and study sessions. Share a voice inbox for group projects, updates, or tutoring."
+    },
+    {
+      icon: "👪",
+      title: "Families",
+      description: "Stay connected across time zones and busy days. Leave heartfelt updates or important reminders — async."
+    },
+    {
+      icon: "🧑‍💼",
+      title: "Professionals",
+      description: "Replace voicemail chaos with organized voice summaries. Handle client requests or questions with smart replies and CTAs."
+    },
+    {
+      icon: "🎙️",
+      title: "Creators",
+      description: "Let fans leave you voice messages without giving out your number. Capture testimonials, feedback, and stories in their own voice."
+    },
+    {
+      icon: "💼",
+      title: "Sales Agents",
+      description: "Turn missed calls into structured AI-handled voice leads. Let prospects ask questions without pressure — then follow up."
+    }
+  ];
+  
   return (
     <section className="py-24 px-4 bg-gradient-to-b from-black to-voicemate-dark" id="use-cases">
       <div className="container mx-auto">
@@ -27,7 +60,8 @@ export default function UseCases() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            Who It's For
+            <span role="img" aria-label="tools" className="block mb-4">🛠️</span>
+            Who Is VoiceMate For?
           </motion.h2>
           <motion.p
             className="text-gray-300 max-w-2xl mx-auto"
@@ -36,43 +70,12 @@ export default function UseCases() {
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            VoiceMate serves a wide range of users with diverse communication needs
+            VoiceMate is for everyone with a phone who's tired of being interrupted.
           </motion.p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            {
-              icon: "👤",
-              title: "Creators",
-              description: "Capture inbound voice messages from your fans or leads without giving away your number."
-            },
-            {
-              icon: "💼",
-              title: "Sales Agents",
-              description: "Turn missed calls into structured, AI-handled voice leads with built-in CTAs."
-            },
-            {
-              icon: "🎤",
-              title: "Podcasters",
-              description: "Collect listener questions, feedback, and guest submissions without managing multiple platforms."
-            },
-            {
-              icon: "💬",
-              title: "Customer Support",
-              description: "Let customers leave voice messages that are transcribed, categorized, and prioritized automatically."
-            },
-            {
-              icon: "🧑‍💼",
-              title: "Professionals",
-              description: "Manage client communications efficiently with smart categorization and response suggestions."
-            },
-            {
-              icon: "📱",
-              title: "Anyone",
-              description: "Redirect unwanted calls and create space — on your own time, with your voice."
-            }
-          ].map((item, i) => (
+          {useCases.map((item, i) => (
             <motion.div
               key={i}
               custom={i}
@@ -91,6 +94,25 @@ export default function UseCases() {
             </motion.div>
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 1.2, duration: 0.5 }}
+          className="mt-12 text-center"
+        >
+          <div className="inline-block bg-voicemate-card p-6 rounded-xl border border-gray-800">
+            <h3 className="text-xl font-semibold mb-3 flex items-center justify-center gap-2">
+              <span role="img" aria-label="phone">📱</span>
+              Anyone with a phone
+            </h3>
+            <p className="text-gray-300">
+              Ditch the robocalls. Mute the chaos. Keep your humanity.<br />
+              You don't need a new app — just a new link.
+            </p>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
