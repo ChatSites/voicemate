@@ -3,8 +3,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://jvllftcsvfszpkjzjkfy.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bGxmdGNzdmZzenBranpqa2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MTE0ODAsImV4cCI6MjA2MTI4NzQ4MH0.6n9xJKtDgdpejCPLVDPqa3KoA_eCN4fNV4cgCxb5pzM";
+const SUPABASE_URL = "https://vzbadytmoatrwrvgemne.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6YmFkeXRtb2F0cndydmdlbW5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3Mjg5MzIsImV4cCI6MjA2MjMwNDkzMn0.KdyaGRXGKULvjiclJsDFtDdpb_i8F7wTsPweJPnFa0";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -45,18 +45,6 @@ export const cleanupAuthState = () => {
 // Check if an email is already registered
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
-    // ALWAYS ALLOW REGISTRATIONS FOR TESTING
-    // This will let any email register for development purposes
-    console.log('Email check completely bypassed for:', email);
-    return false;
-    
-    /* Original implementation - commented out for now
-    // TEST OVERRIDE: For development/testing, don't block these emails
-    if (email === 'test@example.com' || email.includes('stacy')) {
-      console.log('Email check override for testing:', email);
-      return false; // Allow these test emails to register
-    }
-    
     // First try with the reset password method which is less invasive
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth?tab=login`,
@@ -90,7 +78,6 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
     
     console.log('Email appears to be available:', email);
     return false; // Email likely doesn't exist
-    */
   } catch (error) {
     console.error('Error checking email registration:', error);
     // In case of an error, we assume the email is NOT registered to allow registration
@@ -103,18 +90,6 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     if (!pulseId || pulseId.trim() === '') {
       return true; // Consider empty pulseId as taken
-    }
-    
-    // Test case: Always return true for 'rickj' to simulate it being taken
-    if (pulseId.toLowerCase() === 'rickj') {
-      console.log('PulseID rickj is TAKEN (test override)');
-      return true;
-    }
-    
-    // Also treat 'ralpht' as taken for testing
-    if (pulseId.toLowerCase() === 'ralpht') {
-      console.log('PulseID ralpht is TAKEN (test override)');
-      return true;
     }
     
     // Check if PulseID exists in profiles table
@@ -139,7 +114,7 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   }
 };
 
-// New function to debug user registration
+// Debug user registration
 export const debugRegistration = async (email: string, password: string, userData: any) => {
   console.log('--- DEBUG REGISTRATION START ---');
   console.log('Attempting to register user with email:', email);

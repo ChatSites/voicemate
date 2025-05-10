@@ -96,7 +96,7 @@ export const registerUser = async (
     
     console.log('Registering with data:', userData);
     
-    // Try sign up first - if it fails with "User already registered", try alternative approach
+    // Try sign up first
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
