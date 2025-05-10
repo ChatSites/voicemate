@@ -1,4 +1,3 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,22 @@ const NotFound = () => {
       setErrorMessage(errorDescription || `Authentication error: ${error}`);
       console.log("Auth error detected:", error, errorDescription);
     }
-  }, [location.pathname, location.search, location.hash]);
+    
+    // Check if this is an auth action that should be redirected to auth-confirmation
+    const isAuthAction = location.hash.includes('type=') || 
+                        location.search.includes('type=') || 
+                        location.hash.includes('access_token=') || 
+                        location.search.includes('access_token=');
+                        
+    if (isAuthAction) {
+      // For any route with auth parameters, redirect to auth-confirmation
+      const redirectParams = location.hash ? 
+        location.hash.replace('#', '') : 
+        location.search.replace('?', '');
+      
+      navigate(`/auth-confirmation?${redirectParams}`);
+    }
+  }, [location.pathname, location.search, location.hash, navigate]);
 
   const handleGoToPasswordReset = () => {
     // Extract the token from the URL if possible
