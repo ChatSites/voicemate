@@ -3,8 +3,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://vzbadytmoatrwrvgemne.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6YmFkeXRtb2F0cndydmdlbW5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3Mjg5MzIsImV4cCI6MjA2MjMwNDkzMn0.KdyaGRXGKULvjiclJsDFtDdpb_i8F7wTsPweJPnFa0";
+const SUPABASE_URL = "https://jvllftcsvfszpkjzjkfy.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bGxmdGNzdmZzenBranpqa2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MTE0ODAsImV4cCI6MjA2MTI4NzQ4MH0.6n9xJKtDgdpejCPLVDPqa3KoA_eCN4fNV4cgCxb5pzM";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -105,12 +105,12 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     if (error) {
       console.error('Error checking PulseID availability:', error);
       // Important! For 401 errors, return false to allow attempts to register
-      // Fix: Use string comparison for string type or check if it contains '401'
+      // Always allow registration attempts due to possible auth issues
       if (error.code === '401' || error.code?.toString() === '401') {
         console.log('Auth error checking PulseID, assuming available:', pulseId);
-        return false;
+        return false; // Always assume available on auth errors
       }
-      return true; // Assume taken on other errors to be safe
+      return false; // Default to allowing registration attempts on other errors
     }
     
     // If data exists, PulseID is taken
