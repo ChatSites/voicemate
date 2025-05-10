@@ -105,7 +105,8 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     if (error) {
       console.error('Error checking PulseID availability:', error);
       // Important! For 401 errors, return false to allow attempts to register
-      if (error.code === '401' || error.status === 401) {
+      // Use error.code instead of error.status since status doesn't exist on PostgrestError
+      if (error.code === '401' || error.code === 401) {
         console.log('Auth error checking PulseID, assuming available:', pulseId);
         return false;
       }
