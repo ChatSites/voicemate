@@ -7,6 +7,7 @@ import UseCases from '@/components/UseCases';
 import WhyItMatters from '@/components/WhyItMatters';
 import Story from '@/components/Story';
 import Technology from '@/components/Technology';
+import HowItWorks from '@/components/HowItWorks';
 import CallToAction from '@/components/CallToAction';
 import Footer from '@/components/Footer';
 
@@ -21,6 +22,7 @@ const Index = () => {
       <Hero />
       <AudioPreview />
       <UseCases />
+      <HowItWorks />
       <WhyItMatters />
       <Story />
       <Technology />

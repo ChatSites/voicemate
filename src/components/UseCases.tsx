@@ -29,6 +29,15 @@ export default function UseCases() {
           >
             Who It's For
           </motion.h2>
+          <motion.p
+            className="text-gray-300 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            VoiceMate serves a wide range of users with diverse communication needs
+          </motion.p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -42,6 +51,21 @@ export default function UseCases() {
               icon: "💼",
               title: "Sales Agents",
               description: "Turn missed calls into structured, AI-handled voice leads with built-in CTAs."
+            },
+            {
+              icon: "🎤",
+              title: "Podcasters",
+              description: "Collect listener questions, feedback, and guest submissions without managing multiple platforms."
+            },
+            {
+              icon: "💬",
+              title: "Customer Support",
+              description: "Let customers leave voice messages that are transcribed, categorized, and prioritized automatically."
+            },
+            {
+              icon: "🧑‍💼",
+              title: "Professionals",
+              description: "Manage client communications efficiently with smart categorization and response suggestions."
             },
             {
               icon: "📱",
