@@ -85,16 +85,21 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 };
 
 // Check if a PulseID is already taken
-// FOR TESTING: Always return true for 'rickj' to simulate it being taken
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     if (!pulseId || pulseId.trim() === '') {
       return true; // Consider empty pulseId as taken
     }
     
-    // Test case: Force 'rickj' to always show as taken
+    // Test case: Always return true for 'rickj' to simulate it being taken
     if (pulseId.toLowerCase() === 'rickj') {
       console.log('PulseID rickj is TAKEN (test override)');
+      return true;
+    }
+    
+    // Also treat 'ralpht' as taken for testing
+    if (pulseId.toLowerCase() === 'ralpht') {
+      console.log('PulseID ralpht is TAKEN (test override)');
       return true;
     }
     

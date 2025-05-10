@@ -159,6 +159,16 @@ const RegisterForm: React.FC = () => {
       return;
     }
     
+    // Check if PulseID validation previously failed
+    if (pulseIdAvailable === false) {
+      toast({
+        title: "PulseID already taken",
+        description: "Please choose a different PulseID or select one of our suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Mark registration as in-progress to prevent further checks
     setRegistrationInProgress(true);
     setLoading(true);
@@ -293,8 +303,6 @@ const RegisterForm: React.FC = () => {
 
   const selectSuggestion = (suggestion: string) => {
     setPulseId(suggestion);
-    // We don't set as available automatically anymore
-    // We'll let the useEffect trigger and check it properly
   };
 
   return (
@@ -357,7 +365,10 @@ const RegisterForm: React.FC = () => {
               <Input 
                 id="pulse-id" 
                 placeholder="yourname" 
-                className="rounded-l-none bg-black/30 border-gray-700"
+                className={`rounded-l-none bg-black/30 border-gray-700 ${
+                  pulseIdAvailable === false ? "border-red-500 pr-9" : 
+                  pulseIdAvailable === true ? "border-green-500 pr-9" : ""
+                }`}
                 value={pulseId}
                 onChange={(e) => setPulseId(e.target.value)}
                 required
@@ -370,7 +381,7 @@ const RegisterForm: React.FC = () => {
               )}
               {!isCheckingPulseId && pulseIdAvailable !== null && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {pulseIdAvailable === true ? (
+                  {pulseIdAvailable ? (
                     <CircleCheck className="h-4 w-4 text-green-500" />
                   ) : (
                     <CircleX className="h-4 w-4 text-red-500" />
@@ -380,12 +391,15 @@ const RegisterForm: React.FC = () => {
             </div>
           </div>
           
-          <PulseIdChecker 
-            pulseIdAvailable={pulseIdAvailable as boolean}
-            pulseIdSuggestions={pulseIdSuggestions}
-            onSelectSuggestion={selectSuggestion}
-            registrationInProgress={registrationInProgress}
-          />
+          {pulseIdAvailable === false && (
+            <PulseIdChecker 
+              pulseIdAvailable={pulseIdAvailable}
+              pulseIdSuggestions={pulseIdSuggestions}
+              onSelectSuggestion={selectSuggestion}
+              registrationInProgress={registrationInProgress}
+              isCheckingPulseId={isCheckingPulseId}
+            />
+          )}
           
           {pulseId.length > 0 && pulseId.length < 3 && (
             <p className="text-sm text-amber-400">PulseID must be at least 3 characters</p>
