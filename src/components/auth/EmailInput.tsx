@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CircleX, CircleCheck } from 'lucide-react';
+import { CircleX, CircleCheck, Loader2 } from 'lucide-react';
 import { isEmailRegistered } from '@/integrations/supabase/client';
 
 type EmailInputProps = {
@@ -73,7 +73,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         />
         {isCheckingEmail && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="h-4 w-4 border-2 border-t-transparent border-voicemate-purple rounded-full animate-spin"></div>
+            <Loader2 className="h-4 w-4 text-voicemate-purple animate-spin" />
           </div>
         )}
         {!isCheckingEmail && isEmailValid !== null && (

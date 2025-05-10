@@ -1,6 +1,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -24,9 +25,9 @@ export default function Footer() {
               &copy; 2025 VoiceMate ID &middot; <a href="mailto:rick@voicemate.id" className="text-voicemate-red hover:text-voicemate-purple transition-colors">rick@voicemate.id</a>
             </div>
             <div className="flex justify-center md:justify-end space-x-4">
-              <a href="#privacy" className="text-gray-500 hover:text-white transition-colors">Privacy</a>
-              <a href="#terms" className="text-gray-500 hover:text-white transition-colors">Terms</a>
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">Contact</a>
+              <Link to="/privacy" className="text-gray-500 hover:text-white transition-colors">Privacy</Link>
+              <Link to="/terms" className="text-gray-500 hover:text-white transition-colors">Terms</Link>
+              <Link to="/contact" className="text-gray-500 hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
         </div>
