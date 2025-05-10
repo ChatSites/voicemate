@@ -63,14 +63,19 @@ export default function Navbar() {
               </Button>
             </>
           ) : (
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              className="bg-voicemate-red hover:bg-red-500 transition-colors"
-              onClick={handleNavigateToAuth}
-            >
-              Login / Claim ID
-            </Button>
+            <>
+              <a href="/reserve" className="text-sm text-gray-200 hover:text-white transition-colors">
+                Reserve PulseID
+              </a>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="bg-voicemate-red hover:bg-red-500 transition-colors"
+                onClick={handleNavigateToAuth}
+              >
+                Login / Claim ID
+              </Button>
+            </>
           )}
         </nav>
 
