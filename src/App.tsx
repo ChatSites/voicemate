@@ -15,6 +15,9 @@ import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import UpdatePassword from "./pages/UpdatePassword";
 import ReservePulseID from "./pages/ReservePulseID";
+import Dashboard from "./pages/Dashboard";
+import SendPulse from "./pages/SendPulse";
+import Inbox from "./pages/Inbox";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +38,9 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/reserve" element={<ReservePulseID />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/create" element={<SendPulse />} />
+            <Route path="/inbox" element={<Inbox />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
