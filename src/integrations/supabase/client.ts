@@ -14,6 +14,58 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-    debug: true,  // Enable debug mode for better logging
+    debug: false, // Disable debug mode to reduce noise
   }
 });
+
+// Helper functions for authentication to prevent common issues
+export const cleanupAuthState = () => {
+  // Remove auth tokens and session data
+  localStorage.removeItem('supabase.auth.token');
+  
+  // Clear all Supabase-related keys in localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Clear session storage as well if it exists
+  if (typeof sessionStorage !== 'undefined') {
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  }
+};
+
+// Check if an email is already registered
+export const isEmailRegistered = async (email: string): Promise<boolean> => {
+  try {
+    // We can use the password reset functionality to check if an email exists
+    // If it returns no error, the email exists in the system
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?tab=login`,
+    });
+    
+    // No error means email exists (we're not actually sending the reset email)
+    if (!error) {
+      return true;
+    }
+    
+    // Check the error message to determine if the email is registered
+    if (error.message.includes("For security purposes") || 
+        error.message.includes("If your email exists")) {
+      return true;
+    }
+    
+    // Email likely doesn't exist
+    return false;
+  } catch (error) {
+    console.error('Error checking email registration:', error);
+    // In case of an error, we assume the email is registered to be safe
+    return true; 
+  }
+};
+

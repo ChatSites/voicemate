@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -5,12 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, cleanupAuthState, isEmailRegistered } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -30,6 +27,8 @@ const Auth = () => {
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   const [registrationInProgress, setRegistrationInProgress] = useState(false);
   const [lastCheckedPulseId, setLastCheckedPulseId] = useState('');
+  const [isEmailValid, setIsEmailValid] = useState<boolean | null>(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
@@ -46,6 +45,36 @@ const Auth = () => {
     
     checkSession();
   }, [navigate]);
+
+  // Email validation (check if already registered)
+  useEffect(() => {
+    if (registrationInProgress || !registerEmail) {
+      return;
+    }
+
+    // Validate email format first
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(registerEmail)) {
+      setIsEmailValid(null);
+      return;
+    }
+
+    const checkEmailAvailability = async () => {
+      setIsCheckingEmail(true);
+      try {
+        const isRegistered = await isEmailRegistered(registerEmail);
+        setIsEmailValid(!isRegistered);
+      } catch (error) {
+        console.error('Error checking email availability:', error);
+        setIsEmailValid(null);
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    };
+
+    const timerId = setTimeout(checkEmailAvailability, 600);
+    return () => clearTimeout(timerId);
+  }, [registerEmail, registrationInProgress]);
 
   // PulseID verification
   useEffect(() => {
@@ -105,16 +134,6 @@ const Auth = () => {
     const timerId = setTimeout(checkPulseId, 500);
     return () => clearTimeout(timerId);
   }, [pulseId, registrationInProgress]);
-
-  // Clean up auth state to prevent issues
-  const cleanupAuthState = () => {
-    localStorage.removeItem('supabase.auth.token');
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,38 +220,14 @@ const Auth = () => {
       return;
     }
     
-    // Validate PulseID availability if we haven't just checked it
-    if (pulseIdAvailable === false || pulseId !== lastCheckedPulseId) {
+    // Check if email is already registered
+    if (isEmailValid === false) {
       toast({
-        title: "Verifying PulseID",
-        description: "Please wait while we verify your PulseID availability",
+        title: "Email already registered",
+        description: "This email address is already in use. Please use a different email or try to log in instead.",
+        variant: "destructive",
       });
-      
-      // Force a fresh check of the PulseID
-      setIsCheckingPulseId(true);
-      const isStillAvailable = await isPulseIdStillAvailable(pulseId);
-      setIsCheckingPulseId(false);
-      
-      if (!isStillAvailable) {
-        setPulseIdAvailable(false);
-        
-        // Generate new suggestions
-        const suggestions = [
-          `${pulseId}${Math.floor(Math.random() * 100)}`,
-          `${pulseId}_${Math.floor(Math.random() * 100)}`,
-          `${pulseId}${Math.floor(Math.random() * 900) + 100}`,
-        ];
-        setPulseIdSuggestions(suggestions);
-        
-        toast({
-          title: "PulseID not available",
-          description: "This PulseID has been taken. Please choose another or select one of our suggestions.",
-          variant: "destructive",
-        });
-        return;
-      } else {
-        setPulseIdAvailable(true);
-      }
+      return;
     }
     
     // Mark registration as in-progress to prevent further checks
@@ -240,6 +235,18 @@ const Auth = () => {
     setLoading(true);
     
     try {
+      // Do one final check for email availability
+      const emailIsRegistered = await isEmailRegistered(registerEmail);
+      if (emailIsRegistered) {
+        toast({
+          title: "Email already registered",
+          description: "This email address is already in use. Please use a different email or try to log in.",
+          variant: "destructive",
+        });
+        setIsEmailValid(false);
+        throw new Error("Email already registered");
+      }
+      
       console.log('Starting registration for PulseID:', pulseId);
       
       // Final verification: PulseID still available right before sign-up?
@@ -264,9 +271,7 @@ const Auth = () => {
           variant: "destructive",
         });
         
-        setLoading(false);
-        setRegistrationInProgress(false);
-        return;
+        throw new Error("PulseID was just taken");
       }
       
       console.log('Final check passed - PulseID is still available');
@@ -274,41 +279,7 @@ const Auth = () => {
       // Clean up existing state
       cleanupAuthState();
       
-      // Try to temporarily claim the username first
-      try {
-        // This is a temporary placeholder - we'll update it correctly once the user is created
-        const { error: reserveError } = await supabase
-          .from('profiles')
-          .insert({
-            id: 'temp_' + Date.now().toString(), // We'll update this with real user ID later
-            username: pulseId,
-          });
-          
-        if (reserveError) {
-          console.error('Failed to reserve username:', reserveError);
-          
-          // Check if it's a duplicate key error
-          if (reserveError.code === '23505') {
-            setPulseIdAvailable(false);
-            
-            toast({
-              title: "PulseID was just claimed",
-              description: "This PulseID was just taken. Please choose another one.",
-              variant: "destructive",
-            });
-            
-            setLoading(false);
-            setRegistrationInProgress(false);
-            return;
-          }
-        } else {
-          console.log('Successfully reserved username:', pulseId);
-        }
-      } catch (reserveError) {
-        console.error('Error in username reservation:', reserveError);
-        // Continue with registration even if reservation fails
-      }
-      
+      // Now we're ready to create the user account
       // Sign up with email/password
       const { data, error } = await supabase.auth.signUp({
         email: registerEmail,
@@ -322,42 +293,34 @@ const Auth = () => {
       });
       
       if (error) {
-        // Clean up our temporary reservation if signup fails
-        try {
-          await supabase
-            .from('profiles')
-            .delete()
-            .eq('username', pulseId)
-            .eq('id', 'temp_' + Date.now().toString());
-        } catch (cleanupError) {
-          console.error('Failed to clean up temporary reservation:', cleanupError);
+        // If we get a user_already_exists error, update UI accordingly
+        if (error.message.includes("User already registered")) {
+          setIsEmailValid(false);
+          toast({
+            title: "Email already registered",
+            description: "This email is already registered. Please try logging in instead.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Registration failed",
+            description: error.message || "Something went wrong during registration",
+            variant: "destructive",
+          });
         }
-        
         throw error;
       }
       
-      // Manually update the profile with the PulseID immediately to claim it
+      // Manually update the profile with the PulseID to claim it
       if (data.user) {
         try {
-          // First delete our temporary reservation
-          try {
-            await supabase
-              .from('profiles')
-              .delete()
-              .eq('username', pulseId)
-              .eq('id', 'temp_' + Date.now().toString());
-          } catch (cleanupError) {
-            console.error('Failed to clean up temporary reservation:', cleanupError);
-          }
-          
-          // Then update the real user profile
           console.log('Updating profile for user:', data.user.id);
           const { error: updateError } = await supabase
             .from('profiles')
-            .update({
+            .upsert({
+              id: data.user.id,
               username: pulseId,
-            })
-            .eq('id', data.user.id);
+            });
             
           if (updateError) {
             console.error('Failed to update profile:', updateError);
@@ -385,11 +348,15 @@ const Auth = () => {
     } catch (error: any) {
       console.error('Registration error:', error);
       
-      toast({
-        title: "Registration failed",
-        description: error?.message || "Please check your information and try again",
-        variant: "destructive",
-      });
+      // Don't show duplicate error messages
+      if (!error.message.includes("Email already registered") && 
+          !error.message.includes("PulseID was just taken")) {
+        toast({
+          title: "Registration failed",
+          description: error?.message || "Please check your information and try again",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
       setRegistrationInProgress(false);
@@ -555,15 +522,38 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="regemail">Email</Label>
-                    <Input 
-                      id="regemail" 
-                      type="email" 
-                      placeholder="hello@example.com" 
-                      className="bg-black/30 border-gray-700"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      required
-                    />
+                    <div className="relative">
+                      <Input 
+                        id="regemail" 
+                        type="email" 
+                        placeholder="hello@example.com" 
+                        className={`bg-black/30 border-gray-700 ${
+                          isEmailValid === false ? "border-red-500" : 
+                          isEmailValid === true ? "border-green-500" : ""
+                        }`}
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
+                        required
+                        disabled={registrationInProgress}
+                      />
+                      {isCheckingEmail && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="h-4 w-4 border-2 border-t-transparent border-voicemate-purple rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      {!isCheckingEmail && isEmailValid !== null && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {isEmailValid ? (
+                            <div className="h-4 w-4 bg-green-500 rounded-full"></div>
+                          ) : (
+                            <div className="h-4 w-4 bg-red-500 rounded-full"></div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {isEmailValid === false && (
+                      <p className="text-sm text-red-400">This email is already registered. Please log in instead.</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pulse-id">Desired PulseID</Label>
@@ -638,7 +628,13 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full bg-voicemate-red hover:bg-red-600"
-                    disabled={loading || pulseIdAvailable === false || pulseId.length < 3 || isCheckingPulseId || registrationInProgress}
+                    disabled={loading || 
+                             pulseIdAvailable === false || 
+                             pulseId.length < 3 || 
+                             isCheckingPulseId || 
+                             registrationInProgress || 
+                             isEmailValid === false ||
+                             isCheckingEmail}
                   >
                     {loading ? "Creating account..." : "Claim Your PulseID"}
                   </Button>
