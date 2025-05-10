@@ -103,6 +103,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
     setRegistrationInProgress(true);
     setLoading(true);
     
+    console.log('Attempting registration for:', registerEmail, 'with PulseID:', pulseId);
+    
     try {
       const result = await registerUser(
         fullName,
@@ -111,13 +113,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
         registerPassword
       );
       
+      console.log('Registration result:', result);
+      
       if (!result.success) {
         // Handle PulseID taken during registration
         if (result.pulseIdAvailable === false) {
           setPulseIdAvailable(false);
           setPulseIdSuggestions(result.pulseIdSuggestions);
+          throw new Error("PulseID was taken during registration");
         }
-        throw result.error;
+        if (result.error) {
+          throw result.error;
+        }
       }
       
       // Navigate to success page
@@ -127,7 +134,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
       console.error('Registration error:', error);
       
       // Don't show duplicate error messages
-      if (!error?.message?.includes("PulseID was just taken")) {
+      if (!error?.message?.includes("PulseID was just taken") && 
+          !error?.message?.includes("User already registered")) {
         toast({
           title: "Registration failed",
           description: error?.message || "Please check your information and try again",

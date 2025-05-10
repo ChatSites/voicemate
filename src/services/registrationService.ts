@@ -68,6 +68,23 @@ export const registerUser = async (
     
     console.log('PulseID check passed - PulseID is still available');
     
+    // Check email availability (in case it was registered between checks)
+    if (!emailIsAvailable) {
+      console.log('Final check failed - Email is already registered');
+      toast({
+        title: "Email already registered",
+        description: "This email was registered while you were filling out the form. Please try logging in instead.",
+        variant: "destructive",
+      });
+      
+      return {
+        success: false,
+        error: new Error("Email already registered"),
+        pulseIdAvailable: true,
+        pulseIdSuggestions: []
+      };
+    }
+    
     // Clean up existing state
     cleanupAuthState();
     
@@ -85,6 +102,7 @@ export const registerUser = async (
       password,
       options: {
         data: userData,
+        emailRedirectTo: `${window.location.origin}/auth?tab=login`,
       }
     });
     
@@ -133,6 +151,8 @@ export const registerUser = async (
       } catch (profileError) {
         console.error('Failed to update profile:', profileError);
       }
+    } else {
+      console.warn('No user object returned from registration - cannot update profile');
     }
     
     if (emailConfirmNeeded) {
@@ -141,11 +161,16 @@ export const registerUser = async (
         title: "Email confirmation required",
         description: "Please check your email and confirm your account before logging in.",
       });
+      
+      // Log that email confirmation is needed
+      console.log('Email confirmation is required for:', email);
     } else {
       toast({
         title: "Registration successful",
         description: "Your account has been created. Welcome to VoiceMate!",
       });
+      
+      console.log('User registered successfully without email confirmation needed');
     }
     
     return { 
