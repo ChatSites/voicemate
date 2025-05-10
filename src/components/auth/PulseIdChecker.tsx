@@ -35,11 +35,9 @@ const PulseIdChecker: React.FC<PulseIdCheckerProps> = ({
 
   return (
     <div className="mt-2">
-      {renderStatusIcon && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          {renderStatusIcon()}
-        </div>
-      )}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+        {renderStatusIcon()}
+      </div>
       
       {shouldShowSuggestions && (
         <>

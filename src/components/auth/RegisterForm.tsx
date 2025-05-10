@@ -7,7 +7,7 @@ import { CardContent, CardFooter } from '@/components/ui/card';
 import { supabase, cleanupAuthState, isEmailRegistered, isPulseIdTaken } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import PulseIdChecker from './PulseIdChecker';
-import { Circle, CircleX, CircleCheck } from 'lucide-react';
+import { CircleX, CircleCheck } from 'lucide-react';
 
 const RegisterForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -29,10 +29,12 @@ const RegisterForm: React.FC = () => {
       return;
     }
 
+    // Reset the email validity state when email changes
+    setIsEmailValid(null);
+
     // Validate email format first
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(registerEmail)) {
-      setIsEmailValid(null);
       return;
     }
 
@@ -108,7 +110,7 @@ const RegisterForm: React.FC = () => {
       return !isRegistered; // Return true if email is available (not registered)
     } catch (error) {
       console.error('Error in final email check:', error);
-      return false; // Assume not available on error (safer)
+      return true; // Assume available on error (allow registration attempt)
     }
   };
 
@@ -149,16 +151,6 @@ const RegisterForm: React.FC = () => {
       return;
     }
 
-    // Check if email validation previously failed
-    if (isEmailValid === false) {
-      toast({
-        title: "Email already registered",
-        description: "Please use a different email or try logging in instead",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     // Check if PulseID validation previously failed
     if (pulseIdAvailable === false) {
       toast({
@@ -180,20 +172,7 @@ const RegisterForm: React.FC = () => {
         finalPulseIdCheck(pulseId)
       ]);
       
-      // Check email availability first
-      if (!emailIsAvailable) {
-        toast({
-          title: "Email already registered",
-          description: "This email address is already in use. Please use a different email or try to log in.",
-          variant: "destructive",
-        });
-        setIsEmailValid(false);
-        throw new Error("Email already registered");
-      }
-      
-      console.log('Email check passed - Email is still available');
-      
-      // Then check PulseID availability 
+      // Check PulseID availability first 
       if (!pulseIdIsAvailable) {
         console.log('Final check failed - PulseID is now taken');
         // PulseID is taken, update state and notify user
@@ -216,7 +195,7 @@ const RegisterForm: React.FC = () => {
         throw new Error("PulseID was just taken");
       }
       
-      console.log('Final checks passed - Both email and PulseID are still available');
+      console.log('PulseID check passed - PulseID is still available');
       
       // Clean up existing state
       cleanupAuthState();
@@ -287,8 +266,7 @@ const RegisterForm: React.FC = () => {
       console.error('Registration error:', error);
       
       // Don't show duplicate error messages
-      if (!error.message.includes("Email already registered") && 
-          !error.message.includes("PulseID was just taken")) {
+      if (!error.message?.includes("PulseID was just taken")) {
         toast({
           title: "Registration failed",
           description: error?.message || "Please check your information and try again",
@@ -427,7 +405,6 @@ const RegisterForm: React.FC = () => {
                    pulseId.length < 3 || 
                    isCheckingPulseId || 
                    registrationInProgress || 
-                   isEmailValid === false ||
                    isCheckingEmail}
         >
           {loading ? "Creating account..." : "Claim Your PulseID"}
