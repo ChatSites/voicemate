@@ -1,7 +1,7 @@
-
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function Hero() {
   const openModal = () => {
@@ -90,10 +90,12 @@ export default function Hero() {
         >
           <Button 
             size="lg" 
-            onClick={openModal} 
+            asChild
             className="bg-voicemate-red hover:bg-red-600 text-white rounded-full px-8 py-6 text-lg button-glow transition-all hover:scale-105"
           >
-            🎤 Claim Your PulseID
+            <Link to="/reserve">
+              🎤 Claim Your PulseID
+            </Link>
           </Button>
         </motion.div>
       </motion.div>
