@@ -42,50 +42,41 @@ export const cleanupAuthState = () => {
   }
 };
 
-// Check if an email is already registered
+// Check if an email is already registered - IMPROVED VERSION
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
+  if (!email || !email.includes('@')) {
+    return false; // Invalid email format
+  }
+
   try {
-    // First try with the reset password method which is less invasive
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?tab=login`,
-    });
-    
-    // If there's no error or a "security purposes" message, the email likely exists
-    if (!error || error.message.includes("For security purposes") || 
-        error.message.includes("If your email exists")) {
-      console.log('Email appears to exist:', email);
-      return true;
-    }
-    
-    // As a fallback, try with invalid credentials
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password: 'password_check_only_' + Math.random().toString(36).substring(2),
-    });
-    
-    // Check various error messages that might indicate email exists
-    if (signInError) {
-      if (signInError.message.includes("Invalid login credentials")) {
-        console.log('Email exists based on credentials check:', email);
-        return true; // Email exists but wrong password
+    // Simplify the check to avoid false positives
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email: email,
+      options: {
+        shouldCreateUser: false, // Don't create a new user if it doesn't exist
       }
-      
-      if (signInError.message.includes("Email not confirmed")) {
-        console.log('Email exists but not confirmed:', email);
-        return true; // Email exists but is not confirmed
-      }
+    });
+
+    // If signInWithOtp returns an error saying the user doesn't exist, then the email is available
+    if (error && (
+      error.message.includes("Email not found") || 
+      error.message.includes("User not found") ||
+      error.message.includes("For security purposes")
+    )) {
+      console.log('Email appears to be available:', email);
+      return false;
     }
-    
-    console.log('Email appears to be available:', email);
-    return false; // Email likely doesn't exist
+
+    // If there was no error or another type of error, the email likely exists
+    console.log('Email appears to exist or error occurred:', email);
+    return true;
   } catch (error) {
     console.error('Error checking email registration:', error);
-    // In case of an error, we assume the email is NOT registered to allow registration
-    return false;
+    return false; // Assume email is available on error to allow registration attempt
   }
 };
 
-// Check if a PulseID is already taken
+// Check if a PulseID is already taken - IMPROVED VERSION
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     if (!pulseId || pulseId.trim() === '') {
@@ -93,7 +84,7 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     }
     
     // Log the check for debugging
-    console.log(`Performing actual database check for PulseID: ${pulseId}`);
+    console.log(`Checking availability for PulseID: ${pulseId}`);
     
     // Check if PulseID exists in profiles table
     const { data, error } = await supabase
@@ -104,16 +95,13 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       
     if (error) {
       console.error('Error checking PulseID availability:', error);
-      // Important! For 401 errors, return false to allow attempts to register
-      // Always allow registration attempts due to possible auth issues
-      if (error.code === '401' || error.code?.toString() === '401') {
-        console.log('Auth error checking PulseID, assuming available:', pulseId);
-        return false; // Always assume available on auth errors
-      }
-      return false; // Default to allowing registration attempts on other errors
+      
+      // IMPORTANT: For auth errors (401) or any other errors, return false to allow registration
+      console.log('Error occurred when checking PulseID, assuming available:', pulseId);
+      return false; // Always allow registration attempts on errors
     }
     
-    // If data exists, PulseID is taken
+    // If data exists, PulseID is taken, otherwise it's available
     const isTaken = !!data;
     console.log(`PulseID ${pulseId} is ${isTaken ? 'TAKEN' : 'available'} (database result)`);
     return isTaken;

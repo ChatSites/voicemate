@@ -4,13 +4,22 @@ import { toast } from "@/components/ui/use-toast";
 
 export const finalEmailCheck = async (email: string): Promise<boolean> => {
   try {
-    const { data } = await supabase.auth.signInWithPassword({
+    // Use signInWithOtp with shouldCreateUser: false to check if email exists
+    // This is more reliable than trying fake password signin
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password: 'password_check_only_' + Math.random().toString(36).substring(2),
+      options: {
+        shouldCreateUser: false,
+      }
     });
 
-    // If we get a session, then this email already exists
-    return !data.session;
+    // If we get an error saying user doesn't exist, email is available
+    if (error && (error.message.includes('not found') || error.message.includes('security'))) {
+      return true; // Email is available
+    }
+    
+    // Assume the email is taken in other cases
+    return false;
   } catch (error) {
     console.error('Error in final email check:', error);
     return true; // Assume available on error (allow registration attempt)
