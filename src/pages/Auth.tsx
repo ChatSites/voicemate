@@ -193,6 +193,16 @@ const Auth = () => {
     }
   };
 
+  const finalEmailCheck = async (email: string): Promise<boolean> => {
+    try {
+      const isRegistered = await isEmailRegistered(email);
+      return !isRegistered; // Return true if email is available (not registered)
+    } catch (error) {
+      console.error('Error in final email check:', error);
+      return false; // Assume not available on error (safer)
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -220,24 +230,19 @@ const Auth = () => {
       return;
     }
     
-    // Check if email is already registered
-    if (isEmailValid === false) {
-      toast({
-        title: "Email already registered",
-        description: "This email address is already in use. Please use a different email or try to log in instead.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     // Mark registration as in-progress to prevent further checks
     setRegistrationInProgress(true);
     setLoading(true);
     
     try {
-      // Do one final check for email availability
-      const emailIsRegistered = await isEmailRegistered(registerEmail);
-      if (emailIsRegistered) {
+      // Final verification: Both email AND PulseID still available?
+      const [emailIsAvailable, pulseIdIsAvailable] = await Promise.all([
+        finalEmailCheck(registerEmail),
+        isPulseIdStillAvailable(pulseId)
+      ]);
+      
+      // Check email availability first
+      if (!emailIsAvailable) {
         toast({
           title: "Email already registered",
           description: "This email address is already in use. Please use a different email or try to log in.",
@@ -247,12 +252,10 @@ const Auth = () => {
         throw new Error("Email already registered");
       }
       
-      console.log('Starting registration for PulseID:', pulseId);
+      console.log('Email check passed - Email is still available');
       
-      // Final verification: PulseID still available right before sign-up?
-      const finalCheck = await isPulseIdStillAvailable(pulseId);
-      
-      if (!finalCheck) {
+      // Then check PulseID availability 
+      if (!pulseIdIsAvailable) {
         console.log('Final check failed - PulseID is now taken');
         // PulseID is taken, update state and notify user
         setPulseIdAvailable(false);
@@ -274,13 +277,12 @@ const Auth = () => {
         throw new Error("PulseID was just taken");
       }
       
-      console.log('Final check passed - PulseID is still available');
+      console.log('Final checks passed - Both email and PulseID are still available');
       
       // Clean up existing state
       cleanupAuthState();
       
       // Now we're ready to create the user account
-      // Sign up with email/password
       const { data, error } = await supabase.auth.signUp({
         email: registerEmail,
         password: registerPassword,
@@ -293,7 +295,7 @@ const Auth = () => {
       });
       
       if (error) {
-        // If we get a user_already_exists error, update UI accordingly
+        // Handle specific error cases
         if (error.message.includes("User already registered")) {
           setIsEmailValid(false);
           toast({
@@ -324,13 +326,11 @@ const Auth = () => {
             
           if (updateError) {
             console.error('Failed to update profile:', updateError);
-            // Don't throw here, we'll still consider signup successful
           } else {
             console.log('Successfully updated profile with username:', pulseId);
           }
         } catch (profileError) {
           console.error('Failed to update profile:', profileError);
-          // Continue as this isn't critical - auth still worked
         }
       }
       
