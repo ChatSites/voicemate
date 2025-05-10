@@ -71,7 +71,7 @@ export const registerUser = async (
     // Clean up existing state
     cleanupAuthState();
     
-    // Use the debug registration function
+    // Prepare user metadata
     const userData = {
       full_name: fullName,
       username: pulseId,
@@ -79,10 +79,19 @@ export const registerUser = async (
     
     console.log('Registering with data:', userData);
     
-    const result = await debugRegistration(email, password, userData);
+    // Register the user with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: userData,
+      }
+    });
     
-    if (!result.success) {
-      if (result.error?.message?.includes("User already registered")) {
+    if (authError) {
+      console.error('Auth registration error:', authError);
+      
+      if (authError.message.includes("User already registered")) {
         toast({
           title: "Email already registered",
           description: "This email is already registered. Please try logging in instead.",
@@ -91,23 +100,27 @@ export const registerUser = async (
       } else {
         toast({
           title: "Registration failed",
-          description: result.error?.message || "Something went wrong during registration",
+          description: authError.message || "Something went wrong during registration",
           variant: "destructive",
         });
       }
-      throw result.error || new Error("Registration failed");
+      
+      throw authError;
     }
     
-    console.log('Registration succeeded:', result);
+    console.log('Auth registration succeeded:', authData);
+    
+    // Check if we need email confirmation
+    const emailConfirmNeeded = !authData.session;
     
     // Manually update the profile with the PulseID to claim it if we have a user
-    if (result.user) {
+    if (authData.user) {
       try {
-        console.log('Updating profile for user:', result.user.id);
+        console.log('Updating profile for user:', authData.user.id);
         const { error: updateError } = await supabase
           .from('profiles')
           .upsert({
-            id: result.user.id,
+            id: authData.user.id,
             username: pulseId,
           });
           
@@ -121,15 +134,25 @@ export const registerUser = async (
       }
     }
     
-    if (result.emailConfirmNeeded) {
+    if (emailConfirmNeeded) {
       // Show a message about email confirmation
       toast({
         title: "Email confirmation required",
         description: "Please check your email and confirm your account before logging in.",
       });
+    } else {
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created. Welcome to VoiceMate!",
+      });
     }
     
-    return { success: true, result };
+    return { 
+      success: true, 
+      user: authData.user,
+      session: authData.session,
+      emailConfirmNeeded
+    };
   } catch (error: any) {
     console.error('Registration error:', error);
     return { 

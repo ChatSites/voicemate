@@ -33,6 +33,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
     }
   }, [prefilledPulseId]);
 
+  const isFormValid = () => {
+    return (
+      fullName.length >= 3 && 
+      registerEmail && 
+      isEmailValid !== false && 
+      pulseId.length >= 3 && 
+      pulseIdAvailable !== false &&
+      registerPassword.length >= 8
+    );
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -55,6 +66,24 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
       toast({
         title: "Missing information",
         description: "Please fill out all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (fullName.length < 3) {
+      toast({
+        title: "Name too short",
+        description: "Please enter your full name (at least 3 characters)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (registerPassword.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters",
         variant: "destructive",
       });
       return;
@@ -152,7 +181,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
           disabled={loading || 
                    pulseIdAvailable === false || 
                    pulseId.length < 3 || 
-                   registrationInProgress}
+                   registrationInProgress ||
+                   !isFormValid()}
         >
           {loading ? "Creating account..." : "Claim Your PulseID"}
         </Button>
