@@ -22,6 +22,9 @@ const Auth = () => {
   const [registerEmail, setRegisterEmail] = useState('');
   const [pulseId, setPulseId] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  const [pulseIdAvailable, setPulseIdAvailable] = useState<boolean | null>(null);
+  const [pulseIdSuggestions, setPulseIdSuggestions] = useState<string[]>([]);
+  const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
@@ -38,6 +41,54 @@ const Auth = () => {
     
     checkSession();
   }, [navigate]);
+
+  // PulseID verification
+  useEffect(() => {
+    const checkPulseId = async () => {
+      if (!pulseId || pulseId.length < 3) {
+        setPulseIdAvailable(null);
+        setPulseIdSuggestions([]);
+        return;
+      }
+
+      setIsCheckingPulseId(true);
+      
+      try {
+        // Check if PulseID exists in profiles table
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('pulse_id')
+          .eq('pulse_id', pulseId)
+          .maybeSingle();
+          
+        if (error) throw error;
+        
+        const isAvailable = !data;
+        setPulseIdAvailable(isAvailable);
+        
+        // Generate suggestions if not available
+        if (!isAvailable) {
+          const suggestions = [
+            `${pulseId}${Math.floor(Math.random() * 100)}`,
+            `${pulseId}_${Math.floor(Math.random() * 100)}`,
+            `${pulseId}${Math.floor(Math.random() * 900) + 100}`,
+          ];
+          setPulseIdSuggestions(suggestions);
+        } else {
+          setPulseIdSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error checking PulseID:', error);
+        setPulseIdAvailable(null);
+      } finally {
+        setIsCheckingPulseId(false);
+      }
+    };
+    
+    // Debounce the check to avoid too many requests
+    const timerId = setTimeout(checkPulseId, 500);
+    return () => clearTimeout(timerId);
+  }, [pulseId]);
 
   // Clean up auth state to prevent issues
   const cleanupAuthState = () => {
@@ -92,6 +143,17 @@ const Auth = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate PulseID availability before proceeding
+    if (pulseIdAvailable === false) {
+      toast({
+        title: "PulseID not available",
+        description: "Please choose a different PulseID or select one of our suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -118,7 +180,7 @@ const Auth = () => {
       });
       
       // Navigate back to login tab
-      const loginTab = document.querySelector('[data-state="inactive"][data-value="login"]') as HTMLElement;
+      const loginTab = document.querySelector('[data-state="inactive"][data-value="login"]') as HTMLElement | null;
       if (loginTab) {
         loginTab.click();
       }
@@ -160,6 +222,13 @@ const Auth = () => {
     } finally {
       setLoading(false);
     }
+  };
+  
+  const selectSuggestion = (suggestion: string) => {
+    setPulseId(suggestion);
+    // Set as available since we generated this suggestion
+    setPulseIdAvailable(true);
+    setPulseIdSuggestions([]);
   };
   
   return (
@@ -301,15 +370,53 @@ const Auth = () => {
                       <span className="inline-flex items-center px-3 text-sm bg-black/50 rounded-l-md border border-r-0 border-gray-700 text-gray-400">
                         pulse/
                       </span>
-                      <Input 
-                        id="pulse-id" 
-                        placeholder="yourname" 
-                        className="rounded-l-none bg-black/30 border-gray-700"
-                        value={pulseId}
-                        onChange={(e) => setPulseId(e.target.value)}
-                        required
-                      />
+                      <div className="relative flex-1">
+                        <Input 
+                          id="pulse-id" 
+                          placeholder="yourname" 
+                          className="rounded-l-none bg-black/30 border-gray-700"
+                          value={pulseId}
+                          onChange={(e) => setPulseId(e.target.value)}
+                          required
+                        />
+                        {isCheckingPulseId && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="h-4 w-4 border-2 border-t-transparent border-voicemate-purple rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                        {!isCheckingPulseId && pulseIdAvailable !== null && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            {pulseIdAvailable ? (
+                              <div className="h-4 w-4 bg-green-500 rounded-full"></div>
+                            ) : (
+                              <div className="h-4 w-4 bg-red-500 rounded-full"></div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    {pulseIdAvailable === false && pulseIdSuggestions.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-amber-400 mb-1">This PulseID is already taken. Try one of these:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {pulseIdSuggestions.map((suggestion, index) => (
+                            <Button
+                              key={index}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="text-xs border-voicemate-purple text-voicemate-purple hover:bg-voicemate-purple/20"
+                              onClick={() => selectSuggestion(suggestion)}
+                            >
+                              {suggestion}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {pulseId.length > 0 && pulseId.length < 3 && (
+                      <p className="text-sm text-amber-400">PulseID must be at least 3 characters</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="regpassword">Password</Label>
@@ -328,7 +435,7 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full bg-voicemate-red hover:bg-red-600"
-                    disabled={loading}
+                    disabled={loading || pulseIdAvailable === false || pulseId.length < 3 || isCheckingPulseId}
                   >
                     {loading ? "Creating account..." : "Claim Your PulseID"}
                   </Button>
