@@ -1,7 +1,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = React.useState(false);
@@ -23,7 +23,16 @@ export default function Navbar() {
 
   // This would be replaced with real authentication
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const navigate = useNavigate();
+  
+  // Only use the navigate hook if we're in a browser environment and not during server-side rendering
+  // This will prevent the hook from being called before the Router is initialized
+  const navigate = React.useCallback(() => {
+    return window.location.href = '/auth';
+  }, []);
+
+  const handleNavigateToAuth = React.useCallback(() => {
+    navigate();
+  }, [navigate]);
 
   return (
     <header 
@@ -64,7 +73,7 @@ export default function Navbar() {
               variant="destructive" 
               size="sm" 
               className="bg-voicemate-red hover:bg-red-500 transition-colors"
-              onClick={() => navigate("/auth")}
+              onClick={handleNavigateToAuth}
             >
               Login / Claim ID
             </Button>
