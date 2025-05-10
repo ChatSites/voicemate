@@ -62,16 +62,19 @@ const UpdatePassword = () => {
       
       if (token) {
         // If we have a token, use it directly to reset the password
-        // Correct way to use the token in the Supabase SDK
         console.log('Updating password with token');
-        const { data, error } = await supabase.auth.updateUser({
-          password
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        updateResult = { data, error };
+        
+        // Set the auth token in the session
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (!sessionData.session) {
+          // If no session exists, we need to use the token first
+          // This tells Supabase to use the provided token for this request
+          await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+        }
+        
+        // Now update the password (the token is already being used in the session)
+        updateResult = await supabase.auth.updateUser({ password });
       } else {
         // Regular password update (user already authenticated)
         console.log('Updating password without token');
