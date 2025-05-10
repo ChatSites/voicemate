@@ -1,10 +1,13 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = React.useState(false);
+  const { user, signOut } = useAuth();
+  const location = useLocation();
   
   React.useEffect(() => {
     const handleScroll = () => {
@@ -20,19 +23,10 @@ export default function Navbar() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
-
-  // This would be replaced with real authentication
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   
-  // Only use the navigate hook if we're in a browser environment and not during server-side rendering
-  // This will prevent the hook from being called before the Router is initialized
-  const navigate = React.useCallback(() => {
-    return window.location.href = '/auth';
-  }, []);
-
   const handleNavigateToAuth = React.useCallback(() => {
-    navigate();
-  }, [navigate]);
+    window.location.href = '/auth';
+  }, []);
 
   return (
     <header 
@@ -54,7 +48,7 @@ export default function Navbar() {
           <a href="#use-cases" className="text-sm text-gray-200 hover:text-white transition-colors">
             Use Cases
           </a>
-          {isLoggedIn ? (
+          {user ? (
             <>
               <a href="/dashboard" className="text-sm text-gray-200 hover:text-white transition-colors">Dashboard</a>
               <a href="/create" className="text-sm text-gray-200 hover:text-white transition-colors">Send Pulse</a>
@@ -63,7 +57,7 @@ export default function Navbar() {
                 variant="destructive" 
                 size="sm" 
                 className="bg-voicemate-red hover:bg-red-500 transition-colors"
-                onClick={() => setIsLoggedIn(false)}
+                onClick={signOut}
               >
                 Logout
               </Button>

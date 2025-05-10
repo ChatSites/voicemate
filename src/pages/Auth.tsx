@@ -1,19 +1,130 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/components/ui/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  // Register form state
+  const [fullName, setFullName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [pulseId, setPulseId] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate('/');
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
+
+  // Clean up auth state to prevent issues
+  const cleanupAuthState = () => {
+    localStorage.removeItem('supabase.auth.token');
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Authentication would happen here. This is a placeholder.");
-    navigate('/');
+    setLoading(true);
+    
+    try {
+      // Clean up existing state
+      cleanupAuthState();
+      
+      // Attempt global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+      
+      // Sign in with email/password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to VoiceMate",
+        });
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error?.message || "Please check your credentials and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      // Clean up existing state
+      cleanupAuthState();
+      
+      // Sign up with email/password
+      const { data, error } = await supabase.auth.signUp({
+        email: registerEmail,
+        password: registerPassword,
+        options: {
+          data: {
+            full_name: fullName,
+            pulse_id: pulseId,
+          },
+        },
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to verify your account",
+      });
+      
+      // Navigate back to login tab
+      document.querySelector('[data-state="inactive"][data-value="login"]')?.click();
+      
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error?.message || "Please check your information and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   return (
@@ -38,36 +149,71 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="login">
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleLogin}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="hello@example.com" className="bg-black/30 border-gray-700" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="hello@example.com" 
+                      className="bg-black/30 border-gray-700"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" className="bg-black/30 border-gray-700" />
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      className="bg-black/30 border-gray-700"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                    />
                   </div>
                 </CardContent>
                 
                 <CardFooter>
-                  <Button type="submit" className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90">
-                    Sign In
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90"
+                    disabled={loading}
+                  >
+                    {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </CardFooter>
               </form>
             </TabsContent>
             
             <TabsContent value="register">
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleRegister}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="fullname">Full Name</Label>
-                    <Input id="fullname" type="text" placeholder="John Doe" className="bg-black/30 border-gray-700" />
+                    <Input 
+                      id="fullname" 
+                      type="text" 
+                      placeholder="John Doe" 
+                      className="bg-black/30 border-gray-700"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="regemail">Email</Label>
-                    <Input id="regemail" type="email" placeholder="hello@example.com" className="bg-black/30 border-gray-700" />
+                    <Input 
+                      id="regemail" 
+                      type="email" 
+                      placeholder="hello@example.com" 
+                      className="bg-black/30 border-gray-700"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pulse-id">Desired PulseID</Label>
@@ -75,18 +221,36 @@ const Auth = () => {
                       <span className="inline-flex items-center px-3 text-sm bg-black/50 rounded-l-md border border-r-0 border-gray-700 text-gray-400">
                         pulse/
                       </span>
-                      <Input id="pulse-id" placeholder="yourname" className="rounded-l-none bg-black/30 border-gray-700" />
+                      <Input 
+                        id="pulse-id" 
+                        placeholder="yourname" 
+                        className="rounded-l-none bg-black/30 border-gray-700"
+                        value={pulseId}
+                        onChange={(e) => setPulseId(e.target.value)}
+                        required
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="regpassword">Password</Label>
-                    <Input id="regpassword" type="password" className="bg-black/30 border-gray-700" />
+                    <Input 
+                      id="regpassword" 
+                      type="password" 
+                      className="bg-black/30 border-gray-700"
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      required
+                    />
                   </div>
                 </CardContent>
                 
                 <CardFooter>
-                  <Button type="submit" className="w-full bg-voicemate-red hover:bg-red-600">
-                    Claim Your PulseID
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-voicemate-red hover:bg-red-600"
+                    disabled={loading}
+                  >
+                    {loading ? "Creating account..." : "Claim Your PulseID"}
                   </Button>
                 </CardFooter>
               </form>
