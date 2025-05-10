@@ -29,7 +29,8 @@ No interruptions. No clutter. Just clarity.
 - **Supabase** for secure data storage and user auth  
 - **WebSocket + JavaScript architecture** for instant responsiveness  
 - Custom **Pulse Inbox + Smart Packet Viewer**  
-- Zero-install, mobile-first design  
+- Zero-install, mobile-first design
+- Works on all popular browsers. **No App to download** 
 
 ---
 
