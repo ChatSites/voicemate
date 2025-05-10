@@ -1,12 +1,31 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useEffect } from 'react';
+import Navbar from '@/components/Navbar';
+import Hero from '@/components/Hero';
+import AudioPreview from '@/components/AudioPreview';
+import UseCases from '@/components/UseCases';
+import WhyItMatters from '@/components/WhyItMatters';
+import Story from '@/components/Story';
+import Technology from '@/components/Technology';
+import CallToAction from '@/components/CallToAction';
+import Footer from '@/components/Footer';
 
 const Index = () => {
+  useEffect(() => {
+    document.title = 'VoiceMate ID – Your Voice, Your Identity';
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col overflow-hidden bg-black text-white">
+      <Navbar />
+      <Hero />
+      <AudioPreview />
+      <UseCases />
+      <WhyItMatters />
+      <Story />
+      <Technology />
+      <CallToAction />
+      <Footer />
     </div>
   );
 };
