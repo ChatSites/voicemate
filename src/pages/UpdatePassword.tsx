@@ -61,13 +61,17 @@ const UpdatePassword = () => {
       let updateResult;
       
       if (token) {
-        // If we have a token, use it for password reset
+        // If we have a token, use it directly to reset the password
+        // Correct way to use the token in the Supabase SDK
         console.log('Updating password with token');
-        updateResult = await supabase.auth.updateUser({ 
-          password,
+        const { data, error } = await supabase.auth.updateUser({
+          password
         }, {
-          accessToken: token
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         });
+        updateResult = { data, error };
       } else {
         // Regular password update (user already authenticated)
         console.log('Updating password without token');
