@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,17 +10,28 @@ import EmailInput from './EmailInput';
 import PulseIdInput from './PulseIdInput';
 import { registerUser } from '@/services/registrationService';
 
-const RegisterForm: React.FC = () => {
+interface RegisterFormProps {
+  prefilledPulseId?: string;
+}
+
+const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) => {
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
-  const [pulseId, setPulseId] = useState('');
+  const [pulseId, setPulseId] = useState(prefilledPulseId);
   const [registerPassword, setRegisterPassword] = useState('');
   const [pulseIdAvailable, setPulseIdAvailable] = useState<boolean | null>(null);
   const [pulseIdSuggestions, setPulseIdSuggestions] = useState<string[]>([]);
   const [isEmailValid, setIsEmailValid] = useState<boolean | null>(null);
   const [registrationInProgress, setRegistrationInProgress] = useState(false);
   const navigate = useNavigate();
+
+  // Set pulseId when prefilledPulseId changes
+  useEffect(() => {
+    if (prefilledPulseId) {
+      setPulseId(prefilledPulseId);
+    }
+  }, [prefilledPulseId]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

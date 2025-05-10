@@ -3,12 +3,9 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function CallToAction() {
-  const openModal = () => {
-    alert("🚧 Waitlist form coming soon. You'll be able to reserve your PulseID.");
-  };
-  
   const benefits = [
     "No more spam calls",
     "No more inbox chaos",
@@ -70,10 +67,12 @@ export default function CallToAction() {
           >
             <Button
               size="lg"
-              onClick={openModal}
+              asChild
               className="bg-voicemate-red hover:bg-red-600 text-white rounded-full px-8 py-6 text-lg button-glow transition-all hover:scale-105"
             >
-              🎤 Reserve Your PulseID
+              <Link to="/reserve">
+                🎤 Reserve Your PulseID
+              </Link>
             </Button>
           </motion.div>
         </motion.div>
