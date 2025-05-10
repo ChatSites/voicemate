@@ -22,6 +22,10 @@ const Auth = () => {
   const [registerEmail, setRegisterEmail] = useState('');
   const [pulseId, setPulseId] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  
+  // Reset password state
+  const [resetEmail, setResetEmail] = useState('');
+  const [showResetForm, setShowResetForm] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -130,6 +134,34 @@ const Auth = () => {
     }
   };
   
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth?tab=update-password`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for the password reset link",
+      });
+      
+      setShowResetForm(false);
+    } catch (error: any) {
+      toast({
+        title: "Failed to send reset email",
+        description: error?.message || "Please check your email and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
       <div className="absolute inset-0 bg-mesh-gradient animate-gradient-y -z-10 opacity-10"></div>
@@ -152,43 +184,88 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="login">
-              <form onSubmit={handleLogin}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      placeholder="hello@example.com" 
-                      className="bg-black/30 border-gray-700"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input 
-                      id="password" 
-                      type="password" 
-                      className="bg-black/30 border-gray-700"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </CardContent>
-                
-                <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90"
-                    disabled={loading}
-                  >
-                    {loading ? "Signing in..." : "Sign In"}
-                  </Button>
-                </CardFooter>
-              </form>
+              {!showResetForm ? (
+                <form onSubmit={handleLogin}>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="hello@example.com" 
+                        className="bg-black/30 border-gray-700"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        required 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input 
+                        id="password" 
+                        type="password" 
+                        className="bg-black/30 border-gray-700"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter className="flex flex-col gap-2">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90"
+                      disabled={loading}
+                    >
+                      {loading ? "Signing in..." : "Sign In"}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="link" 
+                      className="text-voicemate-purple"
+                      onClick={() => setShowResetForm(true)}
+                    >
+                      Forgot Password?
+                    </Button>
+                  </CardFooter>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPassword}>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email</Label>
+                      <Input 
+                        id="reset-email" 
+                        type="email" 
+                        placeholder="hello@example.com" 
+                        className="bg-black/30 border-gray-700"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        required 
+                      />
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter className="flex flex-col gap-2">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90"
+                      disabled={loading}
+                    >
+                      {loading ? "Sending..." : "Send Reset Link"}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="link" 
+                      className="text-voicemate-purple"
+                      onClick={() => setShowResetForm(false)}
+                    >
+                      Back to Login
+                    </Button>
+                  </CardFooter>
+                </form>
+              )}
             </TabsContent>
             
             <TabsContent value="register">
