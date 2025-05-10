@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
-import { supabase, cleanupAuthState, isEmailRegistered, isPulseIdTaken } from '@/integrations/supabase/client';
+import { supabase, cleanupAuthState, isEmailRegistered, isPulseIdTaken, debugRegistration } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import PulseIdChecker from './PulseIdChecker';
 import { CircleX, CircleCheck } from 'lucide-react';
@@ -167,6 +168,8 @@ const RegisterForm: React.FC = () => {
     setLoading(true);
     
     try {
+      console.log('Starting registration process for:', registerEmail);
+      
       // Final verification: Both email AND PulseID still available?
       const [emailIsAvailable, pulseIdIsAvailable] = await Promise.all([
         finalEmailCheck(registerEmail),
@@ -201,21 +204,18 @@ const RegisterForm: React.FC = () => {
       // Clean up existing state
       cleanupAuthState();
       
-      // Now we're ready to create the user account
-      const { data, error } = await supabase.auth.signUp({
-        email: registerEmail,
-        password: registerPassword,
-        options: {
-          data: {
-            full_name: fullName,
-            username: pulseId,
-          },
-        },
-      });
+      // Use the debug registration function
+      const userData = {
+        full_name: fullName,
+        username: pulseId,
+      };
       
-      if (error) {
-        // Handle specific error cases
-        if (error.message.includes("User already registered")) {
+      console.log('Registering with data:', userData);
+      
+      const result = await debugRegistration(registerEmail, registerPassword, userData);
+      
+      if (!result.success) {
+        if (result.error?.message?.includes("User already registered")) {
           setIsEmailValid(false);
           toast({
             title: "Email already registered",
@@ -225,21 +225,23 @@ const RegisterForm: React.FC = () => {
         } else {
           toast({
             title: "Registration failed",
-            description: error.message || "Something went wrong during registration",
+            description: result.error?.message || "Something went wrong during registration",
             variant: "destructive",
           });
         }
-        throw error;
+        throw result.error || new Error("Registration failed");
       }
       
-      // Manually update the profile with the PulseID to claim it
-      if (data.user) {
+      console.log('Registration succeeded:', result);
+      
+      // Manually update the profile with the PulseID to claim it if we have a user
+      if (result.user) {
         try {
-          console.log('Updating profile for user:', data.user.id);
+          console.log('Updating profile for user:', result.user.id);
           const { error: updateError } = await supabase
             .from('profiles')
             .upsert({
-              id: data.user.id,
+              id: result.user.id,
               username: pulseId,
             });
             
@@ -253,7 +255,15 @@ const RegisterForm: React.FC = () => {
         }
       }
       
-      // Navigate to success page instead of showing toast and switching tabs
+      if (result.emailConfirmNeeded) {
+        // Show a message about email confirmation
+        toast({
+          title: "Email confirmation required",
+          description: "Please check your email and confirm your account before logging in.",
+        });
+      }
+      
+      // Navigate to success page
       navigate('/registration-success');
       
     } catch (error: any) {

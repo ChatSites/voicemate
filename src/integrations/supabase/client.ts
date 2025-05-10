@@ -26,14 +26,16 @@ export const cleanupAuthState = () => {
   // Clear all Supabase-related keys in localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      console.log(`Removing auth key: ${key}`);
       localStorage.removeItem(key);
     }
   });
   
   // Clear session storage as well if it exists
   if (typeof sessionStorage !== 'undefined') {
-    Object.keys(sessionStorage).forEach((key) => {
+    Object.keys(sessionStorage || {}).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        console.log(`Removing session key: ${key}`);
         sessionStorage.removeItem(key);
       }
     });
@@ -43,11 +45,10 @@ export const cleanupAuthState = () => {
 // Check if an email is already registered
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
-    // For development purposes - always allow registrations
-    // REMOVE THIS FOR PRODUCTION
-    // This will bypass the email check completely, allowing any email to register
-    console.log('Email check bypassed in development mode for:', email);
-    return false; 
+    // ALWAYS ALLOW REGISTRATIONS FOR TESTING
+    // This will let any email register for development purposes
+    console.log('Email check completely bypassed for:', email);
+    return false;
     
     /* Original implementation - commented out for now
     // TEST OVERRIDE: For development/testing, don't block these emails
@@ -135,5 +136,53 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   } catch (error) {
     console.error('Error checking PulseID:', error);
     return true; // Assume taken on error
+  }
+};
+
+// New function to debug user registration
+export const debugRegistration = async (email: string, password: string, userData: any) => {
+  console.log('--- DEBUG REGISTRATION START ---');
+  console.log('Attempting to register user with email:', email);
+  console.log('User data:', userData);
+  
+  try {
+    // Clean up any existing auth state first
+    cleanupAuthState();
+    
+    // Try to sign up the user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: userData,
+      },
+    });
+    
+    if (error) {
+      console.error('Registration error:', error);
+      return { success: false, error };
+    }
+    
+    console.log('Registration response:', data);
+    
+    if (!data.user) {
+      console.error('No user data returned from registration');
+      return { success: false, error: { message: 'No user data returned' } };
+    }
+    
+    console.log('User successfully created with ID:', data.user.id);
+    console.log('Email confirmation needed?', !data.session);
+    
+    return { 
+      success: true, 
+      user: data.user,
+      session: data.session,
+      emailConfirmNeeded: !data.session
+    };
+  } catch (error) {
+    console.error('Registration exception:', error);
+    return { success: false, error };
+  } finally {
+    console.log('--- DEBUG REGISTRATION END ---');
   }
 };
