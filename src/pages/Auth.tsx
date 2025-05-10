@@ -25,6 +25,7 @@ const Auth = () => {
   const [pulseIdAvailable, setPulseIdAvailable] = useState<boolean | null>(null);
   const [pulseIdSuggestions, setPulseIdSuggestions] = useState<string[]>([]);
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
+  const [registrationInProgress, setRegistrationInProgress] = useState(false);
   
   // Reset password state
   const [resetEmail, setResetEmail] = useState('');
@@ -44,6 +45,9 @@ const Auth = () => {
 
   // PulseID verification
   useEffect(() => {
+    // Skip checking if registration is in progress to avoid UI confusion
+    if (registrationInProgress) return;
+
     const checkPulseId = async () => {
       if (!pulseId || pulseId.length < 3) {
         setPulseIdAvailable(null);
@@ -88,7 +92,7 @@ const Auth = () => {
     // Debounce the check to avoid too many requests
     const timerId = setTimeout(checkPulseId, 500);
     return () => clearTimeout(timerId);
-  }, [pulseId]);
+  }, [pulseId, registrationInProgress]);
 
   // Clean up auth state to prevent issues
   const cleanupAuthState = () => {
@@ -144,6 +148,11 @@ const Auth = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent multiple submission attempts
+    if (registrationInProgress) {
+      return;
+    }
+    
     // Validate PulseID availability before proceeding
     if (pulseIdAvailable === false) {
       toast({
@@ -154,7 +163,8 @@ const Auth = () => {
       return;
     }
     
-    // Do one more availability check to ensure it's still available
+    // Mark registration as in-progress to prevent further checks
+    setRegistrationInProgress(true);
     setLoading(true);
     
     try {
@@ -186,6 +196,7 @@ const Auth = () => {
         });
         
         setLoading(false);
+        setRegistrationInProgress(false);
         return;
       }
       
@@ -206,16 +217,20 @@ const Auth = () => {
       
       if (error) throw error;
       
-      // Manually update the profile with the PulseID immediately
+      // Manually update the profile with the PulseID immediately to claim it
       if (data.user) {
-        // This ensures the profile.username gets set properly
         try {
-          await supabase
+          const { error: updateError } = await supabase
             .from('profiles')
             .update({
               username: pulseId,
             })
             .eq('id', data.user.id);
+            
+          if (updateError) {
+            console.error('Failed to update profile:', updateError);
+            // Don't throw here, we'll still consider signup successful
+          }
         } catch (profileError) {
           console.error('Failed to update profile:', profileError);
           // Continue as this isn't critical - auth still worked
@@ -241,6 +256,7 @@ const Auth = () => {
       });
     } finally {
       setLoading(false);
+      setRegistrationInProgress(false);
     }
   };
   
@@ -426,6 +442,7 @@ const Auth = () => {
                           value={pulseId}
                           onChange={(e) => setPulseId(e.target.value)}
                           required
+                          disabled={registrationInProgress}
                         />
                         {isCheckingPulseId && (
                           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -455,6 +472,7 @@ const Auth = () => {
                               variant="outline"
                               className="text-xs border-voicemate-purple text-voicemate-purple hover:bg-voicemate-purple/20"
                               onClick={() => selectSuggestion(suggestion)}
+                              disabled={registrationInProgress}
                             >
                               {suggestion}
                             </Button>
@@ -483,7 +501,7 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full bg-voicemate-red hover:bg-red-600"
-                    disabled={loading || pulseIdAvailable === false || pulseId.length < 3 || isCheckingPulseId}
+                    disabled={loading || pulseIdAvailable === false || pulseId.length < 3 || isCheckingPulseId || registrationInProgress}
                   >
                     {loading ? "Creating account..." : "Claim Your PulseID"}
                   </Button>
