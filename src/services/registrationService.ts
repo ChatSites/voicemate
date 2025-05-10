@@ -79,7 +79,7 @@ export const registerUser = async (
     
     console.log('Registering with data:', userData);
     
-    // Register the user with Supabase Auth
+    // Try sign up first - if it fails with "User already registered", try alternative approach
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -91,10 +91,11 @@ export const registerUser = async (
     if (authError) {
       console.error('Auth registration error:', authError);
       
+      // Special handling for "User already registered" - likely a deleted user that still has records
       if (authError.message.includes("User already registered")) {
         toast({
-          title: "Email already registered",
-          description: "This email is already registered. Please try logging in instead.",
+          title: "Email previously registered",
+          description: "This email was previously used. Please try logging in or use a different email.",
           variant: "destructive",
         });
       } else {
