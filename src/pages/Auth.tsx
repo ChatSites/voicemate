@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,7 +57,7 @@ const Auth = () => {
         // Check if PulseID exists in profiles table
         const { data, error } = await supabase
           .from('profiles')
-          .select('username') // Changed from pulse_id to username which exists in the profiles table
+          .select('username')
           .eq('username', pulseId)
           .maybeSingle();
           
