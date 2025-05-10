@@ -15,33 +15,29 @@ const PulseIdChecker: React.FC<PulseIdCheckerProps> = ({
   onSelectSuggestion,
   registrationInProgress
 }) => {
-  // If pulseIdAvailable is true, we don't need to show suggestions
-  if (pulseIdAvailable === true) {
+  // Only show suggestions when pulseIdAvailable is explicitly false
+  if (pulseIdAvailable !== false) {
     return null;
   }
 
   return (
     <div className="mt-2">
-      {pulseIdAvailable === false && (
-        <>
-          <p className="text-sm text-amber-400 mb-1">This PulseID is already taken. Try one of these:</p>
-          <div className="flex flex-wrap gap-2">
-            {pulseIdSuggestions.map((suggestion, index) => (
-              <Button
-                key={index}
-                type="button"
-                size="sm"
-                variant="outline"
-                className="text-xs border-voicemate-purple text-voicemate-purple hover:bg-voicemate-purple/20"
-                onClick={() => onSelectSuggestion(suggestion)}
-                disabled={registrationInProgress}
-              >
-                {suggestion}
-              </Button>
-            ))}
-          </div>
-        </>
-      )}
+      <p className="text-sm text-amber-400 mb-1">This PulseID is already taken. Try one of these:</p>
+      <div className="flex flex-wrap gap-2">
+        {pulseIdSuggestions.map((suggestion, index) => (
+          <Button
+            key={index}
+            type="button"
+            size="sm"
+            variant="outline"
+            className="text-xs border-voicemate-purple text-voicemate-purple hover:bg-voicemate-purple/20"
+            onClick={() => onSelectSuggestion(suggestion)}
+            disabled={registrationInProgress}
+          >
+            {suggestion}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 };

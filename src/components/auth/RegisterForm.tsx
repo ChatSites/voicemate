@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,7 @@ import { CardContent, CardFooter } from '@/components/ui/card';
 import { supabase, cleanupAuthState, isEmailRegistered, isPulseIdTaken } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import PulseIdChecker from './PulseIdChecker';
+import { Circle, CircleX, CircleCheck } from 'lucide-react';
 
 const RegisterForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -291,10 +293,8 @@ const RegisterForm: React.FC = () => {
 
   const selectSuggestion = (suggestion: string) => {
     setPulseId(suggestion);
-    // Set as available since we generated this suggestion
-    setPulseIdAvailable(true);
-    setLastCheckedPulseId(suggestion);
-    setPulseIdSuggestions([]);
+    // We don't set as available automatically anymore
+    // We'll let the useEffect trigger and check it properly
   };
 
   return (
@@ -336,9 +336,9 @@ const RegisterForm: React.FC = () => {
             {!isCheckingEmail && isEmailValid !== null && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
                 {isEmailValid ? (
-                  <div className="h-4 w-4 bg-green-500 rounded-full"></div>
+                  <CircleCheck className="h-4 w-4 text-green-500" />
                 ) : (
-                  <div className="h-4 w-4 bg-red-500 rounded-full"></div>
+                  <CircleX className="h-4 w-4 text-red-500" />
                 )}
               </div>
             )}
@@ -371,9 +371,9 @@ const RegisterForm: React.FC = () => {
               {!isCheckingPulseId && pulseIdAvailable !== null && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {pulseIdAvailable === true ? (
-                    <div className="h-4 w-4 bg-green-500 rounded-full"></div>
+                    <CircleCheck className="h-4 w-4 text-green-500" />
                   ) : (
-                    <div className="h-4 w-4 bg-red-500 rounded-full"></div>
+                    <CircleX className="h-4 w-4 text-red-500" />
                   )}
                 </div>
               )}
