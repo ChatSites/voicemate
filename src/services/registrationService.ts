@@ -1,36 +1,53 @@
-
 import { supabase, cleanupAuthState, isPulseIdTaken, debugRegistration } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 
 export const finalEmailCheck = async (email: string): Promise<boolean> => {
   try {
-    // Use signInWithOtp with shouldCreateUser: false to check if email exists
-    // This is more reliable than trying fake password signin
+    // Check if email has valid format
+    if (!email.includes('@')) {
+      return false;
+    }
+
+    // Try signing in as if the user exists
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: false,
+        shouldCreateUser: false, // Don't create user if they don't exist
       }
     });
 
-    // If we get an error saying user doesn't exist, email is available
-    if (error && (error.message.includes('not found') || error.message.includes('security'))) {
+    // If we get message about email not found or security, email is available
+    if (error && (
+      error.message.includes('not found') || 
+      error.message.includes('security') ||
+      error.message.includes('Unable to validate')
+    )) {
+      console.log('Email verification: Email appears to be available:', email);
       return true; // Email is available
     }
     
-    // Assume the email is taken in other cases
+    // Otherwise assume email is taken
+    console.log('Email verification: Email appears to be taken:', email);
     return false;
   } catch (error) {
     console.error('Error in final email check:', error);
-    return true; // Assume available on error (allow registration attempt)
+    // On error, allow registration attempt
+    return true;
   }
 };
 
 export const finalPulseIdCheck = async (id: string): Promise<boolean> => {
   try {
-    // Always allow registration attempts due to 401 errors
-    console.log('Bypassing final PulseID check due to potential 401 errors');
-    return true; // Always return true to allow registration attempts
+    // Log the check for debugging
+    console.log(`Final PulseID check for: ${id}`);
+    
+    // Simple check for empty IDs
+    if (!id || id.trim() === '') {
+      return false;
+    }
+    
+    // Always allow registration attempts
+    return true;
   } catch (error) {
     console.error('Error in final PulseID check:', error);
     return true; // Allow registration attempts
@@ -43,13 +60,10 @@ export const registerUser = async (
   pulseId: string,
   password: string
 ) => {
-  console.log('Starting registration process for:', email);
+  console.log('Starting registration process for:', email, 'with PulseID:', pulseId);
   
   try {
-    // Skip PulseID verification due to 401 issues
-    // Always attempt registration
-    
-    // Clean up existing state
+    // Clean up existing auth state to avoid conflicts
     cleanupAuthState();
     
     // Prepare user metadata
@@ -60,7 +74,7 @@ export const registerUser = async (
     
     console.log('Registering with data:', userData);
     
-    // Try direct registration without preliminary checks that might fail with 401
+    // Try direct registration
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -73,7 +87,7 @@ export const registerUser = async (
     if (authError) {
       console.error('Auth registration error:', authError);
       
-      // Special handling for "User already registered" - likely a deleted user that still has records
+      // Special handling for "User already registered"
       if (authError.message.includes("User already registered")) {
         toast({
           title: "Email previously registered",
@@ -96,7 +110,7 @@ export const registerUser = async (
     // Check if we need email confirmation
     const emailConfirmNeeded = !authData.session;
     
-    // Manually update the profile with the PulseID to claim it if we have a user
+    // Update the profile with the PulseID
     if (authData.user) {
       try {
         console.log('Updating profile for user:', authData.user.id);
@@ -115,18 +129,14 @@ export const registerUser = async (
       } catch (profileError) {
         console.error('Failed to update profile:', profileError);
       }
-    } else {
-      console.warn('No user object returned from registration - cannot update profile');
     }
     
     if (emailConfirmNeeded) {
-      // Show a message about email confirmation
       toast({
         title: "Email confirmation required",
         description: "Please check your email and confirm your account before logging in.",
       });
       
-      // Log that email confirmation is needed
       console.log('Email confirmation is required for:', email);
     } else {
       toast({

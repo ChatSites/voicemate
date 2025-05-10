@@ -40,11 +40,14 @@ const EmailInput: React.FC<EmailInputProps> = ({
     const checkEmailAvailability = async () => {
       setIsCheckingEmail(true);
       try {
+        console.log('Checking if email is available:', email);
         const isRegistered = await isEmailRegistered(email);
+        console.log('Email check result:', email, isRegistered ? 'taken' : 'available');
         setIsEmailValid(!isRegistered);
       } catch (error) {
         console.error('Error checking email availability:', error);
-        setIsEmailValid(null);
+        // On error, assume email is available
+        setIsEmailValid(true);
       } finally {
         setIsCheckingEmail(false);
       }

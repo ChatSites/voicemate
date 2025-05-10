@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const SUPABASE_URL = "https://vzbadytmoatrwrvgemne.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6YmFkeXRtb2F0cndydmdlbW5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3Mjg5MzIsImV4cCI6MjA2MjMwNDkzMn0.KdyaGRXGKULvjiclJsDFdtDdpb_i8F7wTsPweJPnFa0";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6YmFkeXRtb2F0cndydmdlbW5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3Mjg5MzIsImV4cCI6MjA2MTMwNDkzMn0.KdyaGRXGKULvjiclJsDFdtDdpb_i8F7wTsPweJPnFa0";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -49,27 +49,30 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
   }
 
   try {
-    // Simplify the check to avoid false positives
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email: email,
+    console.log('Checking if email is registered:', email);
+    
+    // Use signInWithOtp with shouldCreateUser: false to check if email exists
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
       options: {
         shouldCreateUser: false, // Don't create a new user if it doesn't exist
       }
     });
 
-    // If signInWithOtp returns an error saying the user doesn't exist, then the email is available
+    // If we get specific errors, email is available
     if (error && (
       error.message.includes("Email not found") || 
       error.message.includes("User not found") ||
-      error.message.includes("For security purposes")
+      error.message.includes("For security purposes") ||
+      error.message.includes("Unable to validate")
     )) {
-      console.log('Email appears to be available:', email);
-      return false;
+      console.log('Email checked - available:', email);
+      return false; // Email is available
     }
 
     // If there was no error or another type of error, the email likely exists
-    console.log('Email appears to exist or error occurred:', email);
-    return true;
+    console.log('Email checked - likely exists:', email);
+    return true; // Email is taken
   } catch (error) {
     console.error('Error checking email registration:', error);
     return false; // Assume email is available on error to allow registration attempt
