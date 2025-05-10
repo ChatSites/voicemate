@@ -1,33 +1,22 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import InboxHeader from '@/components/inbox/InboxHeader';
 import InboxContent from '@/components/inbox/InboxContent';
+import { useInboxState } from '@/hooks/useInboxState';
 
 export default function InboxPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [selectedPulseId, setSelectedPulseId] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { selectedPulseId, isPlaying, handlePlayPulse } = useInboxState();
   
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [loading, user, navigate]);
-  
-  const handlePlayPulse = (id: string) => {
-    setSelectedPulseId(id);
-    setIsPlaying(true);
-    // In a real app, this would play the audio
-    
-    // For demo purposes, we'll just toggle the play state after 3 seconds
-    setTimeout(() => {
-      setIsPlaying(false);
-    }, 3000);
-  };
   
   if (loading) {
     return (
