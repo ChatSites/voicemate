@@ -154,9 +154,41 @@ const Auth = () => {
       return;
     }
     
+    // Do one more availability check to ensure it's still available
     setLoading(true);
     
     try {
+      // Verify PulseID availability one last time before submitting
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', pulseId)
+        .maybeSingle();
+        
+      if (checkError) throw checkError;
+      
+      if (existingUser) {
+        // PulseID is taken, update state and notify user
+        setPulseIdAvailable(false);
+        
+        // Generate suggestions
+        const suggestions = [
+          `${pulseId}${Math.floor(Math.random() * 100)}`,
+          `${pulseId}_${Math.floor(Math.random() * 100)}`,
+          `${pulseId}${Math.floor(Math.random() * 900) + 100}`,
+        ];
+        setPulseIdSuggestions(suggestions);
+        
+        toast({
+          title: "PulseID was just taken",
+          description: "Someone claimed this PulseID while you were registering. Please choose another or select one of our suggestions.",
+          variant: "destructive",
+        });
+        
+        setLoading(false);
+        return;
+      }
+      
       // Clean up existing state
       cleanupAuthState();
       
@@ -173,6 +205,22 @@ const Auth = () => {
       });
       
       if (error) throw error;
+      
+      // Manually update the profile with the PulseID immediately
+      if (data.user) {
+        // This ensures the profile.username gets set properly
+        try {
+          await supabase
+            .from('profiles')
+            .update({
+              username: pulseId,
+            })
+            .eq('id', data.user.id);
+        } catch (profileError) {
+          console.error('Failed to update profile:', profileError);
+          // Continue as this isn't critical - auth still worked
+        }
+      }
       
       toast({
         title: "Registration successful",
