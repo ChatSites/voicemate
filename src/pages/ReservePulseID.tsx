@@ -74,7 +74,7 @@ const ReservePulseID = () => {
                     onClick={proceedToSignup}
                     disabled={!pulseIdAvailable || pulseId.length < 3}
                   >
-                    Continue to Signup <ArrowRight className="ml-1 h-4 w-4" />
+                    Claim Your PulseID <ArrowRight className="ml-1 h-4 w-4" />
                   </Button>
                 </div>
               </div>
