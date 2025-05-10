@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,7 @@ import { supabase, cleanupAuthState, isEmailRegistered, isPulseIdTaken } from '@
 import { toast } from "@/components/ui/use-toast";
 import PulseIdChecker from './PulseIdChecker';
 import { CircleX, CircleCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const RegisterForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -22,6 +22,7 @@ const RegisterForm: React.FC = () => {
   const [lastCheckedPulseId, setLastCheckedPulseId] = useState('');
   const [isEmailValid, setIsEmailValid] = useState<boolean | null>(null);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const navigate = useNavigate();
 
   // Email validation (check if already registered)
   useEffect(() => {
@@ -252,15 +253,8 @@ const RegisterForm: React.FC = () => {
         }
       }
       
-      toast({
-        title: "Registration successful",
-        description: "Please check your email to verify your account",
-      });
-      
-      // Attempt to navigate to login tab
-      document.querySelector('[data-state="inactive"][data-value="login"]')?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true })
-      );
+      // Navigate to success page instead of showing toast and switching tabs
+      navigate('/registration-success');
       
     } catch (error: any) {
       console.error('Registration error:', error);
