@@ -14,7 +14,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-    debug: false, // Disable debug mode to reduce noise
+    debug: true, // Enable debug mode to see more logs
   }
 });
 
