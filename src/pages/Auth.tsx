@@ -229,6 +229,16 @@ const Auth = () => {
       });
       return;
     }
+
+    // Check if email validation previously failed
+    if (isEmailValid === false) {
+      toast({
+        title: "Email already registered",
+        description: "Please use a different email or try logging in instead",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Mark registration as in-progress to prevent further checks
     setRegistrationInProgress(true);

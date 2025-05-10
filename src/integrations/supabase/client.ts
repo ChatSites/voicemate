@@ -43,8 +43,23 @@ export const cleanupAuthState = () => {
 // Check if an email is already registered
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
-    // We can use the password reset functionality to check if an email exists
-    // If it returns no error, the email exists in the system
+    // First, check if we can find a user with this email by signing in with a bogus password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'password_check_only_' + Math.random().toString(36).substring(2), // Random invalid password
+    });
+    
+    // If the error says invalid credentials, the email exists
+    if (signInError && signInError.message.includes("Invalid login credentials")) {
+      return true; // Email exists
+    }
+    
+    // If there's some other error, it's likely the user doesn't exist
+    if (signInError && signInError.message.includes("Email not confirmed")) {
+      return true; // Email exists but is not confirmed
+    }
+    
+    // Also try the password reset as a backup verification
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth?tab=login`,
     });
