@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import EmailInput from './EmailInput';
 import PulseIdInput from './PulseIdInput';
+import FullNameInput from './FullNameInput';
+import PasswordInput from './PasswordInput';
 import { registerUser } from '@/services/registrationService';
 
 interface RegisterFormProps {
@@ -114,18 +114,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
   return (
     <form onSubmit={handleRegister}>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="fullname">Full Name</Label>
-          <Input 
-            id="fullname" 
-            type="text" 
-            placeholder="John Doe" 
-            className="bg-black/30 border-gray-700"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
-          />
-        </div>
+        <FullNameInput 
+          fullName={fullName} 
+          setFullName={setFullName} 
+          registrationInProgress={registrationInProgress} 
+        />
         
         <EmailInput
           email={registerEmail}
@@ -145,17 +138,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
           registrationInProgress={registrationInProgress}
         />
         
-        <div className="space-y-2">
-          <Label htmlFor="regpassword">Password</Label>
-          <Input 
-            id="regpassword" 
-            type="password" 
-            className="bg-black/30 border-gray-700"
-            value={registerPassword}
-            onChange={(e) => setRegisterPassword(e.target.value)}
-            required
-          />
-        </div>
+        <PasswordInput
+          password={registerPassword}
+          setPassword={setRegisterPassword}
+          registrationInProgress={registrationInProgress}
+        />
       </CardContent>
       
       <CardFooter>
