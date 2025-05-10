@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { InfoCircle, Mic, Play, Headphones } from "lucide-react";
+import { Info, Mic, Play, Headphones } from "lucide-react";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -56,7 +56,7 @@ const flowSteps = [
     id: "process",
     title: "AI Analysis",
     description: "VoiceMate transcribes, summarizes, and identifies the intent behind each message.",
-    icon: InfoCircle,
+    icon: Info,
     color: "bg-voicemate-purple",
   },
   {
