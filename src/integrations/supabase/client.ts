@@ -92,6 +92,9 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       return true; // Consider empty pulseId as taken
     }
     
+    // Log the check for debugging
+    console.log(`Performing actual database check for PulseID: ${pulseId}`);
+    
     // Check if PulseID exists in profiles table
     const { data, error } = await supabase
       .from('profiles')
@@ -101,16 +104,21 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       
     if (error) {
       console.error('Error checking PulseID availability:', error);
-      return true; // Assume taken on error to be safe
+      // Important! For 401 errors, return false to allow attempts to register
+      if (error.code === '401' || error.status === 401) {
+        console.log('Auth error checking PulseID, assuming available:', pulseId);
+        return false;
+      }
+      return true; // Assume taken on other errors to be safe
     }
     
     // If data exists, PulseID is taken
     const isTaken = !!data;
-    console.log(`PulseID ${pulseId} is ${isTaken ? 'TAKEN' : 'available'}`);
+    console.log(`PulseID ${pulseId} is ${isTaken ? 'TAKEN' : 'available'} (database result)`);
     return isTaken;
   } catch (error) {
     console.error('Error checking PulseID:', error);
-    return true; // Assume taken on error
+    return false; // Assume available on error to allow registration attempt
   }
 };
 
