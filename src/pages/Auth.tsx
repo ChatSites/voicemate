@@ -7,12 +7,13 @@ import { supabase } from '@/integrations/supabase/client';
 import LoginForm from '@/components/auth/LoginForm';
 import PasswordResetForm from '@/components/auth/PasswordResetForm';
 import RegisterForm from '@/components/auth/RegisterForm';
+import { Button } from '@/components/ui/button';
 
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showResetForm, setShowResetForm] = useState(false);
-  const [defaultTab, setDefaultTab] = useState('login');
+  const [activeTab, setActiveTab] = useState('register');
   const [prefilledPulseId, setPrefilledPulseId] = useState('');
   
   useEffect(() => {
@@ -22,8 +23,8 @@ const Auth = () => {
     const pulseId = params.get('pulseId');
     
     // Set default tab if specified in URL
-    if (tab === 'register') {
-      setDefaultTab('register');
+    if (tab === 'login') {
+      setActiveTab('login');
     }
     
     // Set prefilled PulseID if specified in URL
@@ -41,6 +42,15 @@ const Auth = () => {
     
     checkSession();
   }, [navigate, location.search]);
+
+  const switchToLogin = () => {
+    setActiveTab('login');
+    setShowResetForm(false);
+  };
+
+  const switchToRegister = () => {
+    setActiveTab('register');
+  };
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -54,27 +64,50 @@ const Auth = () => {
         <Card className="border border-gray-800 bg-voicemate-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="text-xl text-center">Welcome to VoiceMate</CardTitle>
-            <CardDescription className="text-center">Login or claim your PulseID</CardDescription>
+            <CardDescription className="text-center">
+              {activeTab === 'register' ? 'Claim your PulseID' : 'Login to your account'}
+            </CardDescription>
           </CardHeader>
           
-          <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-4 bg-black/20">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Claim ID</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
+          {activeTab === 'register' ? (
+            <>
+              <RegisterForm prefilledPulseId={prefilledPulseId} />
+              <div className="px-6 pb-6 text-center">
+                <p className="text-sm text-gray-400 mt-4">
+                  Already have an account?{" "}
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-voicemate-purple hover:text-voicemate-red"
+                    onClick={switchToLogin}
+                  >
+                    Sign in here
+                  </Button>
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
               {!showResetForm ? (
-                <LoginForm onShowResetForm={() => setShowResetForm(true)} />
+                <>
+                  <LoginForm onShowResetForm={() => setShowResetForm(true)} />
+                  <div className="px-6 pb-6 text-center">
+                    <p className="text-sm text-gray-400 mt-4">
+                      Don't have an account?{" "}
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-voicemate-purple hover:text-voicemate-red"
+                        onClick={switchToRegister}
+                      >
+                        Claim your PulseID
+                      </Button>
+                    </p>
+                  </div>
+                </>
               ) : (
                 <PasswordResetForm onGoBack={() => setShowResetForm(false)} />
               )}
-            </TabsContent>
-            
-            <TabsContent value="register">
-              <RegisterForm prefilledPulseId={prefilledPulseId} />
-            </TabsContent>
-          </Tabs>
+            </>
+          )}
         </Card>
         
         <div className="mt-6 text-center text-sm text-gray-500">
