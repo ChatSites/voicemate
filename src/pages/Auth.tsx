@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
-import { supabase, cleanupAuthState, isEmailRegistered } from '@/integrations/supabase/client';
+import { supabase, cleanupAuthState, isEmailRegistered, isPulseIdTaken } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 
 const Auth = () => {
@@ -93,19 +92,9 @@ const Auth = () => {
       try {
         console.log(`Checking availability for PulseID: ${pulseId}`);
         
-        // Check if PulseID exists in profiles table
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('username', pulseId)
-          .maybeSingle();
-          
-        if (error) {
-          console.error('Error checking PulseID:', error);
-          throw error;
-        }
+        const isTaken = await isPulseIdTaken(pulseId);
+        const isAvailable = !isTaken;
         
-        const isAvailable = !data;
         console.log(`PulseID ${pulseId} is ${isAvailable ? 'available' : 'taken'}`);
         
         setLastCheckedPulseId(pulseId);
@@ -176,29 +165,22 @@ const Auth = () => {
     }
   };
 
-  const isPulseIdStillAvailable = async (id: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', id)
-        .maybeSingle();
-        
-      if (error) throw error;
-      
-      return !data; // Return true if no data is found (ID is available)
-    } catch (error) {
-      console.error('Error in final PulseID check:', error);
-      return false; // Assume not available on error (safer)
-    }
-  };
-
   const finalEmailCheck = async (email: string): Promise<boolean> => {
     try {
       const isRegistered = await isEmailRegistered(email);
       return !isRegistered; // Return true if email is available (not registered)
     } catch (error) {
       console.error('Error in final email check:', error);
+      return false; // Assume not available on error (safer)
+    }
+  };
+
+  const finalPulseIdCheck = async (id: string): Promise<boolean> => {
+    try {
+      const isTaken = await isPulseIdTaken(id);
+      return !isTaken; // Return true if ID is available (not taken)
+    } catch (error) {
+      console.error('Error in final PulseID check:', error);
       return false; // Assume not available on error (safer)
     }
   };
@@ -248,7 +230,7 @@ const Auth = () => {
       // Final verification: Both email AND PulseID still available?
       const [emailIsAvailable, pulseIdIsAvailable] = await Promise.all([
         finalEmailCheck(registerEmail),
-        isPulseIdStillAvailable(pulseId)
+        finalPulseIdCheck(pulseId)
       ]);
       
       // Check email availability first

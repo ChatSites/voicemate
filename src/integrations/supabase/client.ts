@@ -83,3 +83,30 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
     return true; 
   }
 };
+
+// Check if a PulseID is already taken 
+export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
+  try {
+    if (!pulseId || pulseId.trim() === '') {
+      return true; // Consider empty pulseId as taken
+    }
+    
+    // Check if PulseID exists in profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', pulseId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error('Error checking PulseID availability:', error);
+      return true; // Assume taken on error to be safe
+    }
+    
+    return !!data; // If data exists, PulseID is taken
+  } catch (error) {
+    console.error('Error checking PulseID:', error);
+    return true; // Assume taken on error
+  }
+};
+
