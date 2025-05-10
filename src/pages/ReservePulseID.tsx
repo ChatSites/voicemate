@@ -65,6 +65,7 @@ const ReservePulseID = () => {
                 <PulseIdInput 
                   pulseId={pulseId}
                   setPulseId={setPulseId}
+                  setPulseIdAvailable={setPulseIdAvailable}
                 />
                 
                 <div className="pt-4">
