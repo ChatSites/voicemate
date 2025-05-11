@@ -49,33 +49,24 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
   }
 
   try {
-    // Use a more direct API to check if user exists
-    const { data, error } = await supabase.auth.admin.listUsers({
-      filter: {
-        email: email
-      }
+    // The admin.listUsers method doesn't accept a filter parameter
+    // Let's use a different approach to check if the email exists
+    
+    console.log('Checking if email exists:', email);
+    
+    // Try basic auth - this is less accurate but should work for now
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'INCORRECT_PASSWORD_FOR_CHECK_ONLY'
     });
-
-    // If this admin API call fails, we'll fall back to a simpler method
-    if (error) {
-      console.log('Admin API not available, falling back to basic check');
-      // Try basic auth - this is less accurate but should work for now
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: 'INCORRECT_PASSWORD_FOR_CHECK_ONLY'
-      });
-      
-      // If we get password error, email exists
-      if (signInError && signInError.message.includes('Invalid login credentials')) {
-        return true;
-      }
-      
-      // For all other errors, assume email doesn't exist
-      return false; 
+    
+    // If we get password error, email exists
+    if (signInError && signInError.message.includes('Invalid login credentials')) {
+      return true;
     }
     
-    // If we got users data and there's at least one user, email exists
-    return !!(data && data.users && data.users.length > 0);
+    // For all other errors, assume email doesn't exist
+    return false;
   } catch (error) {
     console.error('Error checking email registration:', error);
     return false; // Assume email is available on error to allow registration attempt
