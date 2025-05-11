@@ -3,6 +3,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Make sure we're using the correct Supabase project URL and key
+// This matches the project ID in supabase/config.toml (jvllftcsvfszpkjzjkfy)
 const SUPABASE_URL = "https://jvllftcsvfszpkjzjkfy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bGxmdGNzdmZzenBranpqa2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MTE0ODAsImV4cCI6MjA2MTI4NzQ4MH0.6n9xJKtDgdpejCPLVDPqa3KoA_eCN4fNV4cgCxb5pzM";
 
@@ -42,80 +44,43 @@ export const cleanupAuthState = () => {
   }
 };
 
-// Check if an email is already registered
+// Check if an email is already registered - FIXED VERSION
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
+  if (!email || !email.includes('@')) {
+    return false; // Invalid email format
+  }
+
   try {
-    // ALWAYS ALLOW REGISTRATIONS FOR TESTING
-    // This will let any email register for development purposes
-    console.log('Email check completely bypassed for:', email);
-    return false;
+    console.log('Checking if email exists:', email);
     
-    /* Original implementation - commented out for now
-    // TEST OVERRIDE: For development/testing, don't block these emails
-    if (email === 'test@example.com' || email.includes('stacy')) {
-      console.log('Email check override for testing:', email);
-      return false; // Allow these test emails to register
-    }
-    
-    // First try with the reset password method which is less invasive
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?tab=login`,
+    // Try basic auth - this is less accurate but should work for now
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'INCORRECT_PASSWORD_FOR_CHECK_ONLY'
     });
     
-    // If there's no error or a "security purposes" message, the email likely exists
-    if (!error || error.message.includes("For security purposes") || 
-        error.message.includes("If your email exists")) {
-      console.log('Email appears to exist:', email);
+    // If we get password error, email exists
+    if (signInError && signInError.message.includes('Invalid login credentials')) {
       return true;
     }
     
-    // As a fallback, try with invalid credentials
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password: 'password_check_only_' + Math.random().toString(36).substring(2),
-    });
-    
-    // Check various error messages that might indicate email exists
-    if (signInError) {
-      if (signInError.message.includes("Invalid login credentials")) {
-        console.log('Email exists based on credentials check:', email);
-        return true; // Email exists but wrong password
-      }
-      
-      if (signInError.message.includes("Email not confirmed")) {
-        console.log('Email exists but not confirmed:', email);
-        return true; // Email exists but is not confirmed
-      }
-    }
-    
-    console.log('Email appears to be available:', email);
-    return false; // Email likely doesn't exist
-    */
+    // For all other errors, assume email doesn't exist
+    return false;
   } catch (error) {
     console.error('Error checking email registration:', error);
-    // In case of an error, we assume the email is NOT registered to allow registration
-    return false;
+    return false; // Assume email is available on error to allow registration attempt
   }
 };
 
-// Check if a PulseID is already taken
+// Check if a PulseID is already taken - FIXED VERSION
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     if (!pulseId || pulseId.trim() === '') {
       return true; // Consider empty pulseId as taken
     }
     
-    // Test case: Always return true for 'rickj' to simulate it being taken
-    if (pulseId.toLowerCase() === 'rickj') {
-      console.log('PulseID rickj is TAKEN (test override)');
-      return true;
-    }
-    
-    // Also treat 'ralpht' as taken for testing
-    if (pulseId.toLowerCase() === 'ralpht') {
-      console.log('PulseID ralpht is TAKEN (test override)');
-      return true;
-    }
+    // Log the check for debugging
+    console.log(`Checking availability for PulseID: ${pulseId}`);
     
     // Check if PulseID exists in profiles table
     const { data, error } = await supabase
@@ -126,20 +91,20 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       
     if (error) {
       console.error('Error checking PulseID availability:', error);
-      return true; // Assume taken on error to be safe
+      return false; // On error, allow registration attempt
     }
     
-    // If data exists, PulseID is taken
+    // If data exists, PulseID is taken, otherwise it's available
     const isTaken = !!data;
-    console.log(`PulseID ${pulseId} is ${isTaken ? 'TAKEN' : 'available'}`);
+    console.log(`PulseID ${pulseId} is ${isTaken ? 'TAKEN' : 'available'} (database result)`);
     return isTaken;
   } catch (error) {
     console.error('Error checking PulseID:', error);
-    return true; // Assume taken on error
+    return false; // Assume available on error to allow registration attempt
   }
 };
 
-// New function to debug user registration
+// Debug user registration
 export const debugRegistration = async (email: string, password: string, userData: any) => {
   console.log('--- DEBUG REGISTRATION START ---');
   console.log('Attempting to register user with email:', email);

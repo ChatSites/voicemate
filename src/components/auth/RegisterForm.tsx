@@ -8,13 +8,14 @@ import EmailInput from './EmailInput';
 import PulseIdInput from './PulseIdInput';
 import FullNameInput from './FullNameInput';
 import PasswordInput from './PasswordInput';
-import { registerUser } from '@/services/registrationService';
+import { registerUser } from '@/services/registerUser';
 
 interface RegisterFormProps {
   prefilledPulseId?: string;
+  onSwitchToLogin?: () => void;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
@@ -37,9 +38,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
     return (
       fullName.length >= 3 && 
       registerEmail && 
-      isEmailValid !== false && 
+      registerEmail.includes('@') && 
       pulseId.length >= 3 && 
-      pulseIdAvailable !== false &&
       registerPassword.length >= 8
     );
   };
@@ -88,20 +88,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
       });
       return;
     }
-
-    // Check if PulseID validation previously failed
-    if (pulseIdAvailable === false) {
-      toast({
-        title: "PulseID already taken",
-        description: "Please choose a different PulseID or select one of our suggestions",
-        variant: "destructive",
-      });
-      return;
-    }
     
     // Mark registration as in-progress to prevent further checks
     setRegistrationInProgress(true);
     setLoading(true);
+    
+    console.log('Attempting registration for:', registerEmail, 'with PulseID:', pulseId);
     
     try {
       const result = await registerUser(
@@ -111,13 +103,31 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
         registerPassword
       );
       
+      console.log('Registration result:', result);
+      
       if (!result.success) {
         // Handle PulseID taken during registration
         if (result.pulseIdAvailable === false) {
           setPulseIdAvailable(false);
-          setPulseIdSuggestions(result.pulseIdSuggestions);
+          setPulseIdSuggestions(result.pulseIdSuggestions || []);
+          throw new Error("PulseID is already taken. Please choose another one.");
         }
-        throw result.error;
+        
+        if (result.error && result.error.message.includes("already registered")) {
+          toast({
+            title: "Email already registered",
+            description: "This email is already in use. Please log in instead.",
+            variant: "destructive",
+          });
+          if (onSwitchToLogin) {
+            setTimeout(() => onSwitchToLogin(), 1500);
+          }
+          throw new Error("Email already registered");
+        }
+        
+        if (result.error) {
+          throw result.error;
+        }
       }
       
       // Navigate to success page
@@ -126,8 +136,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
     } catch (error: any) {
       console.error('Registration error:', error);
       
-      // Don't show duplicate error messages
-      if (!error?.message?.includes("PulseID was just taken")) {
+      // Only show error if it's not already handled above
+      if (!error?.message?.includes("already registered") && 
+          !error?.message?.includes("PulseID is already taken")) {
         toast({
           title: "Registration failed",
           description: error?.message || "Please check your information and try again",
@@ -178,11 +189,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '' }) =>
         <Button 
           type="submit" 
           className="w-full bg-voicemate-red hover:bg-red-600"
-          disabled={loading || 
-                   pulseIdAvailable === false || 
-                   pulseId.length < 3 || 
-                   registrationInProgress ||
-                   !isFormValid()}
+          disabled={loading || !isFormValid() || registrationInProgress}
         >
           {loading ? "Creating account..." : "Claim Your PulseID"}
         </Button>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,10 +17,17 @@ const UpdatePassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   useEffect(() => {
     document.title = 'Update Password | VoiceMate ID';
-  }, []);
+    
+    // Log params for debugging
+    console.log('UpdatePassword params:', 
+      Object.fromEntries(searchParams.entries()),
+      'hash:', location.hash
+    );
+  }, [searchParams, location.hash]);
 
   const validatePassword = () => {
     if (password.length < 8) {
@@ -47,7 +54,34 @@ const UpdatePassword = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      // Extract token from params or hash
+      const token = searchParams.get('access_token') || 
+                    new URLSearchParams(location.hash.replace('#', '?')).get('access_token');
+      
+      let updateResult;
+      
+      if (token) {
+        // If we have a token, use it directly to reset the password
+        console.log('Updating password with token');
+        
+        // Set the auth token in the session
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (!sessionData.session) {
+          // If no session exists, we need to use the token first
+          // This tells Supabase to use the provided token for this request
+          await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+        }
+        
+        // Now update the password (the token is already being used in the session)
+        updateResult = await supabase.auth.updateUser({ password });
+      } else {
+        // Regular password update (user already authenticated)
+        console.log('Updating password without token');
+        updateResult = await supabase.auth.updateUser({ password });
+      }
+      
+      const { error } = updateResult;
       
       if (error) throw error;
 
@@ -63,13 +97,15 @@ const UpdatePassword = () => {
         description: error?.message || "An error occurred while updating your password.",
         variant: "destructive",
       });
+      console.error('Password update error:', error);
     } finally {
       setLoading(false);
     }
   };
 
   // Check for access token to ensure user came from a reset link
-  const hasAccessToken = searchParams.get('access_token') !== null;
+  const hasAccessToken = searchParams.get('access_token') !== null || 
+                          location.hash.includes('access_token=');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">

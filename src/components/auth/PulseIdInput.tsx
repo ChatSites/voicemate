@@ -2,44 +2,45 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CircleX, CircleCheck } from 'lucide-react';
-import PulseIdChecker from './PulseIdChecker';
 import { isPulseIdTaken } from '@/integrations/supabase/client';
+import { CircleCheck, CircleX } from 'lucide-react';
+import PulseIdSuggestions from './PulseIdSuggestions';
 
 type PulseIdInputProps = {
   pulseId: string;
   setPulseId: (id: string) => void;
-  registrationInProgress: boolean;
   pulseIdAvailable: boolean | null;
   setPulseIdAvailable: (available: boolean | null) => void;
   pulseIdSuggestions: string[];
   setPulseIdSuggestions: (suggestions: string[]) => void;
+  registrationInProgress: boolean;
 }
 
-const PulseIdInput: React.FC<PulseIdInputProps> = ({
-  pulseId,
-  setPulseId,
-  registrationInProgress,
+const PulseIdInput: React.FC<PulseIdInputProps> = ({ 
+  pulseId, 
+  setPulseId, 
   pulseIdAvailable,
   setPulseIdAvailable,
   pulseIdSuggestions,
-  setPulseIdSuggestions
+  setPulseIdSuggestions,
+  registrationInProgress
 }) => {
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
-  const [lastCheckedPulseId, setLastCheckedPulseId] = useState('');
 
-  // PulseID verification
+  // Real-time PulseID verification - but just basic format validation
   useEffect(() => {
-    // Skip checking if registration is in progress to avoid UI confusion
-    if (registrationInProgress) return;
+    if (registrationInProgress) {
+      return;
+    }
+    
+    if (!pulseId || pulseId.length < 3) {
+      setPulseIdAvailable(null);
+      setPulseIdSuggestions([]);
+      return;
+    }
 
+    // Basic validation has passed, now check availability
     const checkPulseId = async () => {
-      if (!pulseId || pulseId.length < 3) {
-        setPulseIdAvailable(null);
-        setPulseIdSuggestions([]);
-        return;
-      }
-
       setIsCheckingPulseId(true);
       
       try {
@@ -50,7 +51,6 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         
         console.log(`PulseID ${pulseId} is ${isAvailable ? 'available' : 'taken'}`);
         
-        setLastCheckedPulseId(pulseId);
         setPulseIdAvailable(isAvailable);
         
         // Generate suggestions if not available
@@ -75,15 +75,15 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     // Debounce the check to avoid too many requests
     const timerId = setTimeout(checkPulseId, 500);
     return () => clearTimeout(timerId);
-  }, [pulseId, registrationInProgress, setPulseIdAvailable, setPulseIdSuggestions]);
-
+  }, [pulseId, setPulseIdAvailable, setPulseIdSuggestions, registrationInProgress]);
+  
   const selectSuggestion = (suggestion: string) => {
     setPulseId(suggestion);
   };
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="pulse-id">Desired PulseID</Label>
+    <div className="space-y-3">
+      <Label htmlFor="pulse-id">Choose Your PulseID</Label>
       <div className="flex">
         <span className="inline-flex items-center px-3 text-sm bg-black/50 rounded-l-md border border-r-0 border-gray-700 text-gray-400">
           pulse/
@@ -117,19 +117,16 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           )}
         </div>
       </div>
-      
-      {pulseIdAvailable === false && (
-        <PulseIdChecker 
-          pulseIdAvailable={pulseIdAvailable}
-          pulseIdSuggestions={pulseIdSuggestions}
-          onSelectSuggestion={selectSuggestion}
-          registrationInProgress={registrationInProgress}
-          isCheckingPulseId={isCheckingPulseId}
-        />
-      )}
-      
+
       {pulseId.length > 0 && pulseId.length < 3 && (
         <p className="text-sm text-amber-400">PulseID must be at least 3 characters</p>
+      )}
+
+      {pulseIdAvailable === false && pulseIdSuggestions.length > 0 && (
+        <PulseIdSuggestions 
+          suggestions={pulseIdSuggestions}
+          onSelectSuggestion={selectSuggestion}
+        />
       )}
     </div>
   );

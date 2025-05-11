@@ -9,17 +9,19 @@ import PulseIdSuggestions from './PulseIdSuggestions';
 type PulseIdInputProps = {
   pulseId: string;
   setPulseId: (id: string) => void;
+  setPulseIdAvailable: (available: boolean | null) => void;
 }
 
-const PulseIdInput: React.FC<PulseIdInputProps> = ({ pulseId, setPulseId }) => {
+const PulseIdInput: React.FC<PulseIdInputProps> = ({ pulseId, setPulseId, setPulseIdAvailable }) => {
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
-  const [pulseIdAvailable, setPulseIdAvailable] = useState<boolean | null>(null);
+  const [pulseIdAvailable, setPulseIdAvailableLocal] = useState<boolean | null>(null);
   const [pulseIdSuggestions, setPulseIdSuggestions] = useState<string[]>([]);
 
   // Real-time PulseID verification
   useEffect(() => {
     const checkPulseId = async () => {
       if (!pulseId || pulseId.length < 3) {
+        setPulseIdAvailableLocal(null);
         setPulseIdAvailable(null);
         setPulseIdSuggestions([]);
         return;
@@ -35,6 +37,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({ pulseId, setPulseId }) => {
         
         console.log(`PulseID ${pulseId} is ${isAvailable ? 'available' : 'taken'}`);
         
+        setPulseIdAvailableLocal(isAvailable);
         setPulseIdAvailable(isAvailable);
         
         // Generate suggestions if not available
@@ -50,6 +53,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({ pulseId, setPulseId }) => {
         }
       } catch (error) {
         console.error('Error checking PulseID:', error);
+        setPulseIdAvailableLocal(null);
         setPulseIdAvailable(null);
       } finally {
         setIsCheckingPulseId(false);
@@ -59,7 +63,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({ pulseId, setPulseId }) => {
     // Debounce the check to avoid too many requests
     const timerId = setTimeout(checkPulseId, 500);
     return () => clearTimeout(timerId);
-  }, [pulseId]);
+  }, [pulseId, setPulseIdAvailable]);
   
   const selectSuggestion = (suggestion: string) => {
     setPulseId(suggestion);

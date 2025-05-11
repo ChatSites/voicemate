@@ -38,11 +38,7 @@ export default function Navbar() {
     >
       <div className="container mx-auto flex justify-between items-center py-4">
         <a href="/" className="flex items-center space-x-2">
-<img
-      src="https://i.ibb.co/k2KwyQhN/voicemate-logo-horiz-dark.png"
-      alt="VoiceMate Logo"
-      className="h-8 max-w-[300px] w-auto"
-    />
+          <span className="text-xl font-bold text-white">VoiceMate</span>
         </a>
         
         <nav className="hidden md:flex items-center space-x-8">
