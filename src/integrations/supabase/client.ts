@@ -42,44 +42,47 @@ export const cleanupAuthState = () => {
   }
 };
 
-// Check if an email is already registered - IMPROVED VERSION
+// Check if an email is already registered - FIXED VERSION
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   if (!email || !email.includes('@')) {
     return false; // Invalid email format
   }
 
   try {
-    console.log('Checking if email is registered:', email);
-    
-    // Use signInWithOtp with shouldCreateUser: false to check if email exists
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false, // Don't create a new user if it doesn't exist
+    // Use a more direct API to check if user exists
+    const { data, error } = await supabase.auth.admin.listUsers({
+      filter: {
+        email: email
       }
     });
 
-    // If we get specific errors, email is available
-    if (error && (
-      error.message.includes("Email not found") || 
-      error.message.includes("User not found") ||
-      error.message.includes("For security purposes") ||
-      error.message.includes("Unable to validate")
-    )) {
-      console.log('Email checked - available:', email);
-      return false; // Email is available
+    // If this admin API call fails, we'll fall back to a simpler method
+    if (error) {
+      console.log('Admin API not available, falling back to basic check');
+      // Try basic auth - this is less accurate but should work for now
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'INCORRECT_PASSWORD_FOR_CHECK_ONLY'
+      });
+      
+      // If we get password error, email exists
+      if (signInError && signInError.message.includes('Invalid login credentials')) {
+        return true;
+      }
+      
+      // For all other errors, assume email doesn't exist
+      return false; 
     }
-
-    // If there was no error or another type of error, the email likely exists
-    console.log('Email checked - likely exists:', email);
-    return true; // Email is taken
+    
+    // If we got users data and there's at least one user, email exists
+    return !!(data && data.users && data.users.length > 0);
   } catch (error) {
     console.error('Error checking email registration:', error);
     return false; // Assume email is available on error to allow registration attempt
   }
 };
 
-// Check if a PulseID is already taken - IMPROVED VERSION
+// Check if a PulseID is already taken - FIXED VERSION
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     if (!pulseId || pulseId.trim() === '') {
@@ -98,10 +101,7 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       
     if (error) {
       console.error('Error checking PulseID availability:', error);
-      
-      // IMPORTANT: For auth errors (401) or any other errors, return false to allow registration
-      console.log('Error occurred when checking PulseID, assuming available:', pulseId);
-      return false; // Always allow registration attempts on errors
+      return false; // On error, allow registration attempt
     }
     
     // If data exists, PulseID is taken, otherwise it's available

@@ -1,57 +1,17 @@
-import { supabase, cleanupAuthState, isPulseIdTaken, debugRegistration } from '@/integrations/supabase/client';
+
+import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 
+// This is a simplified check, final verification happens during registration
 export const finalEmailCheck = async (email: string): Promise<boolean> => {
-  try {
-    // Check if email has valid format
-    if (!email.includes('@')) {
-      return false;
-    }
-
-    // Try signing in as if the user exists
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false, // Don't create user if they don't exist
-      }
-    });
-
-    // If we get message about email not found or security, email is available
-    if (error && (
-      error.message.includes('not found') || 
-      error.message.includes('security') ||
-      error.message.includes('Unable to validate')
-    )) {
-      console.log('Email verification: Email appears to be available:', email);
-      return true; // Email is available
-    }
-    
-    // Otherwise assume email is taken
-    console.log('Email verification: Email appears to be taken:', email);
-    return false;
-  } catch (error) {
-    console.error('Error in final email check:', error);
-    // On error, allow registration attempt
-    return true;
-  }
+  // Just do basic format validation
+  return email && email.includes('@');
 };
 
+// This is a simplified check, final verification happens during registration
 export const finalPulseIdCheck = async (id: string): Promise<boolean> => {
-  try {
-    // Log the check for debugging
-    console.log(`Final PulseID check for: ${id}`);
-    
-    // Simple check for empty IDs
-    if (!id || id.trim() === '') {
-      return false;
-    }
-    
-    // Always allow registration attempts
-    return true;
-  } catch (error) {
-    console.error('Error in final PulseID check:', error);
-    return true; // Allow registration attempts
-  }
+  // Just do basic format validation
+  return id && id.length >= 3;
 };
 
 export const registerUser = async (
@@ -74,7 +34,7 @@ export const registerUser = async (
     
     console.log('Registering with data:', userData);
     
-    // Try direct registration
+    // Perform registration
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
