@@ -38,7 +38,7 @@ export default function Navbar() {
     >
       <div className="container mx-auto flex justify-between items-center py-4">
         <a href="/" className="flex items-center space-x-2">
-          <img src="/voicemate_logo_horiz_dark.png" alt="VoiceMate Logo" className="h-8" />
+          <img src="public/voicemate_logo_horiz_dark.png" alt="VoiceMate Logo" className="h-8" />
           <span className="text-xl font-bold text-white">VoiceMate</span>
         </a>
         
