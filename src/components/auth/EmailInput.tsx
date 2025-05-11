@@ -22,7 +22,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
 }) => {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
-  // Email validation - now we just validate format, not existence
+  // Email validation (check if already registered)
   useEffect(() => {
     if (registrationInProgress || !email) {
       return;
@@ -31,28 +31,20 @@ const EmailInput: React.FC<EmailInputProps> = ({
     // Reset the email validity state when email changes
     setIsEmailValid(null);
 
-    // Validate email format first - this is the basic check we'll do here
+    // Validate email format first
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return;
     }
 
-    // Don't check for existence during typing - let the registration process handle this
-    setIsEmailValid(true);
-
-    /*
-    // Commented out email existence check - let the registration handle this
     const checkEmailAvailability = async () => {
       setIsCheckingEmail(true);
       try {
-        console.log('Checking if email is available:', email);
         const isRegistered = await isEmailRegistered(email);
-        console.log('Email check result:', email, isRegistered ? 'taken' : 'available');
         setIsEmailValid(!isRegistered);
       } catch (error) {
         console.error('Error checking email availability:', error);
-        // On error, assume email is available
-        setIsEmailValid(true);
+        setIsEmailValid(null);
       } finally {
         setIsCheckingEmail(false);
       }
@@ -60,7 +52,6 @@ const EmailInput: React.FC<EmailInputProps> = ({
 
     const timerId = setTimeout(checkEmailAvailability, 600);
     return () => clearTimeout(timerId);
-    */
   }, [email, registrationInProgress, setIsEmailValid]);
 
   return (

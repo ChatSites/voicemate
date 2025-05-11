@@ -18,7 +18,6 @@ import ReservePulseID from "./pages/ReservePulseID";
 import Dashboard from "./pages/Dashboard";
 import SendPulse from "./pages/SendPulse";
 import Inbox from "./pages/Inbox";
-import AuthConfirmation from "./pages/AuthConfirmation";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +41,6 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create" element={<SendPulse />} />
             <Route path="/inbox" element={<Inbox />} />
-            <Route path="/auth-confirmation" element={<AuthConfirmation />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
