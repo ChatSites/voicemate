@@ -3,8 +3,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://vzbadytmoatrwrvgemne.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6YmFkeXRtb2F0cndydmdlbW5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3Mjg5MzIsImV4cCI6MjA2MTMwNDkzMn0.KdyaGRXGKULvjiclJsDFdtDdpb_i8F7wTsPweJPnFa0";
+// Make sure we're using the correct Supabase project URL and key
+// This matches the project ID in supabase/config.toml (jvllftcsvfszpkjzjkfy)
+const SUPABASE_URL = "https://jvllftcsvfszpkjzjkfy.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bGxmdGNzdmZzenBranpqa2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MTE0ODAsImV4cCI6MjA2MTI4NzQ4MH0.6n9xJKtDgdpejCPLVDPqa3KoA_eCN4fNV4cgCxb5pzM";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -49,9 +51,6 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
   }
 
   try {
-    // The admin.listUsers method doesn't accept a filter parameter
-    // Let's use a different approach to check if the email exists
-    
     console.log('Checking if email exists:', email);
     
     // Try basic auth - this is less accurate but should work for now
