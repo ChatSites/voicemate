@@ -11,7 +11,7 @@ export const processAudioRecording = async (
   ctas?: string[];
 }> => {
   try {
-    console.log("Processing audio recording...");
+    console.log("Processing audio recording, blob size:", audioBlob.size);
     
     // Convert the audio blob to base64
     const reader = new FileReader();
@@ -20,6 +20,7 @@ export const processAudioRecording = async (
         try {
           // Extract base64 data from the data URL
           const base64Audio = (reader.result as string).split(',')[1];
+          console.log("Audio converted to base64, length:", base64Audio?.length || 0);
           
           const { data, error } = await supabase.functions.invoke('voice-analysis', {
             body: {
@@ -30,11 +31,6 @@ export const processAudioRecording = async (
           
           if (error) {
             console.error("Edge function error:", error);
-            toast({
-              title: "Processing Error",
-              description: "Failed to analyze your voice message. Please try again.",
-              variant: "destructive"
-            });
             reject(error);
             return;
           }
@@ -47,29 +43,24 @@ export const processAudioRecording = async (
             // If we received a transcript from the API, use it
             if (data.transcript) {
               result.transcript = data.transcript;
+              console.log("Received transcript:", data.transcript);
             }
             
             // Process CTAs 
             if (data.ctas && Array.isArray(data.ctas)) {
-              const ctaLabels = data.ctas
-                .map((cta: { label: string }) => cta.label)
-                .filter((label: string) => label && label.trim().length > 0)
-                .map((label: string) => {
-                  // Make labels shorter and more action-oriented
-                  let actionLabel = label.trim();
-                  // Remove common prefixes
-                  actionLabel = actionLabel.replace(/^(I want to|Let me|I'd like to|Please|Can you|Could you)/i, '').trim();
-                  // Capitalize first letter
-                  actionLabel = actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1);
-                  return actionLabel;
+              result.ctas = data.ctas
+                .filter((cta: string) => cta && cta.trim().length > 0)
+                .map((cta: string) => {
+                  // Make labels concise and action-oriented
+                  return cta.trim();
                 });
               
-              console.log("Suggested CTAs:", ctaLabels);
-              result.ctas = ctaLabels;
+              console.log("Processed CTAs:", result.ctas);
             }
             
             resolve(result);
           } else {
+            console.error("Processing failed:", data);
             reject(new Error("Processing failed"));
           }
         } catch (err) {
@@ -79,6 +70,7 @@ export const processAudioRecording = async (
       };
       
       reader.onerror = () => {
+        console.error("Error reading audio file");
         reject(new Error("Error reading audio file"));
       };
       

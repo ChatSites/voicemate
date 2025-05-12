@@ -17,6 +17,7 @@ export const useRecording = (): UseRecordingResult => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recognitionRef = useRef<any | null>(null);
   const fullTranscriptRef = useRef<string>('');
+  const audioChunksRef = useRef<Blob[]>([]);
   
   useEffect(() => {
     return () => {
@@ -38,20 +39,36 @@ export const useRecording = (): UseRecordingResult => {
       setTranscription('');
       fullTranscriptRef.current = '';
       setSuggestedCTAs([]);
+      audioChunksRef.current = [];
       
       // Start audio recording
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm'
+      });
       mediaRecorderRef.current = mediaRecorder;
       
-      const audioChunks: Blob[] = [];
-      
       mediaRecorder.addEventListener('dataavailable', (event) => {
-        audioChunks.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       });
       
       mediaRecorder.addEventListener('stop', async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        console.log("Media recorder stopped");
+        console.log("Audio chunks collected:", audioChunksRef.current.length);
+        
+        if (audioChunksRef.current.length === 0) {
+          toast({
+            title: "Recording Error",
+            description: "No audio data was captured. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        console.log("Audio blob created, size:", audioBlob.size);
         setRecordingData(audioBlob);
         setIsProcessing(true);
         
@@ -81,7 +98,8 @@ export const useRecording = (): UseRecordingResult => {
         }
       });
       
-      mediaRecorder.start();
+      mediaRecorder.start(1000); // Collect data in 1-second chunks
+      console.log("Media recorder started");
       setIsRecording(true);
       setRecordingTime(0);
       
@@ -145,6 +163,7 @@ export const useRecording = (): UseRecordingResult => {
     setTranscription('');
     fullTranscriptRef.current = '';
     setSuggestedCTAs([]);
+    audioChunksRef.current = [];
   };
 
   return {

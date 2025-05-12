@@ -9,6 +9,7 @@ const corsHeaders = {
 
 // Process base64 in chunks to prevent memory issues
 function processBase64Chunks(base64String: string, chunkSize = 32768) {
+  console.log("Processing base64 audio, length:", base64String.length);
   const chunks: Uint8Array[] = [];
   let position = 0;
   
@@ -34,6 +35,7 @@ function processBase64Chunks(base64String: string, chunkSize = 32768) {
     offset += chunk.length;
   }
 
+  console.log("Finished processing audio data, size:", result.length);
   return result;
 }
 
@@ -59,11 +61,7 @@ async function analyzeIntent(text: string) {
           {
             role: 'system',
             content: `You are an AI that analyzes voice message transcripts to identify the speaker's intent and suggest relevant call-to-action buttons.
-            Respond with a JSON object containing:
-            1. "intent": A brief label describing the main intent (e.g., "scheduling_request", "pricing_inquiry", "feedback")
-            2. "category": Broader category (e.g., "meeting", "sales", "support")
-            3. "label": Human-readable label for the intent (e.g., "Schedule a Meeting")
-            4. "ctas": Array of 2-5 BRIEF, ACTION-ORIENTED phrases that would make good button text, each 1-5 words max.
+            Respond with a JSON object containing an array of 2-5 BRIEF, ACTION-ORIENTED phrases that would make good button text, each 1-5 words max.
             
             Make the CTAs very concise, actionable, and directly related to what the speaker wants to achieve.
             For example, if someone is asking about pricing, good CTAs might be:
@@ -78,7 +76,6 @@ async function analyzeIntent(text: string) {
             content: `Analyze this voice message transcript and suggest relevant CTAs: "${text}"`
           }
         ],
-        response_format: { type: "json_object" },
         temperature: 0.2
       }),
     });
@@ -91,7 +88,22 @@ async function analyzeIntent(text: string) {
 
     const result = await response.json();
     console.log("Intent analysis result:", result.choices[0].message.content);
-    return JSON.parse(result.choices[0].message.content);
+    
+    try {
+      // Try to parse as JSON first
+      const parsedContent = JSON.parse(result.choices[0].message.content);
+      return parsedContent;
+    } catch (e) {
+      // If not valid JSON, extract CTAs from text
+      const content = result.choices[0].message.content;
+      
+      // Extract CTAs from the content
+      const ctas = content.split('\n')
+        .filter((line: string) => line.trim().startsWith('-') || line.trim().startsWith('*'))
+        .map((line: string) => line.replace(/^[-*]\s+/, '').replace(/"/g, '').trim());
+      
+      return { ctas };
+    }
   } catch (error) {
     console.error('Error analyzing intent:', error);
     throw error;
@@ -115,7 +127,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          ...intentAnalysis
+          ctas: intentAnalysis.ctas || []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -163,7 +175,7 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           transcript: transcribedText,
-          ...intentAnalysis
+          ctas: intentAnalysis.ctas || []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
