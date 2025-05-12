@@ -2,14 +2,19 @@
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+// Interface for audio processing results
+interface AudioProcessingResult {
+  transcript?: string;
+  intent?: string;
+  description?: string;
+  ctas?: string[];
+}
+
 // Process the recorded audio and get AI analysis
 export const processAudioRecording = async (
   audioBlob: Blob,
   existingTranscript?: string
-): Promise<{
-  transcript?: string;
-  ctas?: string[];
-}> => {
+): Promise<AudioProcessingResult> => {
   try {
     console.log("Processing audio recording, blob size:", audioBlob.size);
     
@@ -38,12 +43,19 @@ export const processAudioRecording = async (
           console.log("Voice analysis response:", data);
           
           if (data.success) {
-            const result: { transcript?: string; ctas?: string[] } = {};
+            const result: AudioProcessingResult = {};
             
             // If we received a transcript from the API, use it
             if (data.transcript) {
               result.transcript = data.transcript;
               console.log("Received transcript:", data.transcript);
+            }
+            
+            // Store intent information if available
+            if (data.intent) {
+              result.intent = data.intent;
+              result.description = data.description || '';
+              console.log("Identified intent:", data.intent, "Description:", data.description || 'None');
             }
             
             // Process CTAs if available from the API
@@ -57,18 +69,20 @@ export const processAudioRecording = async (
               
               console.log("Processed CTAs:", result.ctas);
             } else {
-              // Ensure we always have some CTAs
-              result.ctas = ["Plan Trip", "Boat Invitation", "Check Calendar", "Confirm Details"];
-              console.log("Using default CTAs due to missing CTAs from API");
+              // Generate default CTAs based on intent if available
+              result.ctas = getDefaultCTAs(data.intent || 'default');
+              console.log("Using default CTAs for intent:", data.intent || 'default');
             }
             
             resolve(result);
           } else {
             console.error("Processing failed:", data);
-            // Even if processing fails, return some default CTAs
+            // Return some default data on error
             resolve({
               transcript: existingTranscript,
-              ctas: ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
+              intent: data.intent || 'default',
+              description: data.description || 'Error processing',
+              ctas: data.ctas || getDefaultCTAs('default')
             });
           }
         } catch (err) {
@@ -76,7 +90,9 @@ export const processAudioRecording = async (
           // Return default values on error
           resolve({
             transcript: existingTranscript,
-            ctas: ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
+            intent: 'default',
+            description: 'Error processing',
+            ctas: getDefaultCTAs('default')
           });
         }
       };
@@ -86,7 +102,9 @@ export const processAudioRecording = async (
         // Return default values on error
         resolve({
           transcript: existingTranscript,
-          ctas: ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
+          intent: 'default',
+          description: 'Error reading file',
+          ctas: getDefaultCTAs('default')
         });
       };
       
@@ -97,7 +115,24 @@ export const processAudioRecording = async (
     // Return default values on error
     return {
       transcript: existingTranscript,
-      ctas: ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
+      intent: 'default',
+      description: 'Error in processing',
+      ctas: getDefaultCTAs('default')
     };
   }
+};
+
+// Get default CTAs based on intent
+const getDefaultCTAs = (intent: string): string[] => {
+  const defaultCTAs: Record<string, string[]> = {
+    'travel_invitation': ["Plan Trip", "Check Calendar", "Book Travel", "Confirm Dates"],
+    'scheduling': ["Schedule Meeting", "Check Calendar", "Confirm Dates", "Set Reminder"],
+    'follow_up': ["Remind Later", "Send Follow-up", "Check Calendar", "Make Note"],
+    'invitation': ["Accept Invitation", "Check Calendar", "Request Details", "Share Plan"],
+    'boat_related': ["Boat Invitation", "Plan Trip", "Check Availability", "Weather Check"],
+    'social_gathering': ["RSVP Now", "Check Calendar", "Suggest Time", "Ask Details"],
+    'default': ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
+  };
+  
+  return defaultCTAs[intent] || defaultCTAs.default;
 };
