@@ -20,6 +20,8 @@ export default function SendPulse() {
     isRecording,
     recordingTime,
     recordingData,
+    transcription,
+    suggestedCTAs,
     startRecording,
     stopRecording,
     resetRecording
@@ -92,6 +94,8 @@ export default function SendPulse() {
                 isRecording={isRecording}
                 recordingTime={recordingTime}
                 recordingData={recordingData}
+                transcription={transcription}
+                suggestedCTAs={suggestedCTAs}
                 pulseTitle={pulseTitle}
                 pulseDescription={pulseDescription}
                 isSending={isSending}

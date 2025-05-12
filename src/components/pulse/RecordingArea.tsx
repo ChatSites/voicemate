@@ -5,11 +5,14 @@ import RecordingVisualizer from './RecordingVisualizer';
 import RecordingTimer from './RecordingTimer';
 import RecordingControls from './RecordingControls';
 import AudioPlayback from './AudioPlayback';
+import TranscriptionDisplay from './TranscriptionDisplay';
 
 interface RecordingAreaProps {
   isRecording: boolean;
   recordingTime: number;
   recordingData: Blob | null;
+  transcription: string;
+  suggestedCTAs: string[];
   onStartRecording: () => void;
   onStopRecording: () => void;
   onResetRecording: () => void;
@@ -19,6 +22,8 @@ const RecordingArea: React.FC<RecordingAreaProps> = ({
   isRecording,
   recordingTime,
   recordingData,
+  transcription,
+  suggestedCTAs,
   onStartRecording,
   onStopRecording,
   onResetRecording,
@@ -31,11 +36,14 @@ const RecordingArea: React.FC<RecordingAreaProps> = ({
           onReset={onResetRecording} 
         />
       ) : (
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 w-full">
           {isRecording ? (
             <div className="space-y-4">
               <RecordingVisualizer />
               <RecordingTimer seconds={recordingTime} />
+              {transcription && (
+                <TranscriptionDisplay transcription={transcription} />
+              )}
               <RecordingControls
                 isRecording={true}
                 onStartRecording={onStartRecording}
