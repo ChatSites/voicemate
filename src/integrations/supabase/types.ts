@@ -9,96 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      intent_logs: {
         Row: {
-          avatar_url: string | null
+          category: string | null
           created_at: string | null
+          ctas: Json | null
+          email: string | null
           id: string
-          updated_at: string | null
-          username: string | null
+          intent: string
+          ip_address: string | null
+          label: string | null
+          transcript: string
+          user_agent: string | null
+          user_id: number
         }
         Insert: {
-          avatar_url?: string | null
+          category?: string | null
           created_at?: string | null
-          id: string
-          updated_at?: string | null
-          username?: string | null
+          ctas?: Json | null
+          email?: string | null
+          id?: string
+          intent: string
+          ip_address?: string | null
+          label?: string | null
+          transcript: string
+          user_agent?: string | null
+          user_id?: number
         }
         Update: {
-          avatar_url?: string | null
+          category?: string | null
           created_at?: string | null
+          ctas?: Json | null
+          email?: string | null
           id?: string
-          updated_at?: string | null
-          username?: string | null
-        }
-        Relationships: []
-      }
-      pulse_templates: {
-        Row: {
-          branding_theme: Json | null
-          created_at: string
-          cta_presets: Json | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          branding_theme?: Json | null
-          created_at?: string
-          cta_presets?: Json | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          branding_theme?: Json | null
-          created_at?: string
-          cta_presets?: Json | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-          user_id?: string
+          intent?: string
+          ip_address?: string | null
+          label?: string | null
+          transcript?: string
+          user_agent?: string | null
+          user_id?: number
         }
         Relationships: []
       }
       pulses: {
         Row: {
+          audio_url: string | null
           created_at: string
-          cta_buttons: Json | null
+          ctas: Json | null
           id: string
-          intent_metadata: Json | null
-          title: string
+          intent: string | null
+          pulse_id: string | null
           transcript: string | null
-          updated_at: string
-          user_id: string
-          voice_url: string | null
         }
         Insert: {
+          audio_url?: string | null
           created_at?: string
-          cta_buttons?: Json | null
+          ctas?: Json | null
           id?: string
-          intent_metadata?: Json | null
-          title: string
+          intent?: string | null
+          pulse_id?: string | null
           transcript?: string | null
-          updated_at?: string
-          user_id: string
-          voice_url?: string | null
         }
         Update: {
+          audio_url?: string | null
           created_at?: string
-          cta_buttons?: Json | null
+          ctas?: Json | null
           id?: string
-          intent_metadata?: Json | null
-          title?: string
+          intent?: string | null
+          pulse_id?: string | null
           transcript?: string | null
-          updated_at?: string
-          user_id?: string
-          voice_url?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          id: string
+          name: string | null
+          pulse_id: string | null
+        }
+        Insert: {
+          id?: string
+          name?: string | null
+          pulse_id?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string | null
+          pulse_id?: string | null
         }
         Relationships: []
       }
