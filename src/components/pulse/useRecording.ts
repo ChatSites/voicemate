@@ -27,6 +27,12 @@ interface SpeechRecognitionAlternative {
   readonly transcript: string;
 }
 
+// Add specific error event interface
+interface SpeechRecognitionErrorEvent extends Event {
+  readonly error: string;
+  readonly message?: string;
+}
+
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   grammars: any;
@@ -34,7 +40,7 @@ interface SpeechRecognition extends EventTarget {
   lang: string;
   maxAlternatives: number;
   onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
   start(): void;
   stop(): void;
 }
