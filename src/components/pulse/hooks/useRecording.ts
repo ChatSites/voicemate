@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { UseRecordingResult } from '@/components/pulse/types/speechRecognition';
+import { UseRecordingResult, CTAVariant } from '@/components/pulse/types/speechRecognition';
 import { initSpeechRecognition } from '../services/speechRecognitionService';
 import { processAudioRecording } from '../services/audioProcessingService';
 
@@ -10,7 +10,7 @@ export const useRecording = (): UseRecordingResult => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordingData, setRecordingData] = useState<Blob | null>(null);
   const [transcription, setTranscription] = useState('');
-  const [suggestedCTAs, setSuggestedCTAs] = useState<string[]>([]);
+  const [suggestedCTAs, setSuggestedCTAs] = useState<CTAVariant[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const timerRef = useRef<number | null>(null);

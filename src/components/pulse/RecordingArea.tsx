@@ -7,12 +7,7 @@ import RecordingControls from './RecordingControls';
 import AudioPlayback from './AudioPlayback';
 import TranscriptionDisplay from './TranscriptionDisplay';
 import { Button } from '@/components/ui/button';
-
-interface CTAVariant {
-  label: string;
-  action: string;
-  url?: string;
-}
+import { CTAVariant } from './types/speechRecognition';
 
 interface RecordingAreaProps {
   isRecording: boolean;

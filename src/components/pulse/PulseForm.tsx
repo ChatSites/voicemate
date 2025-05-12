@@ -6,12 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Lightbulb } from 'lucide-react';
 import RecordingArea from './RecordingArea';
-
-interface CTAVariant {
-  label: string;
-  action: string;
-  url?: string;
-}
+import { CTAVariant } from './types/speechRecognition';
 
 interface PulseFormProps {
   isRecording: boolean;

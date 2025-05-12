@@ -1,13 +1,7 @@
 
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-// Interface for CTA variant
-interface CTAVariant {
-  label: string;
-  action: string;
-  url?: string;
-}
+import { CTAVariant } from '../types/speechRecognition';
 
 // Interface for audio processing results
 interface AudioProcessingResult {
@@ -87,7 +81,7 @@ export const processAudioRecording = async (
                   };
                 }
                 return null;
-              }).filter(Boolean);
+              }).filter(Boolean) as CTAVariant[];
               
               console.log("Processed CTAs:", result.ctas);
             } else {

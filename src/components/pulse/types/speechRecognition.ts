@@ -36,9 +36,28 @@ export interface SpeechRecognition extends EventTarget {
   maxAlternatives: number;
   onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
   onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null; // Added missing onend property
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
   start(): void;
   stop(): void;
+}
+
+// Define the CTAVariant interface
+export interface CTAVariant {
+  label: string;
+  action: string;
+  url?: string;
+}
+
+// Core recording types
+export interface UseRecordingResult {
+  isRecording: boolean;
+  recordingTime: number;
+  recordingData: Blob | null;
+  transcription: string;
+  suggestedCTAs: CTAVariant[];
+  startRecording: () => Promise<void>;
+  stopRecording: () => void;
+  resetRecording: () => void;
 }
 
 declare global {
@@ -50,16 +69,4 @@ declare global {
       new(): SpeechRecognition;
     };
   }
-}
-
-// Core recording types
-export interface UseRecordingResult {
-  isRecording: boolean;
-  recordingTime: number;
-  recordingData: Blob | null;
-  transcription: string;
-  suggestedCTAs: string[];
-  startRecording: () => Promise<void>;
-  stopRecording: () => void;
-  resetRecording: () => void;
 }

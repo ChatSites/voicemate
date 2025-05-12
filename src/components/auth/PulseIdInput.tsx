@@ -132,7 +132,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       {pulseIdAvailable === false && pulseIdSuggestions.length > 0 && (
         <PulseIdSuggestions 
           suggestions={pulseIdSuggestions}
-          onSuggestionClick={handleSuggestionClick}
+          onSelectSuggestion={handleSuggestionClick}
         />
       )}
     </div>

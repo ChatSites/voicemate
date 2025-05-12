@@ -9,6 +9,7 @@ import PulseForm from '@/components/pulse/PulseForm';
 import PulseTips from '@/components/pulse/PulseTips';
 import { useRecording } from '@/components/pulse/hooks/useRecording';
 import { supabase } from '@/integrations/supabase/client';
+import { CTAVariant } from '@/components/pulse/types/speechRecognition';
 
 export default function SendPulse() {
   const { user, loading } = useAuth();
@@ -36,9 +37,10 @@ export default function SendPulse() {
 
   useEffect(() => {
     // Auto-populate title with first suggested CTA if available
-    if (suggestedCTAs.length > 0 && !pulseTitle) {
-      console.log("Auto-setting title to:", suggestedCTAs[0]);
-      setPulseTitle(suggestedCTAs[0]);
+    if (suggestedCTAs.length > 0 && !pulseTitle && suggestedCTAs[0].label) {
+      console.log("Auto-setting title to:", suggestedCTAs[0].label);
+      // Remove emoji if present
+      setPulseTitle(suggestedCTAs[0].label.replace(/^[^\w]+/, '').trim());
     }
   }, [suggestedCTAs, pulseTitle]);
   
