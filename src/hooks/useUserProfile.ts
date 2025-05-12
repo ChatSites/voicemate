@@ -25,7 +25,7 @@ export const useUserProfile = () => {
         return;
       }
 
-      // Fix: use "profiles" table instead of "users"
+      // Use "profiles" table instead of "users"
       const { data, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -36,13 +36,14 @@ export const useUserProfile = () => {
         setError(profileError.message);
       } else if (data) {
         // Map the returned profile data to our UserProfile interface
-        setProfile({
+        const userProfile: UserProfile = {
           id: data.id,
           name: userData.user.user_metadata?.full_name || null,
           pulse_id: data.username || null,
           created_at: data.created_at,
           avatar_url: data.avatar_url
-        });
+        };
+        setProfile(userProfile);
       }
 
       setLoading(false);

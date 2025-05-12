@@ -15,7 +15,7 @@ export const registerUser = async (
   try {
     // Step 1: Check PulseID availability
     const { data: existingPulseId, error: pulseIdError, status } = await supabase
-      .from('profiles') // Fix: use 'profiles' instead of 'users'
+      .from('profiles')
       .select('id')
       .eq('username', pulseId)
       .single();
