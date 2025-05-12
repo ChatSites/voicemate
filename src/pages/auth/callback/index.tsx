@@ -54,8 +54,9 @@ export default function AuthCallback() {
           }
         }
 
-        // Get type from query parameters or determine based on context
+        // Get type from query parameters
         const type = searchParams.get("type");
+        console.log("Auth callback type:", type);
         
         switch (type) {
           case "signup":
@@ -76,8 +77,22 @@ export default function AuthCallback() {
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
           case "recovery":
-            setMessage("Please reset your password.");
-            setTimeout(() => navigate("/update-password"), 1500);
+            setMessage("Redirecting to password reset page...");
+            toast({
+              title: "Password Reset",
+              description: "Please set your new password."
+            });
+            // Ensure we pass the access token to the update-password page if it exists
+            const accessToken = searchParams.get("access_token") || 
+                                new URLSearchParams(location.hash.substring(1)).get("access_token");
+            
+            setTimeout(() => {
+              if (accessToken) {
+                navigate(`/update-password?access_token=${accessToken}`);
+              } else {
+                navigate("/update-password");
+              }
+            }, 1500);
             break;
           case "email_change":
             setMessage("Email updated! Redirecting...");
