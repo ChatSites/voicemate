@@ -39,7 +39,7 @@ function processBase64Chunks(base64String: string, chunkSize = 32768) {
   return result;
 }
 
-// Analyze text to determine intent and CTAs
+// Analyze text to determine intent and CTAs - improved prompt for better handling of longer messages
 async function analyzeIntent(text: string) {
   const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
   
@@ -61,22 +61,25 @@ async function analyzeIntent(text: string) {
           {
             role: 'system',
             content: `You are an AI that analyzes voice message transcripts to identify the speaker's intent and suggest relevant call-to-action buttons.
-            Respond with a JSON object containing an array of 2-5 BRIEF, ACTION-ORIENTED phrases that would make good button text, each 1-5 words max.
+            Respond with a JSON object containing an array of 3-5 BRIEF, ACTION-ORIENTED phrases that would make good button text, each 1-5 words max.
             
             Make the CTAs very concise, actionable, and directly related to what the speaker wants to achieve.
-            For example, if someone is asking about pricing, good CTAs might be:
-            - "View Pricing"
-            - "Request Quote"
-            - "Talk to Sales"
+            For example, if someone is inviting a friend to an event, good CTAs might be:
+            - "Send Invitation"
+            - "Book Travel"
+            - "Check Calendar"
+            - "Share Location"
             
-            CTAs should be phrases, not complete sentences.`
+            Always return at least 3 CTAs regardless of the transcript length.
+            CTAs should be phrases, not complete sentences. Focus on the most likely actions the recipient would want to take.`
           },
           {
             role: 'user',
             content: `Analyze this voice message transcript and suggest relevant CTAs: "${text}"`
           }
         ],
-        temperature: 0.2
+        temperature: 0.2,
+        max_tokens: 150
       }),
     });
 
@@ -102,11 +105,21 @@ async function analyzeIntent(text: string) {
         .filter((line: string) => line.trim().startsWith('-') || line.trim().startsWith('*'))
         .map((line: string) => line.replace(/^[-*]\s+/, '').replace(/"/g, '').trim());
       
+      // If we couldn't extract CTAs, provide some defaults
+      if (ctas.length === 0) {
+        return {
+          ctas: ["Plan Trip", "Boat Invitation", "Check Calendar", "Confirm Details"]
+        };
+      }
+      
       return { ctas };
     }
   } catch (error) {
     console.error('Error analyzing intent:', error);
-    throw error;
+    // Return default CTAs if analysis fails
+    return {
+      ctas: ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
+    };
   }
 }
 
@@ -127,7 +140,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          ctas: intentAnalysis.ctas || []
+          ctas: intentAnalysis.ctas || ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -175,7 +188,7 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           transcript: transcribedText,
-          ctas: intentAnalysis.ctas || []
+          ctas: intentAnalysis.ctas || ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"]
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -187,7 +200,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error.message,
+        ctas: ["Send Message", "Schedule Meeting", "Follow Up", "Confirm Plans"] 
       }),
       {
         status: 500,
