@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Mic } from 'lucide-react';
+import { Mic, Loader2 } from 'lucide-react';
 import RecordingVisualizer from './RecordingVisualizer';
 import RecordingTimer from './RecordingTimer';
 import RecordingControls from './RecordingControls';
@@ -28,13 +28,32 @@ const RecordingArea: React.FC<RecordingAreaProps> = ({
   onStopRecording,
   onResetRecording,
 }) => {
+  const [isProcessing, setIsProcessing] = React.useState(false);
+
+  React.useEffect(() => {
+    if (recordingData && !transcription) {
+      setIsProcessing(true);
+    } else if (transcription) {
+      setIsProcessing(false);
+    }
+  }, [recordingData, transcription]);
+
   return (
     <div className="flex flex-col items-center justify-center p-6 border border-dashed border-gray-700 rounded-lg bg-black/30">
       {recordingData ? (
-        <AudioPlayback 
-          audioBlob={recordingData} 
-          onReset={onResetRecording} 
-        />
+        <>
+          {isProcessing ? (
+            <div className="flex flex-col items-center space-y-4 py-8">
+              <Loader2 className="h-8 w-8 text-voicemate-purple animate-spin" />
+              <p className="text-gray-400">Processing your recording with AI...</p>
+            </div>
+          ) : (
+            <AudioPlayback 
+              audioBlob={recordingData} 
+              onReset={onResetRecording} 
+            />
+          )}
+        </>
       ) : (
         <div className="text-center space-y-4 w-full">
           {isRecording ? (

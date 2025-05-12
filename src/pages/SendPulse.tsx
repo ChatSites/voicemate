@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import PulseForm from '@/components/pulse/PulseForm';
 import PulseTips from '@/components/pulse/PulseTips';
 import { useRecording } from '@/components/pulse/useRecording';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function SendPulse() {
   const { user, loading } = useAuth();
@@ -32,6 +33,13 @@ export default function SendPulse() {
       navigate('/auth');
     }
   }, [loading, user, navigate]);
+
+  React.useEffect(() => {
+    // Auto-populate title with first suggested CTA if available
+    if (suggestedCTAs.length > 0 && !pulseTitle) {
+      setPulseTitle(suggestedCTAs[0]);
+    }
+  }, [suggestedCTAs, pulseTitle]);
   
   const handleSendPulse = async () => {
     if (!recordingData) {
@@ -55,16 +63,55 @@ export default function SendPulse() {
     // Show sending state
     setIsSending(true);
     
-    // This is where you would upload the recording to the server
-    // For now, we'll just show a success message after a delay
-    setTimeout(() => {
+    try {
+      // Upload the audio file to Supabase Storage
+      const audioFileName = `${user?.id}-${Date.now()}.webm`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('pulses')
+        .upload(audioFileName, recordingData, { contentType: 'audio/webm' });
+
+      if (uploadError) {
+        throw new Error(`Error uploading audio: ${uploadError.message}`);
+      }
+
+      // Get the public URL of the uploaded audio
+      const { data: publicUrlData } = supabase.storage
+        .from('pulses')
+        .getPublicUrl(audioFileName);
+
+      const audioUrl = publicUrlData.publicUrl;
+
+      // Insert the record into the pulses table
+      const { error: insertError } = await supabase
+        .from('pulses')
+        .insert({
+          pulse_id: user?.id || null,
+          audio_url: audioUrl,
+          transcript: transcription,
+          intent: pulseTitle, // Using the title as the intent
+          ctas: suggestedCTAs
+        });
+
+      if (insertError) {
+        throw new Error(`Error inserting pulse record: ${insertError.message}`);
+      }
+      
       toast({
         title: "Pulse Sent!",
         description: "Your voice message has been sent successfully.",
       });
-      setIsSending(false);
+      
       navigate('/dashboard');
-    }, 2000);
+    } catch (error) {
+      console.error("Error sending pulse:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
   
   if (loading) {
@@ -116,4 +163,4 @@ export default function SendPulse() {
       </div>
     </div>
   );
-}
+};

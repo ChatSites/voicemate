@@ -1,6 +1,8 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import type {} from '@/types/speechRecognition';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseRecordingResult {
   isRecording: boolean;
@@ -19,6 +21,7 @@ export const useRecording = (): UseRecordingResult => {
   const [recordingData, setRecordingData] = useState<Blob | null>(null);
   const [transcription, setTranscription] = useState('');
   const [suggestedCTAs, setSuggestedCTAs] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const timerRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -54,12 +57,56 @@ export const useRecording = (): UseRecordingResult => {
         audioChunks.push(event.data);
       });
       
-      mediaRecorder.addEventListener('stop', () => {
+      mediaRecorder.addEventListener('stop', async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         setRecordingData(audioBlob);
+        setIsProcessing(true);
         
-        // After recording stops, analyze content to suggest CTAs
-        analyzeContentForCTAs(transcription);
+        try {
+          // Use the OpenAI API through our Supabase edge function
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          
+          reader.onloadend = async () => {
+            // Extract base64 data from the data URL
+            const base64Audio = (reader.result as string).split(',')[1];
+            
+            const { data, error } = await supabase.functions.invoke('voice-analysis', {
+              body: {
+                audio: base64Audio
+              }
+            });
+            
+            if (error) {
+              console.error("Edge function error:", error);
+              toast({
+                title: "Processing Error",
+                description: "Failed to analyze your voice message. Please try again.",
+                variant: "destructive"
+              });
+              return;
+            }
+            
+            if (data.success) {
+              setTranscription(data.transcript || '');
+              
+              // Process CTAs
+              if (data.ctas && Array.isArray(data.ctas)) {
+                const ctaLabels = data.ctas.map((cta: { label: string }) => cta.label);
+                setSuggestedCTAs(ctaLabels);
+              }
+            }
+          };
+        } catch (err) {
+          console.error("Error processing audio:", err);
+          toast({
+            title: "Processing Error",
+            description: "An error occurred while processing your recording.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsProcessing(false);
+        }
       });
       
       mediaRecorder.start();
@@ -139,30 +186,6 @@ export const useRecording = (): UseRecordingResult => {
     setRecordingTime(0);
     setTranscription('');
     setSuggestedCTAs([]);
-  };
-  
-  // Function to analyze content and suggest CTAs based on the transcription
-  const analyzeContentForCTAs = (text: string) => {
-    // Simple intent detection based on keywords
-    const lowerText = text.toLowerCase();
-    
-    // Default CTAs if we can't determine specific intent
-    const defaultCTAs = ['Contact Me', 'Learn More', 'Schedule Call'];
-    
-    // Simple keyword-based intent detection
-    if (lowerText.includes('meeting') || lowerText.includes('schedule') || lowerText.includes('calendar')) {
-      setSuggestedCTAs(['Schedule Meeting', 'Check My Calendar', 'Book a Time']);
-    } else if (lowerText.includes('question') || lowerText.includes('help') || lowerText.includes('support')) {
-      setSuggestedCTAs(['Ask a Question', 'Get Support', 'Contact Me']);
-    } else if (lowerText.includes('purchase') || lowerText.includes('buy') || lowerText.includes('price')) {
-      setSuggestedCTAs(['Purchase Now', 'View Pricing', 'Request Quote']);
-    } else if (lowerText.includes('demo') || lowerText.includes('show') || lowerText.includes('example')) {
-      setSuggestedCTAs(['Watch Demo', 'See Examples', 'Request Demo']);
-    } else if (lowerText.includes('learn') || lowerText.includes('info') || lowerText.includes('more')) {
-      setSuggestedCTAs(['Learn More', 'Download Info', 'Visit Website']);
-    } else {
-      setSuggestedCTAs(defaultCTAs);
-    }
   };
 
   return {
