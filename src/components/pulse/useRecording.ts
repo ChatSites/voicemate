@@ -1,7 +1,5 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
-import type {} from '@/types/speechRecognition';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UseRecordingResult {
@@ -119,8 +117,8 @@ export const useRecording = (): UseRecordingResult => {
       
       // Initialize speech recognition for real-time transcription
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognitionClass();
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognitionAPI();
         recognitionRef.current = recognition;
         
         recognition.continuous = true;
