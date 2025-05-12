@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { toast } from "@/components/ui/use-toast";
@@ -8,6 +8,8 @@ import EmailInput from './EmailInput';
 import PulseIdInput from './PulseIdInput';
 import FullNameInput from './FullNameInput';
 import PasswordInput from './PasswordInput';
+import RegistrationSubmitButton from './RegistrationSubmitButton';
+import { useRegistrationForm } from '@/hooks/useRegistrationForm';
 import { registerUser } from '@/services/registerUser';
 
 interface RegisterFormProps {
@@ -16,95 +18,84 @@ interface RegisterFormProps {
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSwitchToLogin }) => {
-  const [loading, setLoading] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [pulseId, setPulseId] = useState(prefilledPulseId);
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [pulseIdAvailable, setPulseIdAvailable] = useState<boolean | null>(null);
-  const [pulseIdSuggestions, setPulseIdSuggestions] = useState<string[]>([]);
-  const [isEmailValid, setIsEmailValid] = useState<boolean | null>(null);
-  const [registrationInProgress, setRegistrationInProgress] = useState(false);
   const navigate = useNavigate();
+  const {
+    formState,
+    updateField,
+    isFormValid,
+    setPulseIdAvailable,
+    setPulseIdSuggestions,
+    setIsEmailValid,
+    setRegistrationInProgress,
+    setLoading
+  } = useRegistrationForm(prefilledPulseId);
 
-  // Set pulseId when prefilledPulseId changes
-  useEffect(() => {
-    if (prefilledPulseId) {
-      setPulseId(prefilledPulseId);
+  const validateForm = (): boolean => {
+    // Basic input validation
+    if (!formState.pulseId || formState.pulseId.length < 3) {
+      toast({
+        title: "Invalid PulseID",
+        description: "PulseID must be at least 3 characters",
+        variant: "destructive",
+      });
+      return false;
     }
-  }, [prefilledPulseId]);
-
-  const isFormValid = () => {
-    return (
-      fullName.length >= 3 && 
-      registerEmail && 
-      registerEmail.includes('@') && 
-      pulseId.length >= 3 && 
-      registerPassword.length >= 8 &&
-      isPasswordValid(registerPassword)
-    );
-  };
-
-  const isPasswordValid = (password: string): boolean => {
-    const hasLowercase = /[a-z]/.test(password);
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
     
-    return hasLowercase && hasUppercase && hasNumber && hasSpecial;
+    if (!formState.fullName || !formState.registerEmail || !formState.registerPassword) {
+      toast({
+        title: "Missing information",
+        description: "Please fill out all required fields",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (formState.fullName.length < 3) {
+      toast({
+        title: "Name too short",
+        description: "Please enter your full name (at least 3 characters)",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (formState.registerPassword.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    // Check if password meets complexity requirements
+    const hasLowercase = /[a-z]/.test(formState.registerPassword);
+    const hasUppercase = /[A-Z]/.test(formState.registerPassword);
+    const hasNumber = /[0-9]/.test(formState.registerPassword);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(formState.registerPassword);
+    
+    if (!hasLowercase || !hasUppercase || !hasNumber || !hasSpecial) {
+      toast({
+        title: "Password too weak",
+        description: "Password must include lowercase, uppercase, number, and special character",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    return true;
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Prevent multiple submission attempts
-    if (registrationInProgress) {
+    if (formState.registrationInProgress) {
       return;
     }
     
-    // Basic input validation
-    if (!pulseId || pulseId.length < 3) {
-      toast({
-        title: "Invalid PulseID",
-        description: "PulseID must be at least 3 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!fullName || !registerEmail || !registerPassword) {
-      toast({
-        title: "Missing information",
-        description: "Please fill out all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (fullName.length < 3) {
-      toast({
-        title: "Name too short",
-        description: "Please enter your full name (at least 3 characters)",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (registerPassword.length < 8) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!isPasswordValid(registerPassword)) {
-      toast({
-        title: "Password too weak",
-        description: "Password must include lowercase, uppercase, number, and special character",
-        variant: "destructive",
-      });
+    // Form validation
+    if (!validateForm()) {
       return;
     }
     
@@ -112,14 +103,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
     setRegistrationInProgress(true);
     setLoading(true);
     
-    console.log('Attempting registration for:', registerEmail, 'with PulseID:', pulseId);
+    console.log('Attempting registration for:', formState.registerEmail, 'with PulseID:', formState.pulseId);
     
     try {
       const result = await registerUser(
-        fullName,
-        registerEmail,
-        pulseId,
-        registerPassword
+        formState.fullName,
+        formState.registerEmail,
+        formState.pulseId,
+        formState.registerPassword
       );
       
       console.log('Registration result:', result);
@@ -178,44 +169,42 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
     <form onSubmit={handleRegister}>
       <CardContent className="space-y-4">
         <FullNameInput 
-          fullName={fullName} 
-          setFullName={setFullName} 
-          registrationInProgress={registrationInProgress} 
+          fullName={formState.fullName} 
+          setFullName={(value) => updateField('fullName', value)} 
+          registrationInProgress={formState.registrationInProgress} 
         />
         
         <EmailInput
-          email={registerEmail}
-          setEmail={setRegisterEmail}
-          isEmailValid={isEmailValid}
+          email={formState.registerEmail}
+          setEmail={(value) => updateField('registerEmail', value)}
+          isEmailValid={formState.isEmailValid}
           setIsEmailValid={setIsEmailValid}
-          registrationInProgress={registrationInProgress}
+          registrationInProgress={formState.registrationInProgress}
         />
         
         <PulseIdInput
-          pulseId={pulseId}
-          setPulseId={setPulseId}
-          pulseIdAvailable={pulseIdAvailable}
+          pulseId={formState.pulseId}
+          setPulseId={(value) => updateField('pulseId', value)}
+          pulseIdAvailable={formState.pulseIdAvailable}
           setPulseIdAvailable={setPulseIdAvailable}
-          pulseIdSuggestions={pulseIdSuggestions}
+          pulseIdSuggestions={formState.pulseIdSuggestions}
           setPulseIdSuggestions={setPulseIdSuggestions}
-          registrationInProgress={registrationInProgress}
+          registrationInProgress={formState.registrationInProgress}
         />
         
         <PasswordInput
-          password={registerPassword}
-          setPassword={setRegisterPassword}
-          registrationInProgress={registrationInProgress}
+          password={formState.registerPassword}
+          setPassword={(value) => updateField('registerPassword', value)}
+          registrationInProgress={formState.registrationInProgress}
         />
       </CardContent>
       
       <CardFooter>
-        <Button 
-          type="submit" 
-          className="w-full bg-voicemate-red hover:bg-red-600"
-          disabled={loading || !isFormValid() || registrationInProgress}
-        >
-          {loading ? "Creating account..." : "Claim Your PulseID"}
-        </Button>
+        <RegistrationSubmitButton 
+          isLoading={formState.loading} 
+          isFormValid={isFormValid()} 
+          isRegistrationInProgress={formState.registrationInProgress}
+        />
       </CardFooter>
     </form>
   );
