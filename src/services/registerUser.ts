@@ -1,6 +1,4 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from "@/components/ui/use-toast";
 
 export const registerUser = async (
   fullName: string,
@@ -14,18 +12,14 @@ export const registerUser = async (
   pulseIdSuggestions?: string[];
 }> => {
   try {
-    // Step 1: Check PulseID availability directly from database 
-    // to be absolutely sure before proceeding
-    const { data: existingPulseId, error: pulseIdError } = await supabase
-      .from('profiles')
+    // Step 1: Check PulseID availability
+    const { data: existingPulseId, error: pulseIdError, status } = await supabase
+      .from('users') // Make sure this matches your actual table name
       .select('id')
-      .eq('username', pulseId)
+      .eq('pulse_id', pulseId)
       .single();
 
-    if (pulseIdError && pulseIdError.code !== 'PGRST116') { // Not found is OK
-      console.log('Error checking PulseID:', pulseIdError);
-      // Continue with registration anyway, as this is not critical
-    } else if (existingPulseId) {
+    if (existingPulseId && status !== 406) {
       const pulseIdSuggestions = [
         `${pulseId}_${Math.floor(Math.random() * 1000)}`,
         `${pulseId}.${Date.now().toString().slice(-4)}`,
@@ -40,11 +34,9 @@ export const registerUser = async (
       };
     }
 
-    console.log('Proceeding with registration for:', email, 'with PulseID:', pulseId);
-
-    // Step 2: Sign up with Supabase Auth
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
+    // Step 2: Sign up user via Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
       password,
       options: {
         data: {
@@ -52,22 +44,20 @@ export const registerUser = async (
           pulse_id: pulseId,
         },
         emailRedirectTo: `${window.location.origin}/auth-confirmation?type=signup`,
-      }
+      },
     });
 
     if (error) {
-      console.error('Registration error from Supabase:', error);
-      
-      if (error.message.includes('User already registered')) {
+      if (error.status === 409 || error.message.includes('already registered')) {
         return {
           success: false,
           error: new Error('User already registered. Please login instead.'),
         };
       }
-      
-      return { 
-        success: false, 
-        error: new Error(`Registration failed: ${error.message}`) 
+
+      return {
+        success: false,
+        error: new Error(`Registration failed: ${error.message}`),
       };
     }
 
@@ -76,16 +66,16 @@ export const registerUser = async (
       return { success: false, error: new Error('No user returned') };
     }
 
-    // Step 3: Add user profile to `profiles` table
-    const { error: insertError } = await supabase.from('profiles').insert([
+    // Step 3: Insert into users table
+    const { error: insertError } = await supabase.from('users').insert([
       {
         id: user.id,
-        username: pulseId,
+        name: fullName,
+        pulse_id: pulseId,
       },
     ]);
 
     if (insertError) {
-      console.error('Profile insert error:', insertError);
       return {
         success: false,
         error: new Error(`Profile insert failed: ${insertError.message}`),
@@ -94,7 +84,6 @@ export const registerUser = async (
 
     return { success: true };
   } catch (err: any) {
-    console.error('Unexpected registration error:', err);
     return {
       success: false,
       error: new Error(err?.message || 'Unknown registration error'),
