@@ -68,6 +68,8 @@ export const initSpeechRecognition = (
     }
   };
 
+  // Add the event listener as a property of the recognition object
+  // This property needs to be added to the SpeechRecognition interface in types/speechRecognition.ts
   recognition.onend = () => {
     console.log("Speech recognition ended");
   };

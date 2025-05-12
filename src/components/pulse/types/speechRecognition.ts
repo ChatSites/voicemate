@@ -36,6 +36,7 @@ export interface SpeechRecognition extends EventTarget {
   maxAlternatives: number;
   onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
   onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null; // Added missing onend property
   start(): void;
   stop(): void;
 }
@@ -62,4 +63,3 @@ export interface UseRecordingResult {
   stopRecording: () => void;
   resetRecording: () => void;
 }
-
