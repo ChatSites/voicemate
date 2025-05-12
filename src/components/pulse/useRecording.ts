@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import type {} from '@/types/speechRecognition';
+import '@/types/speechRecognition'; // Import the type definitions
 
 interface UseRecordingResult {
   isRecording: boolean;
