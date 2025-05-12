@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import PulseForm from '@/components/pulse/PulseForm';
 import PulseTips from '@/components/pulse/PulseTips';
-import { useRecording } from '@/components/pulse/useRecording';
+import { useRecording } from '@/components/pulse/hooks/useRecording';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function SendPulse() {
