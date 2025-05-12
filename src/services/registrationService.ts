@@ -70,15 +70,16 @@ export const registerUser = async (
     // Check if we need email confirmation
     const emailConfirmNeeded = !authData.session;
     
-    // Update the profile with the PulseID
+    // Update the user table with the PulseID
     if (authData.user) {
       try {
         console.log('Updating profile for user:', authData.user.id);
         const { error: updateError } = await supabase
-          .from('profiles')
+          .from('users')
           .upsert({
             id: authData.user.id,
-            username: pulseId,
+            name: fullName,
+            pulse_id: pulseId,
           });
           
         if (updateError) {

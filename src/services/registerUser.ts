@@ -15,9 +15,9 @@ export const registerUser = async (
   try {
     // Step 1: Check PulseID availability
     const { data: existingPulseId, error: pulseIdError, status } = await supabase
-      .from('profiles')
+      .from('users')
       .select('id')
-      .eq('username', pulseId)
+      .eq('pulse_id', pulseId)
       .single();
 
     if (existingPulseId && status !== 406) {
@@ -67,11 +67,12 @@ export const registerUser = async (
       return { success: false, error: new Error('No user returned') };
     }
 
-    // Step 3: Insert into profiles table
-    const { error: insertError } = await supabase.from('profiles').insert([
+    // Step 3: Insert into users table
+    const { error: insertError } = await supabase.from('users').insert([
       {
         id: user.id,
-        username: pulseId, // This is the pulse_id field in profiles table
+        name: fullName,
+        pulse_id: pulseId, // This is the pulse_id field in users table
       },
     ]);
 

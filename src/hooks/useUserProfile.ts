@@ -25,9 +25,9 @@ export const useUserProfile = () => {
         return;
       }
 
-      // Use "profiles" table instead of "users"
+      // Use "users" table which exists in your database
       const { data, error: profileError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('id', userData.user.id)
         .single();
@@ -35,13 +35,14 @@ export const useUserProfile = () => {
       if (profileError) {
         setError(profileError.message);
       } else if (data) {
-        // Map the returned profile data to our UserProfile interface
+        // Map the returned user data to our UserProfile interface
         const userProfile: UserProfile = {
           id: data.id,
-          name: userData.user.user_metadata?.full_name || null,
-          pulse_id: data.username || null,
-          created_at: data.created_at,
-          avatar_url: data.avatar_url
+          name: userData.user.user_metadata?.full_name || data.name || null,
+          pulse_id: data.pulse_id || null,
+          // These fields might not exist in your users table, but are in the interface
+          created_at: undefined, // Not available in your table
+          avatar_url: null // Not available in your table
         };
         setProfile(userProfile);
       }
