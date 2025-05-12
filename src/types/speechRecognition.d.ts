@@ -1,54 +1,81 @@
 
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message: string;
+interface SpeechRecognitionEventMap {
+  'audioend': Event;
+  'audiostart': Event;
+  'end': Event;
+  'error': SpeechRecognitionErrorEvent;
+  'nomatch': SpeechRecognitionEvent;
+  'result': SpeechRecognitionEvent;
+  'soundend': Event;
+  'soundstart': Event;
+  'speechend': Event;
+  'speechstart': Event;
+  'start': Event;
 }
 
 interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  readonly error: string;
+  readonly message: string;
 }
 
 interface SpeechRecognitionResultList {
-  length: number;
-  item(index: number): SpeechRecognitionResult;
+  readonly length: number;
   [index: number]: SpeechRecognitionResult;
+  item(index: number): SpeechRecognitionResult;
 }
 
 interface SpeechRecognitionResult {
-  length: number;
-  item(index: number): SpeechRecognitionAlternative;
+  readonly isFinal: boolean;
+  readonly length: number;
   [index: number]: SpeechRecognitionAlternative;
-  isFinal: boolean;
+  item(index: number): SpeechRecognitionAlternative;
 }
 
 interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
+  readonly confidence: number;
+  readonly transcript: string;
 }
 
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
+  grammars: any;
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
-  onstart: (event: Event) => void;
-  onresult: (event: SpeechRecognitionEvent) => void;
-  onerror: (event: SpeechRecognitionErrorEvent) => void;
-  onend: (event: Event) => void;
+  onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onsoundstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  abort(): void;
   start(): void;
   stop(): void;
-  abort(): void;
+  addEventListener<K extends keyof SpeechRecognitionEventMap>(type: K, listener: (this: SpeechRecognition, ev: SpeechRecognitionEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+  removeEventListener<K extends keyof SpeechRecognitionEventMap>(type: K, listener: (this: SpeechRecognition, ev: SpeechRecognitionEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
 }
 
-interface SpeechRecognitionConstructor {
-  new (): SpeechRecognition;
-}
-
+// Extend window interface to include SpeechRecognition
 declare global {
   interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor;
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
   }
 }
 
