@@ -2,70 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-// Use the global type definition without importing
-interface SpeechRecognitionEvent extends Event {
-  readonly resultIndex: number;
-  readonly results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResultList {
-  readonly length: number;
-  [index: number]: SpeechRecognitionResult;
-  item(index: number): SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-  readonly isFinal: boolean;
-  readonly length: number;
-  [index: number]: SpeechRecognitionAlternative;
-  item(index: number): SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-  readonly confidence: number;
-  readonly transcript: string;
-}
-
-// Add specific error event interface
-interface SpeechRecognitionErrorEvent extends Event {
-  readonly error: string;
-  readonly message?: string;
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  grammars: any;
-  interimResults: boolean;
-  lang: string;
-  maxAlternatives: number;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-  start(): void;
-  stop(): void;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: {
-      new(): SpeechRecognition;
-    };
-    webkitSpeechRecognition: {
-      new(): SpeechRecognition;
-    };
-  }
-}
-
-interface UseRecordingResult {
-  isRecording: boolean;
-  recordingTime: number;
-  recordingData: Blob | null;
-  transcription: string;
-  suggestedCTAs: string[];
-  startRecording: () => Promise<void>;
-  stopRecording: () => void;
-  resetRecording: () => void;
-}
+import { UseRecordingResult } from '../types/speechRecognition';
+import { initSpeechRecognition } from './services/speechRecognitionService';
+import { processAudioRecording } from './services/audioProcessingService';
 
 export const useRecording = (): UseRecordingResult => {
   const [isRecording, setIsRecording] = useState(false);
@@ -74,10 +13,12 @@ export const useRecording = (): UseRecordingResult => {
   const [transcription, setTranscription] = useState('');
   const [suggestedCTAs, setSuggestedCTAs] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  
   const timerRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any | null>(null);
   const fullTranscriptRef = useRef<string>('');
+  const audioChunksRef = useRef<Blob[]>([]);
   
   useEffect(() => {
     return () => {
@@ -99,81 +40,53 @@ export const useRecording = (): UseRecordingResult => {
       setTranscription('');
       fullTranscriptRef.current = '';
       setSuggestedCTAs([]);
+      audioChunksRef.current = [];
       
       // Start audio recording
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm'
+      });
       mediaRecorderRef.current = mediaRecorder;
       
-      const audioChunks: Blob[] = [];
-      
       mediaRecorder.addEventListener('dataavailable', (event) => {
-        audioChunks.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       });
       
       mediaRecorder.addEventListener('stop', async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        console.log("Media recorder stopped");
+        console.log("Audio chunks collected:", audioChunksRef.current.length);
+        
+        if (audioChunksRef.current.length === 0) {
+          toast({
+            title: "Recording Error",
+            description: "No audio data was captured. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        console.log("Audio blob created, size:", audioBlob.size);
         setRecordingData(audioBlob);
         setIsProcessing(true);
         
         try {
-          // Use the OpenAI API through our Supabase edge function
-          const reader = new FileReader();
-          reader.readAsDataURL(audioBlob);
+          // Process audio recording with AI
+          const result = await processAudioRecording(audioBlob, fullTranscriptRef.current);
           
-          reader.onloadend = async () => {
-            console.log("Processing audio recording...");
-            // Extract base64 data from the data URL
-            const base64Audio = (reader.result as string).split(',')[1];
-            
-            const { data, error } = await supabase.functions.invoke('voice-analysis', {
-              body: {
-                audio: base64Audio,
-                transcript: fullTranscriptRef.current || undefined // Send existing transcript if available
-              }
-            });
-            
-            if (error) {
-              console.error("Edge function error:", error);
-              toast({
-                title: "Processing Error",
-                description: "Failed to analyze your voice message. Please try again.",
-                variant: "destructive"
-              });
-              return;
-            }
-            
-            console.log("Voice analysis response:", data);
-            
-            if (data.success) {
-              // If we didn't have a complete transcript from speech recognition, use the one from the API
-              if (!fullTranscriptRef.current && data.transcript) {
-                fullTranscriptRef.current = data.transcript;
-                setTranscription(data.transcript);
-              }
-              
-              // Process CTAs - transform them to be shorter and more action-oriented
-              if (data.ctas && Array.isArray(data.ctas)) {
-                const ctaLabels = data.ctas
-                  .map((cta: { label: string }) => cta.label)
-                  .filter((label: string) => label && label.trim().length > 0)
-                  .map((label: string) => {
-                    // Make labels shorter and more action-oriented
-                    let actionLabel = label.trim();
-                    // Remove common prefixes
-                    actionLabel = actionLabel.replace(/^(I want to|Let me|I'd like to|Please|Can you|Could you)/i, '').trim();
-                    // Capitalize first letter
-                    actionLabel = actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1);
-                    return actionLabel;
-                  });
-                
-                console.log("Suggested CTAs:", ctaLabels);
-                setSuggestedCTAs(ctaLabels);
-              } else {
-                console.log("No CTAs returned from API");
-              }
-            }
-          };
+          // If we didn't have a complete transcript from speech recognition, use the one from the API
+          if (!fullTranscriptRef.current && result.transcript) {
+            fullTranscriptRef.current = result.transcript;
+            setTranscription(result.transcript);
+          }
+          
+          // Set the suggested CTAs if available
+          if (result.ctas && result.ctas.length > 0) {
+            setSuggestedCTAs(result.ctas);
+          }
         } catch (err) {
           console.error("Error processing audio:", err);
           toast({
@@ -186,7 +99,8 @@ export const useRecording = (): UseRecordingResult => {
         }
       });
       
-      mediaRecorder.start();
+      mediaRecorder.start(1000); // Collect data in 1-second chunks
+      console.log("Media recorder started");
       setIsRecording(true);
       setRecordingTime(0);
       
@@ -195,45 +109,21 @@ export const useRecording = (): UseRecordingResult => {
       }, 1000);
       
       // Initialize speech recognition for real-time transcription
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognitionAPI();
+      const recognition = initSpeechRecognition(
+        // Update the transcription state
+        (currentTranscript) => {
+          setTranscription(currentTranscript);
+        },
+        // Update the full transcript ref
+        (fullTranscript) => {
+          fullTranscriptRef.current = fullTranscript;
+        }
+      );
+      
+      if (recognition) {
         recognitionRef.current = recognition;
-        
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-        
-        recognition.onresult = (event) => {
-          let interimTranscript = '';
-          let finalTranscript = '';
-          
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
-              // Add to full transcript
-              fullTranscriptRef.current += " " + event.results[i][0].transcript;
-            } else {
-              interimTranscript += event.results[i][0].transcript;
-            }
-          }
-          
-          const currentTranscript = fullTranscriptRef.current + 
-            (interimTranscript ? ' ' + interimTranscript : '');
-          setTranscription(currentTranscript.trim());
-          
-          // Log for debugging
-          console.log("Live transcription update:", currentTranscript);
-        };
-        
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error', event.error);
-        };
-        
         recognition.start();
         console.log("Speech recognition started");
-      } else {
-        console.warn('Speech recognition not supported in this browser');
       }
       
     } catch (err) {
@@ -274,6 +164,7 @@ export const useRecording = (): UseRecordingResult => {
     setTranscription('');
     fullTranscriptRef.current = '';
     setSuggestedCTAs([]);
+    audioChunksRef.current = [];
   };
 
   return {
