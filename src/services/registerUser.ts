@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const registerUser = async (
@@ -14,9 +15,9 @@ export const registerUser = async (
   try {
     // Step 1: Check PulseID availability
     const { data: existingPulseId, error: pulseIdError, status } = await supabase
-      .from('users') // Make sure this matches your actual table name
+      .from('profiles') // Fix: use 'profiles' instead of 'users'
       .select('id')
-      .eq('pulse_id', pulseId)
+      .eq('username', pulseId)
       .single();
 
     if (existingPulseId && status !== 406) {
@@ -43,7 +44,7 @@ export const registerUser = async (
           full_name: fullName,
           pulse_id: pulseId,
         },
-        emailRedirectTo: `${window.location.origin}/auth-confirmation?type=signup`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
       },
     });
 
@@ -66,12 +67,11 @@ export const registerUser = async (
       return { success: false, error: new Error('No user returned') };
     }
 
-    // Step 3: Insert into users table
-    const { error: insertError } = await supabase.from('users').insert([
+    // Step 3: Insert into profiles table
+    const { error: insertError } = await supabase.from('profiles').insert([
       {
         id: user.id,
-        name: fullName,
-        pulse_id: pulseId,
+        username: pulseId, // This is the pulse_id field in profiles table
       },
     ]);
 

@@ -19,7 +19,7 @@ import Dashboard from "./pages/Dashboard";
 import SendPulse from "./pages/SendPulse";
 import Inbox from "./pages/Inbox";
 import AuthConfirmation from "./pages/AuthConfirmation";
-import AuthCallback from "./pages/AuthCallback";
+import AuthCallback from "./pages/auth/callback";
 
 const queryClient = new QueryClient();
 

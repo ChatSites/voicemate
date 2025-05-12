@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,18 +19,34 @@ export default function AuthCallback() {
     
     const handleAuthRedirect = async () => {
       try {
-        // Process Supabase auth redirect and extract session information
-        const { data, error } = await supabase.auth.getSessionFromUrl();
+        // Fix: Use exchangeCodeForSession instead of the deprecated getSessionFromUrl
+        const code = searchParams.get("code") || 
+                     new URLSearchParams(location.hash.substring(1)).get("code");
+        
+        let session;
+        let sessionError;
+        
+        // If we have a code parameter, try to exchange it for a session
+        if (code) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          session = data.session;
+          sessionError = error;
+        } else {
+          // For older flows or auth state changes
+          const { data, error } = await supabase.auth.getSession();
+          session = data.session;
+          sessionError = error;
+        }
 
-        if (error) {
-          console.error("Auth error:", error.message);
+        if (sessionError) {
+          console.error("Auth error:", sessionError.message);
           setMessage("There was a problem with authentication.");
-          setError(error.message);
+          setError(sessionError.message);
           setIsProcessing(false);
           return;
         }
 
-        console.log("Auth callback successful:", data);
+        console.log("Auth callback successful:", session);
         
         // Get the type parameter to determine what kind of auth flow this is
         const type = searchParams.get("type");
