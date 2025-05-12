@@ -1,12 +1,13 @@
-
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = React.useState(false);
   const { user, signOut } = useAuth();
+  const { profile } = useUserProfile();
   const location = useLocation();
   
   React.useEffect(() => {
@@ -39,6 +40,9 @@ export default function Navbar() {
       <div className="container mx-auto flex justify-between items-center py-4">
         <a href="/" className="flex items-center space-x-2">
           <span className="text-xl font-bold text-white">VoiceMate</span>
+          {profile?.pulse_id && (
+            <span className="text-sm text-voicemate-purple">@{profile.pulse_id}</span>
+          )}
         </a>
         
         <nav className="hidden md:flex items-center space-x-8">
@@ -48,11 +52,17 @@ export default function Navbar() {
           <a href="#use-cases" className="text-sm text-gray-200 hover:text-white transition-colors">
             Use Cases
           </a>
+
           {user ? (
             <>
               <a href="/dashboard" className="text-sm text-gray-200 hover:text-white transition-colors">Dashboard</a>
               <a href="/create" className="text-sm text-gray-200 hover:text-white transition-colors">Send Pulse</a>
               <a href="/inbox" className="text-sm text-gray-200 hover:text-white transition-colors">Inbox</a>
+              {profile?.name && (
+                <span className="text-sm text-gray-400 italic">
+                  {profile.name}
+                </span>
+              )}
               <Button 
                 variant="destructive" 
                 size="sm" 
