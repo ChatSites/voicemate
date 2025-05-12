@@ -7,12 +7,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Send, Lightbulb } from 'lucide-react';
 import RecordingArea from './RecordingArea';
 
+interface CTAVariant {
+  label: string;
+  action: string;
+  url?: string;
+}
+
 interface PulseFormProps {
   isRecording: boolean;
   recordingTime: number;
   recordingData: Blob | null;
   transcription: string;
-  suggestedCTAs: string[];
+  suggestedCTAs: CTAVariant[];
   pulseTitle: string;
   pulseDescription: string;
   isSending: boolean;
@@ -22,6 +28,7 @@ interface PulseFormProps {
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onSendPulse: () => void;
+  onSelectCTA?: (cta: CTAVariant) => void;
 }
 
 const PulseForm: React.FC<PulseFormProps> = ({
@@ -38,7 +45,8 @@ const PulseForm: React.FC<PulseFormProps> = ({
   onResetRecording,
   onTitleChange,
   onDescriptionChange,
-  onSendPulse
+  onSendPulse,
+  onSelectCTA
 }) => {
   // Automatically scroll to CTA section when suggestions appear
   const ctaSectionRef = React.useRef<HTMLDivElement>(null);
@@ -48,6 +56,19 @@ const PulseForm: React.FC<PulseFormProps> = ({
       ctaSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [suggestedCTAs]);
+
+  // Handle CTA selection for title
+  const handleCTAClick = (cta: CTAVariant) => {
+    // Use the CTA label for the title if title is empty
+    if (!pulseTitle.trim()) {
+      onTitleChange(cta.label.replace(/^[^\w]+/, '').trim()); // Remove leading emoji if present
+    }
+    
+    // Call the parent's onSelectCTA if provided
+    if (onSelectCTA) {
+      onSelectCTA(cta);
+    }
+  };
 
   return (
     <Card className="bg-voicemate-card border-gray-800">
@@ -80,6 +101,7 @@ const PulseForm: React.FC<PulseFormProps> = ({
             onStartRecording={onStartRecording}
             onStopRecording={onStopRecording}
             onResetRecording={onResetRecording}
+            onSelectCTA={handleCTAClick}
           />
         </div>
       </CardContent>
@@ -96,10 +118,10 @@ const PulseForm: React.FC<PulseFormProps> = ({
                   key={index} 
                   variant="outline" 
                   size="sm"
-                  onClick={() => onTitleChange(cta)}
+                  onClick={() => handleCTAClick(cta)}
                   className="border-gray-700 hover:bg-gray-800"
                 >
-                  {cta}
+                  {cta.label}
                 </Button>
               ))}
             </div>
