@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { UseRecordingResult } from '../types/speechRecognition';
+import { UseRecordingResult } from '../../types/speechRecognition';
 import { initSpeechRecognition } from '../services/speechRecognitionService';
 import { processAudioRecording } from '../services/audioProcessingService';
 

@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { UseRecordingResult } from '../types/speechRecognition';
+import { UseRecordingResult } from '@/components/pulse/types/speechRecognition';
 import { initSpeechRecognition } from './services/speechRecognitionService';
 import { processAudioRecording } from './services/audioProcessingService';
 
