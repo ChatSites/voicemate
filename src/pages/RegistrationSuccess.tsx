@@ -1,12 +1,31 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { CircleCheck } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const RegistrationSuccess = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // If the user is logged in, allow them to go to the dashboard immediately
+  // If not, they'll need to verify their email first
+  const handleGoToDashboard = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  // Redirect authenticated users directly to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -30,14 +49,14 @@ const RegistrationSuccess = () => {
           
           <CardContent className="flex flex-col items-center">
             <p className="text-center mb-6 text-gray-400">
-              Thank you for joining VoiceMate. Your account has been created.
+              Thank you for joining VoiceMate. {!user && "Please check your email to verify your account before continuing."}
             </p>
             
             <Button 
               className="w-full bg-voicemate-purple hover:bg-purple-700"
-              onClick={() => navigate('/')}
+              onClick={handleGoToDashboard}
             >
-              Go to Dashboard
+              {user ? "Go to Dashboard" : "Continue to Login"}
             </Button>
           </CardContent>
         </Card>

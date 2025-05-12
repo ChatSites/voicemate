@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 export default function AuthCallback() {
   const [message, setMessage] = useState("Completing authentication...");
@@ -23,6 +24,11 @@ export default function AuthCallback() {
           if (error) {
             console.error("Auth error:", error.message);
             setMessage("There was a problem confirming your account.");
+            toast({
+              title: "Authentication Error",
+              description: error.message,
+              variant: "destructive"
+            });
             return;
           }
           
@@ -48,15 +54,25 @@ export default function AuthCallback() {
           }
         }
 
+        // Get type from query parameters or determine based on context
         const type = searchParams.get("type");
+        
         switch (type) {
           case "signup":
             setMessage("Welcome! Redirecting you to your dashboard...");
+            toast({
+              title: "Registration Successful",
+              description: "Your account has been created successfully."
+            });
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
           case "magiclink":
           case "invite":
             setMessage("Login successful! Redirecting...");
+            toast({
+              title: "Login Successful",
+              description: "Welcome back!"
+            });
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
           case "recovery":
@@ -65,6 +81,10 @@ export default function AuthCallback() {
             break;
           case "email_change":
             setMessage("Email updated! Redirecting...");
+            toast({
+              title: "Email Updated",
+              description: "Your email has been updated successfully."
+            });
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
           default:
@@ -75,6 +95,11 @@ export default function AuthCallback() {
       } catch (err) {
         console.error("Auth callback error:", err);
         setMessage("Authentication process failed.");
+        toast({
+          title: "Authentication Failed",
+          description: "An error occurred during authentication.",
+          variant: "destructive"
+        });
       }
     };
 
