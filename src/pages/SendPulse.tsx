@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
@@ -28,15 +28,16 @@ export default function SendPulse() {
     resetRecording
   } = useRecording();
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [loading, user, navigate]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Auto-populate title with first suggested CTA if available
     if (suggestedCTAs.length > 0 && !pulseTitle) {
+      console.log("Auto-setting title to:", suggestedCTAs[0]);
       setPulseTitle(suggestedCTAs[0]);
     }
   }, [suggestedCTAs, pulseTitle]);
@@ -64,6 +65,7 @@ export default function SendPulse() {
     setIsSending(true);
     
     try {
+      console.log("Sending pulse...");
       // Upload the audio file to Supabase Storage
       const audioFileName = `${user?.id}-${Date.now()}.webm`;
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -80,15 +82,17 @@ export default function SendPulse() {
         .getPublicUrl(audioFileName);
 
       const audioUrl = publicUrlData.publicUrl;
+      console.log("Audio uploaded successfully:", audioUrl);
 
       // Insert the record into the pulses table
       const { error: insertError } = await supabase
         .from('pulses')
         .insert({
-          pulse_id: user?.id || null,
+          user_id: user?.id || null,
           audio_url: audioUrl,
           transcript: transcription,
-          intent: pulseTitle, // Using the title as the intent
+          title: pulseTitle,
+          description: pulseDescription,
           ctas: suggestedCTAs
         });
 

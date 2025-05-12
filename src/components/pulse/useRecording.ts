@@ -77,6 +77,7 @@ export const useRecording = (): UseRecordingResult => {
   const timerRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const fullTranscriptRef = useRef<string>('');
   
   useEffect(() => {
     return () => {
@@ -96,6 +97,7 @@ export const useRecording = (): UseRecordingResult => {
     try {
       // Reset states
       setTranscription('');
+      fullTranscriptRef.current = '';
       setSuggestedCTAs([]);
       
       // Start audio recording
@@ -120,12 +122,14 @@ export const useRecording = (): UseRecordingResult => {
           reader.readAsDataURL(audioBlob);
           
           reader.onloadend = async () => {
+            console.log("Processing audio recording...");
             // Extract base64 data from the data URL
             const base64Audio = (reader.result as string).split(',')[1];
             
             const { data, error } = await supabase.functions.invoke('voice-analysis', {
               body: {
-                audio: base64Audio
+                audio: base64Audio,
+                transcript: fullTranscriptRef.current || undefined // Send existing transcript if available
               }
             });
             
@@ -139,13 +143,34 @@ export const useRecording = (): UseRecordingResult => {
               return;
             }
             
+            console.log("Voice analysis response:", data);
+            
             if (data.success) {
-              setTranscription(data.transcript || '');
+              // If we didn't have a complete transcript from speech recognition, use the one from the API
+              if (!fullTranscriptRef.current && data.transcript) {
+                fullTranscriptRef.current = data.transcript;
+                setTranscription(data.transcript);
+              }
               
-              // Process CTAs
+              // Process CTAs - transform them to be shorter and more action-oriented
               if (data.ctas && Array.isArray(data.ctas)) {
-                const ctaLabels = data.ctas.map((cta: { label: string }) => cta.label);
+                const ctaLabels = data.ctas
+                  .map((cta: { label: string }) => cta.label)
+                  .filter((label: string) => label && label.trim().length > 0)
+                  .map((label: string) => {
+                    // Make labels shorter and more action-oriented
+                    let actionLabel = label.trim();
+                    // Remove common prefixes
+                    actionLabel = actionLabel.replace(/^(I want to|Let me|I'd like to|Please|Can you|Could you)/i, '').trim();
+                    // Capitalize first letter
+                    actionLabel = actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1);
+                    return actionLabel;
+                  });
+                
+                console.log("Suggested CTAs:", ctaLabels);
                 setSuggestedCTAs(ctaLabels);
+              } else {
+                console.log("No CTAs returned from API");
               }
             }
           };
@@ -186,12 +211,19 @@ export const useRecording = (): UseRecordingResult => {
           for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
               finalTranscript += event.results[i][0].transcript;
+              // Add to full transcript
+              fullTranscriptRef.current += " " + event.results[i][0].transcript;
             } else {
               interimTranscript += event.results[i][0].transcript;
             }
           }
           
-          setTranscription((prev) => prev + finalTranscript + (interimTranscript ? ' ' + interimTranscript : ''));
+          const currentTranscript = fullTranscriptRef.current + 
+            (interimTranscript ? ' ' + interimTranscript : '');
+          setTranscription(currentTranscript.trim());
+          
+          // Log for debugging
+          console.log("Live transcription update:", currentTranscript);
         };
         
         recognition.onerror = (event) => {
@@ -199,6 +231,7 @@ export const useRecording = (): UseRecordingResult => {
         };
         
         recognition.start();
+        console.log("Speech recognition started");
       } else {
         console.warn('Speech recognition not supported in this browser');
       }
@@ -214,6 +247,7 @@ export const useRecording = (): UseRecordingResult => {
   };
   
   const stopRecording = () => {
+    console.log("Stopping recording...");
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
       
@@ -230,6 +264,7 @@ export const useRecording = (): UseRecordingResult => {
     
     if (recognitionRef.current) {
       recognitionRef.current.stop();
+      console.log("Speech recognition stopped");
     }
   };
   
@@ -237,6 +272,7 @@ export const useRecording = (): UseRecordingResult => {
     setRecordingData(null);
     setRecordingTime(0);
     setTranscription('');
+    fullTranscriptRef.current = '';
     setSuggestedCTAs([]);
   };
 

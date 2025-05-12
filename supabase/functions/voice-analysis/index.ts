@@ -46,6 +46,7 @@ async function analyzeIntent(text: string) {
   }
 
   try {
+    console.log("Analyzing intent for text:", text);
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -61,28 +62,24 @@ async function analyzeIntent(text: string) {
             Respond with a JSON object containing:
             1. "intent": A brief label describing the main intent (e.g., "scheduling_request", "pricing_inquiry", "feedback")
             2. "category": Broader category (e.g., "meeting", "sales", "support")
-            3. "label": Human-readable label for the intent (e.g., "Wants to Schedule a Meeting")
-            4. "ctas": Array of suggested CTA buttons, each with "label" and "action" properties.
+            3. "label": Human-readable label for the intent (e.g., "Schedule a Meeting")
+            4. "ctas": Array of 2-5 BRIEF, ACTION-ORIENTED phrases that would make good button text, each 1-5 words max.
             
-            Available actions:
-            - open_scheduling_link
-            - open_reschedule
-            - open_reply_input
-            - show_pricing
-            - open_pricing_form
-            - vault_message
-            - unsubscribe_user
-            - share_packet
-            - open_feedback_form
+            Make the CTAs very concise, actionable, and directly related to what the speaker wants to achieve.
+            For example, if someone is asking about pricing, good CTAs might be:
+            - "View Pricing"
+            - "Request Quote"
+            - "Talk to Sales"
             
-            ONLY use these predefined actions.`
+            CTAs should be phrases, not complete sentences.`
           },
           {
             role: 'user',
             content: `Analyze this voice message transcript and suggest relevant CTAs: "${text}"`
           }
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        temperature: 0.2
       }),
     });
 
@@ -93,6 +90,7 @@ async function analyzeIntent(text: string) {
     }
 
     const result = await response.json();
+    console.log("Intent analysis result:", result.choices[0].message.content);
     return JSON.parse(result.choices[0].message.content);
   } catch (error) {
     console.error('Error analyzing intent:', error);
@@ -112,6 +110,7 @@ serve(async (req) => {
     
     // If we have a transcript already, analyze it directly
     if (transcript) {
+      console.log("Using provided transcript for analysis:", transcript);
       const intentAnalysis = await analyzeIntent(transcript);
       return new Response(
         JSON.stringify({
@@ -126,15 +125,19 @@ serve(async (req) => {
     else if (audio) {
       // Process audio in chunks
       const binaryAudio = processBase64Chunks(audio);
+      console.log("Processing audio data, size:", binaryAudio.length);
       
       // Prepare form data for Whisper API
       const formData = new FormData();
       const blob = new Blob([binaryAudio], { type: 'audio/webm' });
       formData.append('file', blob, 'audio.webm');
       formData.append('model', 'whisper-1');
+      formData.append('language', 'en');
+      formData.append('response_format', 'json');
 
       // Call OpenAI's Whisper API
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      console.log("Sending audio to OpenAI Whisper API...");
       const transcribeResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
@@ -144,11 +147,14 @@ serve(async (req) => {
       });
 
       if (!transcribeResponse.ok) {
-        throw new Error(`OpenAI transcription error: ${await transcribeResponse.text()}`);
+        const errorText = await transcribeResponse.text();
+        console.error("Whisper API error:", errorText);
+        throw new Error(`OpenAI transcription error: ${errorText}`);
       }
 
       const transcriptionResult = await transcribeResponse.json();
       const transcribedText = transcriptionResult.text;
+      console.log("Transcription result:", transcribedText);
       
       // Analyze the transcript for intent
       const intentAnalysis = await analyzeIntent(transcribedText);

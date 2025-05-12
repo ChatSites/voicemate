@@ -31,12 +31,12 @@ const RecordingArea: React.FC<RecordingAreaProps> = ({
   const [isProcessing, setIsProcessing] = React.useState(false);
 
   React.useEffect(() => {
-    if (recordingData && !transcription) {
+    if (recordingData && !transcription && suggestedCTAs.length === 0) {
       setIsProcessing(true);
-    } else if (transcription) {
+    } else if (transcription || suggestedCTAs.length > 0) {
       setIsProcessing(false);
     }
-  }, [recordingData, transcription]);
+  }, [recordingData, transcription, suggestedCTAs]);
 
   return (
     <div className="flex flex-col items-center justify-center p-6 border border-dashed border-gray-700 rounded-lg bg-black/30">
@@ -48,10 +48,18 @@ const RecordingArea: React.FC<RecordingAreaProps> = ({
               <p className="text-gray-400">Processing your recording with AI...</p>
             </div>
           ) : (
-            <AudioPlayback 
-              audioBlob={recordingData} 
-              onReset={onResetRecording} 
-            />
+            <div className="w-full space-y-4">
+              <AudioPlayback 
+                audioBlob={recordingData} 
+                onReset={onResetRecording} 
+              />
+              {transcription && (
+                <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-md">
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Transcript:</h3>
+                  <p className="text-sm text-gray-200">{transcription}</p>
+                </div>
+              )}
+            </div>
           )}
         </>
       ) : (
