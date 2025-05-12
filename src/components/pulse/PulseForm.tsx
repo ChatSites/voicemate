@@ -1,18 +1,18 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Send } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import RecordingArea from './RecordingArea';
 
 interface PulseFormProps {
   isRecording: boolean;
   recordingTime: number;
   recordingData: Blob | null;
+  transcription: string;
+  suggestedCTAs: string[];
   pulseTitle: string;
   pulseDescription: string;
   isSending: boolean;
@@ -28,6 +28,8 @@ const PulseForm: React.FC<PulseFormProps> = ({
   isRecording,
   recordingTime,
   recordingData,
+  transcription,
+  suggestedCTAs,
   pulseTitle,
   pulseDescription,
   isSending,
@@ -64,13 +66,33 @@ const PulseForm: React.FC<PulseFormProps> = ({
             isRecording={isRecording}
             recordingTime={recordingTime}
             recordingData={recordingData}
+            transcription={transcription}
+            suggestedCTAs={suggestedCTAs}
             onStartRecording={onStartRecording}
             onStopRecording={onStopRecording}
             onResetRecording={onResetRecording}
           />
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col space-y-4">
+        {suggestedCTAs.length > 0 && recordingData && (
+          <div className="w-full">
+            <p className="text-sm text-gray-400 mb-2">Suggested Call-To-Actions:</p>
+            <div className="flex flex-wrap gap-2">
+              {suggestedCTAs.map((cta, index) => (
+                <Button 
+                  key={index} 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onTitleChange(cta)}
+                  className="border-gray-700 hover:bg-gray-800"
+                >
+                  {cta}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
         <Button 
           className="bg-voicemate-purple hover:bg-purple-700 text-white w-full"
           disabled={!recordingData || isSending}
