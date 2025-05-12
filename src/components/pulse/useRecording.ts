@@ -1,6 +1,6 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
+import type {} from '@/types/speechRecognition';
 
 interface UseRecordingResult {
   isRecording: boolean;
@@ -72,8 +72,8 @@ export const useRecording = (): UseRecordingResult => {
       
       // Initialize speech recognition for real-time transcription
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
+        const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognitionClass();
         recognitionRef.current = recognition;
         
         recognition.continuous = true;
