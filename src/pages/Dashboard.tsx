@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,27 +6,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Inbox, Send, PieChart, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
+  const { profile, loading: profileLoading, error: profileError } = useUserProfile();
   const navigate = useNavigate();
-  
+
   React.useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [loading, user, navigate]);
-  
-  if (loading) {
+
+  if (loading || profileLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground">Loading dashboard...</p>
+          <p className="text-muted-foreground">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-black">
       <Navbar />
@@ -38,10 +39,17 @@ export default function Dashboard() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold">Welcome, {user?.user_metadata?.name || 'User'}</h1>
-          <p className="text-muted-foreground mt-2">Manage your voice messages and interactions</p>
+          <h1 className="text-3xl font-bold">
+            Welcome, {profile?.name ? profile.name : 'VoiceMate'}
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            @{profile?.pulse_id || 'loading...'}
+          </p>
+          <p className="text-muted-foreground mt-2">
+            Manage your voice messages and interactions
+          </p>
         </motion.div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Pulse Stats Card */}
           <motion.div
@@ -80,7 +88,7 @@ export default function Dashboard() {
               </CardFooter>
             </Card>
           </motion.div>
-          
+
           {/* Send Pulse Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -110,7 +118,7 @@ export default function Dashboard() {
               </CardFooter>
             </Card>
           </motion.div>
-          
+
           {/* Inbox Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -142,7 +150,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
         </div>
-        
+
         {/* Recent Activity */}
         <motion.div
           initial={{ opacity: 0 }}
