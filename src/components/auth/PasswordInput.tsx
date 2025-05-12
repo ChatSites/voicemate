@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type PasswordInputProps = {
   password: string;
@@ -10,83 +11,86 @@ type PasswordInputProps = {
   registrationInProgress: boolean;
 }
 
+// Function to check if password meets complexity requirements
+const validatePasswordComplexity = (password: string): boolean => {
+  const hasLowercase = /[a-z]/.test(password);
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
+  
+  return hasLowercase && hasUppercase && hasNumber && hasSpecial;
+};
+
 const PasswordInput: React.FC<PasswordInputProps> = ({
   password,
   setPassword,
   registrationInProgress
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<{
-    valid: boolean;
-    message: string;
-  }>({ valid: false, message: "" });
+  const [passwordTouched, setPasswordTouched] = useState(false);
   
-  useEffect(() => {
-    // Check password strength
-    if (!password) {
-      setPasswordStrength({ valid: false, message: "" });
-      return;
+  const isComplexEnough = validatePasswordComplexity(password);
+  const isLongEnough = password.length >= 8;
+  const showComplexityWarning = passwordTouched && password.length > 0 && !isComplexEnough;
+  const showLengthWarning = passwordTouched && password.length > 0 && !isLongEnough;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (!passwordTouched) {
+      setPasswordTouched(true);
     }
-    
-    if (password.length < 8) {
-      setPasswordStrength({ 
-        valid: false, 
-        message: "Password must be at least 8 characters" 
-      });
-      return;
-    }
-    
-    // Valid password
-    setPasswordStrength({ 
-      valid: true, 
-      message: "Password strength: Good" 
-    });
-  }, [password]);
-  
-  const togglePasswordVisibility = () => {
+  };
+
+  const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
-  
+
   return (
     <div className="space-y-2">
-      <Label htmlFor="regpassword">Password</Label>
+      <Label htmlFor="password">Password</Label>
       <div className="relative">
-        <Input 
-          id="regpassword" 
+        <Input
+          id="password"
           type={showPassword ? "text" : "password"}
+          placeholder="••••••••"
           className={`bg-black/30 border-gray-700 pr-10 ${
-            password && (passwordStrength.valid ? "border-green-500" : "border-amber-500")
+            (showComplexityWarning || showLengthWarning) ? "border-amber-500" : ""
           }`}
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={handleChange}
           required
           disabled={registrationInProgress}
-          minLength={8}
         />
-        <button 
+        <Button
           type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-          onClick={togglePasswordVisibility}
+          variant="ghost"
+          size="sm"
+          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+          onClick={toggleShowPassword}
           tabIndex={-1}
+          disabled={registrationInProgress}
         >
           {showPassword ? (
-            <EyeOff className="h-4 w-4" />
+            <EyeOffIcon className="h-4 w-4 text-gray-400" />
           ) : (
-            <Eye className="h-4 w-4" />
+            <EyeIcon className="h-4 w-4 text-gray-400" />
           )}
-        </button>
+        </Button>
       </div>
       
-      {password && passwordStrength.message && (
-        <div className="flex items-center text-sm gap-1">
-          {passwordStrength.valid ? (
-            <CheckCircle2 className="h-3 w-3 text-green-500" />
-          ) : (
-            <XCircle className="h-3 w-3 text-amber-500" />
-          )}
-          <span className={passwordStrength.valid ? "text-green-500" : "text-amber-500"}>
-            {passwordStrength.message}
-          </span>
+      {showLengthWarning && (
+        <p className="text-sm text-amber-400">Password must be at least 8 characters</p>
+      )}
+      
+      {showComplexityWarning && (
+        <div className="text-sm text-amber-400">
+          <p>Password must include at least one of each:</p>
+          <ul className="list-disc list-inside ml-2">
+            <li>Lowercase letter (a-z)</li>
+            <li>Uppercase letter (A-Z)</li>
+            <li>Number (0-9)</li>
+            <li>Special character (!@#$%^&*()_+-=[]{};&apos;:&quot;|\,&lt;&gt;?./`~)</li>
+          </ul>
         </div>
       )}
     </div>

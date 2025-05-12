@@ -40,8 +40,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
       registerEmail && 
       registerEmail.includes('@') && 
       pulseId.length >= 3 && 
-      registerPassword.length >= 8
+      registerPassword.length >= 8 &&
+      isPasswordValid(registerPassword)
     );
+  };
+
+  const isPasswordValid = (password: string): boolean => {
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
+    
+    return hasLowercase && hasUppercase && hasNumber && hasSpecial;
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -89,6 +99,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
       return;
     }
     
+    if (!isPasswordValid(registerPassword)) {
+      toast({
+        title: "Password too weak",
+        description: "Password must include lowercase, uppercase, number, and special character",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Mark registration as in-progress to prevent further checks
     setRegistrationInProgress(true);
     setLoading(true);
@@ -131,6 +150,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
       }
       
       // Navigate to success page
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to verify your account",
+      });
       navigate('/registration-success');
       
     } catch (error: any) {

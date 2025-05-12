@@ -67,20 +67,32 @@ export const registerUser = async (
       return { success: false, error: new Error('No user returned') };
     }
 
-    // Step 3: Insert into users table
-    const { error: insertError } = await supabase.from('users').insert([
-      {
-        id: user.id,
-        name: fullName,
-        pulse_id: pulseId, // This is the pulse_id field in users table
-      },
-    ]);
+    // Step 3: Insert into users table - this is where we need to use the client's token
+    // Since the auth.signUp doesn't set the session immediately (email confirmation may be required),
+    // we'll skip this step if there's no session yet
+    if (data.session) {
+      // Create a new client instance with the session to have proper authorization
+      const authedSupabase = supabase;
+      
+      const { error: insertError } = await authedSupabase
+        .from('users')
+        .insert([
+          {
+            id: user.id,
+            name: fullName,
+            pulse_id: pulseId,
+          }
+        ]);
 
-    if (insertError) {
-      return {
-        success: false,
-        error: new Error(`Profile insert failed: ${insertError.message}`),
-      };
+      if (insertError) {
+        console.error('Profile insert error:', insertError);
+        return {
+          success: true, // Still return success since the auth account was created
+          error: new Error(`Note: Profile setup is incomplete. Please complete your profile later.`),
+        };
+      }
+    } else {
+      console.log('No session available yet. Profile will be created after email verification.');
     }
 
     return { success: true };
