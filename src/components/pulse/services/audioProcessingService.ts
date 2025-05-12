@@ -44,10 +44,16 @@ export const processAudioRecording = async (
             if (data.transcript) {
               result.transcript = data.transcript;
               console.log("Received transcript:", data.transcript);
+              
+              // If transcript is very short and we don't have CTAs, provide some default options
+              if (data.transcript.split(' ').length < 3 && (!data.ctas || data.ctas.length === 0)) {
+                console.log("Transcript too short for meaningful CTAs, providing defaults");
+                result.ctas = ["Send Message", "Request Information", "Follow Up", "Schedule Meeting"];
+              }
             }
             
-            // Process CTAs 
-            if (data.ctas && Array.isArray(data.ctas)) {
+            // Process CTAs if available from the API
+            if (data.ctas && Array.isArray(data.ctas) && data.ctas.length > 0) {
               result.ctas = data.ctas
                 .filter((cta: string) => cta && cta.trim().length > 0)
                 .map((cta: string) => {
@@ -56,6 +62,9 @@ export const processAudioRecording = async (
                 });
               
               console.log("Processed CTAs:", result.ctas);
+            } else if (!result.ctas) {
+              // Ensure we always have some CTAs
+              result.ctas = [];
             }
             
             resolve(result);
