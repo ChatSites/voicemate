@@ -19,6 +19,7 @@ import Dashboard from "./pages/Dashboard";
 import SendPulse from "./pages/SendPulse";
 import Inbox from "./pages/Inbox";
 import AuthConfirmation from "./pages/AuthConfirmation";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/create" element={<SendPulse />} />
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/auth-confirmation" element={<AuthConfirmation />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -24,7 +24,7 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({ onGoBack }) => {
     
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth-confirmation`,
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
       });
       
       if (error) throw error;

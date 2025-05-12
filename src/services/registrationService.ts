@@ -40,7 +40,7 @@ export const registerUser = async (
       password,
       options: {
         data: userData,
-        emailRedirectTo: `${window.location.origin}/auth-confirmation?type=signup`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
       }
     });
     
