@@ -16,7 +16,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- Create trigger on auth.users table
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
