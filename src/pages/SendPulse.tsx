@@ -86,16 +86,20 @@ export default function SendPulse() {
       const audioUrl = publicUrlData.publicUrl;
       console.log("Audio uploaded successfully:", audioUrl);
 
+      // Convert CTAVariant[] to a JSON-compatible format
+      // This fixes the type error with Supabase's Json type
+      const ctasForDb = JSON.parse(JSON.stringify(suggestedCTAs));
+
       // Insert the record into the pulses table
+      // Note: The 'pulses' table schema doesn't have a user_id field directly
       const { error: insertError } = await supabase
         .from('pulses')
         .insert({
-          user_id: user?.id || null,
           audio_url: audioUrl,
           transcript: transcription,
           title: pulseTitle,
           description: pulseDescription,
-          ctas: suggestedCTAs
+          ctas: ctasForDb // Now this should be compatible with Json type
         });
 
       if (insertError) {
