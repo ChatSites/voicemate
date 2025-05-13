@@ -40,7 +40,7 @@ export default function Hero() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
         >
-          <span className="text-gradient">🎙️ VoiceMate™</span>
+          <span className="text-gradient">VoiceMate™</span>
         </motion.h1>
         
         <motion.h2
