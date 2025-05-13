@@ -101,27 +101,7 @@ const PulseForm: React.FC<PulseFormProps> = ({
         </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
-        {suggestedCTAs.length > 0 && recordingData && (
-          <div className="w-full" ref={ctaSectionRef}>
-            <div className="flex items-center gap-2 mb-2">
-              <Lightbulb className="h-4 w-4 text-yellow-400" />
-              <p className="text-sm text-yellow-400 font-medium">AI-Generated Suggestions:</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {suggestedCTAs.map((cta, index) => (
-                <Button 
-                  key={index} 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleCTAClick(cta)}
-                  className="border-gray-700 hover:bg-gray-800"
-                >
-                  {cta.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Remove the duplicate CTAs section here - they're already shown in RecordingArea */}
         <Button 
           className="bg-voicemate-purple hover:bg-purple-700 text-white w-full"
           disabled={!recordingData || isSending || !pulseTitle.trim()}
