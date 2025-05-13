@@ -64,10 +64,15 @@ const RecordingArea: React.FC<RecordingAreaProps> = ({
                 onReset={onResetRecording} 
               />
               
-              {transcription && (
+              {transcription && transcription.length > 0 ? (
                 <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-md">
                   <h3 className="text-sm font-medium text-gray-400 mb-1">Transcript:</h3>
-                  <p className="text-sm text-gray-200">{transcription || "No transcript available"}</p>
+                  <p className="text-sm text-gray-200">{transcription}</p>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-md">
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Transcript:</h3>
+                  <p className="text-sm text-gray-200 italic">No transcript available or recording was too short</p>
                 </div>
               )}
               

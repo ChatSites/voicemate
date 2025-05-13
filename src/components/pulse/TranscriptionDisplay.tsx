@@ -22,7 +22,7 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({ transcripti
     >
       <p className="text-sm text-gray-200">
         <span className="text-xs font-medium text-gray-400 block mb-1">Live Transcription:</span>
-        {transcription || "Waiting for speech..."}
+        {transcription && transcription.length > 0 ? transcription : "Waiting for speech..."}
       </p>
     </div>
   );

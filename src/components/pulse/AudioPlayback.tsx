@@ -13,13 +13,24 @@ const AudioPlayback: React.FC<AudioPlaybackProps> = ({ audioBlob, onReset }) => 
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string>('');
+  const [audioLoaded, setAudioLoaded] = useState(false);
   
   useEffect(() => {
     // Create a new object URL for the audio blob
     try {
+      if (!audioBlob || audioBlob.size === 0) {
+        console.error("Invalid audio blob:", audioBlob);
+        toast({
+          title: "Audio Error",
+          description: "Invalid audio recording data",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
-      console.log("Audio URL created:", url);
+      console.log("Audio URL created:", url, "Blob size:", audioBlob.size, "Blob type:", audioBlob.type);
       
       // Clean up the URL when component unmounts
       return () => {
@@ -36,12 +47,18 @@ const AudioPlayback: React.FC<AudioPlaybackProps> = ({ audioBlob, onReset }) => 
   }, [audioBlob]);
   
   const handlePlayPause = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        audioRef.current.play().catch(err => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log("Audio playback started successfully");
+          setIsPlaying(true);
+        }).catch(err => {
           console.error('Error playing audio:', err);
           toast({
             title: "Playback Error",
@@ -49,13 +66,17 @@ const AudioPlayback: React.FC<AudioPlaybackProps> = ({ audioBlob, onReset }) => 
             variant: "destructive"
           });
         });
-        setIsPlaying(true);
       }
     }
   };
   
   const handleAudioEnded = () => {
     setIsPlaying(false);
+  };
+
+  const handleLoadedData = () => {
+    console.log("Audio loaded successfully");
+    setAudioLoaded(true);
   };
   
   return (
@@ -64,6 +85,7 @@ const AudioPlayback: React.FC<AudioPlaybackProps> = ({ audioBlob, onReset }) => 
         ref={audioRef}
         src={audioUrl}
         onEnded={handleAudioEnded}
+        onLoadedData={handleLoadedData}
         onError={(e) => {
           console.error('Audio error:', e);
           toast({
@@ -80,12 +102,13 @@ const AudioPlayback: React.FC<AudioPlaybackProps> = ({ audioBlob, onReset }) => 
           size="sm"
           className="border-gray-700 hover:bg-gray-800"
           onClick={handlePlayPause}
+          disabled={!audioLoaded}
         >
           {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>
         
         <div className="text-sm text-gray-400">
-          {isPlaying ? 'Playing...' : 'Recorded message'}
+          {isPlaying ? 'Playing...' : audioLoaded ? 'Recorded message' : 'Loading audio...'}
         </div>
         
         <Button

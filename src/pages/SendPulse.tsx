@@ -62,6 +62,15 @@ export default function SendPulse() {
       });
       return;
     }
+
+    if (!user?.id) {
+      toast({
+        title: "Authentication Error",
+        description: "User ID not found. Please sign in again.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Show sending state
     setIsSending(true);
@@ -69,13 +78,31 @@ export default function SendPulse() {
     try {
       console.log("Sending pulse...");
       // Upload the audio file to Supabase Storage
-      const audioFileName = `${user?.id}-${Date.now()}.webm`;
+      const audioFileName = `${user.id}-${Date.now()}.webm`;
+      
+      // Check if the "pulses" bucket exists, if not, we'll handle it in the catch
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('pulses')
         .upload(audioFileName, recordingData, { contentType: 'audio/webm' });
 
       if (uploadError) {
-        throw new Error(`Error uploading audio: ${uploadError.message}`);
+        console.error("Storage upload error:", uploadError);
+        
+        // Check if the error is because the bucket doesn't exist
+        if (uploadError.message.includes("does not exist")) {
+          toast({
+            title: "Storage Error",
+            description: "Storage bucket not configured. Please contact support.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Upload Error",
+            description: uploadError.message,
+            variant: "destructive"
+          });
+        }
+        return;
       }
 
       // Get the public URL of the uploaded audio
@@ -86,25 +113,42 @@ export default function SendPulse() {
       const audioUrl = publicUrlData.publicUrl;
       console.log("Audio uploaded successfully:", audioUrl);
 
+      // Get user's pulse_id from the users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('pulse_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (userError) {
+        console.error("Error fetching user pulse_id:", userError);
+      }
+      
+      const userPulseId = userData?.pulse_id || user.email?.split('@')[0] || 'anonymous';
+      
       // Convert CTAVariant[] to a JSON-compatible format
       // This fixes the type error with Supabase's Json type
       const ctasForDb = JSON.parse(JSON.stringify(suggestedCTAs));
 
       // Insert the record into the pulses table
-      // Note: The 'pulses' table schema doesn't have a user_id field directly
-      const { error: insertError } = await supabase
+      const { data: pulseData, error: insertError } = await supabase
         .from('pulses')
         .insert({
           audio_url: audioUrl,
-          transcript: transcription,
+          transcript: transcription || "No transcript available",
           title: pulseTitle,
           description: pulseDescription,
+          pulse_id: userPulseId,
           ctas: ctasForDb // Now this should be compatible with Json type
-        });
+        })
+        .select();
 
       if (insertError) {
+        console.error("Database insertion error:", insertError);
         throw new Error(`Error inserting pulse record: ${insertError.message}`);
       }
+      
+      console.log("Pulse data saved successfully:", pulseData);
       
       toast({
         title: "Pulse Sent!",
