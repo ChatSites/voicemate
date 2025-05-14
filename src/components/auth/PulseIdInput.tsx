@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
@@ -28,6 +28,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
 }) => {
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   const [pulseIdTouched, setPulseIdTouched] = useState(false);
+  const pulseIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Check PulseID availability whenever it changes
   useEffect(() => {
@@ -42,13 +43,16 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     // Reset availability state when typing
     setPulseIdAvailable(null);
     
+    // Clear any existing timeout
+    if (pulseIdCheckTimeoutRef.current) {
+      clearTimeout(pulseIdCheckTimeoutRef.current);
+    }
+    
     setIsCheckingPulseId(true);
     
-    const checkPulseIdAvailability = async () => {
+    pulseIdCheckTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log('Checking if PulseID is available:', pulseId);
         const isTaken = await isPulseIdTaken(pulseId);
-        console.log('PulseID check result:', pulseId, isTaken ? 'taken' : 'available');
         
         setPulseIdAvailable(!isTaken);
         
@@ -71,11 +75,13 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       } finally {
         setIsCheckingPulseId(false);
       }
-    };
+    }, 600);
     
-    // Debounce the check to avoid too many requests
-    const timerId = setTimeout(checkPulseIdAvailability, 600);
-    return () => clearTimeout(timerId);
+    return () => {
+      if (pulseIdCheckTimeoutRef.current) {
+        clearTimeout(pulseIdCheckTimeoutRef.current);
+      }
+    };
   }, [pulseId, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions, registrationInProgress]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {

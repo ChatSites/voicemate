@@ -10,22 +10,23 @@ const RegistrationSuccess = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // If the user is logged in, allow them to go to the dashboard immediately
-  // If not, they'll need to verify their email first
+  // Always direct to dashboard instead of auth
   const handleGoToDashboard = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      navigate('/auth');
-    }
+    navigate('/dashboard');
   };
 
   // Redirect authenticated users directly to dashboard
   useEffect(() => {
-    if (!loading && user) {
-      navigate('/dashboard');
+    if (!loading) {
+      // If still loading, wait for auth state to resolve
+      // If not loading (regardless of user state), proceed to dashboard after short delay
+      const timer = setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000); // Short delay to show success message
+      
+      return () => clearTimeout(timer);
     }
-  }, [user, loading, navigate]);
+  }, [loading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -49,14 +50,14 @@ const RegistrationSuccess = () => {
           
           <CardContent className="flex flex-col items-center">
             <p className="text-center mb-6 text-gray-400">
-              Thank you for joining VoiceMate. {!user && "Please check your email to verify your account before continuing."}
+              Thank you for joining VoiceMate. You'll be redirected to the dashboard in a moment.
             </p>
             
             <Button 
               className="w-full bg-voicemate-purple hover:bg-purple-700"
               onClick={handleGoToDashboard}
             >
-              {user ? "Go to Dashboard" : "Continue to Login"}
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>

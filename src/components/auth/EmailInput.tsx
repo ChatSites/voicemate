@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
@@ -23,6 +23,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
 }) => {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
+  const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Email validation with existence check
   useEffect(() => {
@@ -30,8 +31,10 @@ const EmailInput: React.FC<EmailInputProps> = ({
       return;
     }
 
-    // Reset the email validity state when email changes
-    setIsEmailValid(null);
+    // Clear any existing timeout to prevent multiple checks
+    if (emailCheckTimeoutRef.current) {
+      clearTimeout(emailCheckTimeoutRef.current);
+    }
 
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,14 +47,12 @@ const EmailInput: React.FC<EmailInputProps> = ({
 
     // Only check with the server if the email format is valid
     // and we have at least 5 characters (to avoid unnecessary checks)
-    if (email.length >= 5) {
+    if (email.length >= 5 && isTouched) {
       setIsCheckingEmail(true);
       
-      const checkEmailAvailability = async () => {
+      emailCheckTimeoutRef.current = setTimeout(async () => {
         try {
-          console.log('Checking if email is available:', email);
           const isRegistered = await isEmailRegistered(email);
-          console.log('Email check result:', email, isRegistered ? 'taken' : 'available');
           setIsEmailValid(!isRegistered);
         } catch (error) {
           console.error('Error checking email availability:', error);
@@ -60,12 +61,15 @@ const EmailInput: React.FC<EmailInputProps> = ({
         } finally {
           setIsCheckingEmail(false);
         }
-      };
-
-      const timerId = setTimeout(checkEmailAvailability, 600);
-      return () => clearTimeout(timerId);
+      }, 600);
     }
-  }, [email, registrationInProgress, setIsEmailValid, isTouched]);
+
+    return () => {
+      if (emailCheckTimeoutRef.current) {
+        clearTimeout(emailCheckTimeoutRef.current);
+      }
+    };
+  }, [email, registrationInProgress, isTouched]);
 
   return (
     <div className="space-y-2">
