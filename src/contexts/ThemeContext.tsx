@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
@@ -11,15 +12,21 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    return savedTheme || (prefersDark ? "dark" : "light");
+    // For SSR safety, check if window exists before using it
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem("theme") as Theme | null;
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      return savedTheme || (prefersDark ? "dark" : "light");
+    }
+    return "light"; // Default fallback for SSR
   });
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    document.documentElement.classList.toggle("light", theme === "light");
-    localStorage.setItem("theme", theme);
+    if (typeof window !== 'undefined') {
+      document.documentElement.classList.toggle("dark", theme === "dark");
+      document.documentElement.classList.toggle("light", theme === "light");
+      localStorage.setItem("theme", theme);
+    }
   }, [theme]);
 
   const toggleTheme = () => {
@@ -40,4 +47,3 @@ export const useTheme = () => {
   }
   return context;
 };
-

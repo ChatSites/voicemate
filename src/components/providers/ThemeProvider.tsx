@@ -3,7 +3,6 @@
 
 import * as React from "react";
 import { ThemeProvider as NextThemeProvider } from "next-themes";
-import { useTheme } from "@/contexts/ThemeContext";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -17,5 +16,5 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Re-export useTheme from the context
+// Re-export useTheme separately to avoid circular imports
 export { useTheme } from "@/contexts/ThemeContext";
