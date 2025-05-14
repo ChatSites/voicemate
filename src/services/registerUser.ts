@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export const registerUser = async (
@@ -13,14 +12,14 @@ export const registerUser = async (
   pulseIdSuggestions?: string[];
 }> => {
   try {
-    // Step 1: Check PulseID availability
-    const { data: existingPulseId, error: pulseIdError, status } = await supabase
+    // Step 1: Check PulseID availability using ilike for case insensitivity
+    const { data: existingPulseId, error: pulseIdError } = await supabase
       .from('users')
       .select('id')
-      .eq('pulse_id', pulseId)
-      .single();
+      .ilike('pulse_id', pulseId)
+      .maybeSingle();
 
-    if (existingPulseId && status !== 406) {
+    if (existingPulseId) {
       const pulseIdSuggestions = [
         `${pulseId}_${Math.floor(Math.random() * 1000)}`,
         `${pulseId}.${Date.now().toString().slice(-4)}`,
@@ -68,8 +67,6 @@ export const registerUser = async (
     }
 
     // Step 3: Insert into users table - this is where we need to use the client's token
-    // Since the auth.signUp doesn't set the session immediately (email confirmation may be required),
-    // we'll skip this step if there's no session yet
     if (data.session) {
       // Create a new client instance with the session to have proper authorization
       const authedSupabase = supabase;

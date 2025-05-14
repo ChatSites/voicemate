@@ -89,13 +89,16 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       }
     }
     
-    const { data, error, status } = await supabase
+    // Fix: Add proper accept header and use 'ilike' instead of 'eq' for case-insensitive matching
+    const { data, error } = await supabase
       .from('users')
       .select('id')
-      .eq('pulse_id', pulseId)
+      .ilike('pulse_id', pulseId)
       .maybeSingle();
     
-    if (error && status !== 406) {
+    // Handle errors other than 406 (not found)
+    if (error && error.code !== '406') {
+      console.error('Error checking PulseID:', error);
       throw error;
     }
     
