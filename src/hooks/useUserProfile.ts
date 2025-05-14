@@ -1,7 +1,8 @@
+
 import { useEffect, useState } from 'react';
-// Use RELATIVE paths if aliases break in Lovable
-import { supabase } from '../../integrations/supabase/client';
-import { useAuth } from '../../contexts/AuthContext';
+// Fix the import path to point to the correct location
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface UserProfile {
   id: string;
