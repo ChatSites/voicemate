@@ -7,8 +7,8 @@ export interface UserProfile {
   id: string;
   name: string | null;
   pulse_id: string | null;
-  created_at?: string; // ✅ Added as optional property
-  avatar_url?: string | null; // ✅ Added as optional property
+  created_at?: string; // Keep as optional property
+  avatar_url?: string | null; // Keep as optional property
 }
 
 export const useUserProfile = () => {
@@ -25,9 +25,10 @@ export const useUserProfile = () => {
       }
 
       try {
+        // Only select columns that exist in the users table
         const { data, error: profileError } = await supabase
           .from('users')
-          .select('id, name, pulse_id, created_at, avatar_url')
+          .select('id, name, pulse_id')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -38,8 +39,7 @@ export const useUserProfile = () => {
             id: data.id,
             name: user.user_metadata?.full_name ?? data.name ?? null,
             pulse_id: data.pulse_id ?? null,
-            created_at: data.created_at ?? undefined,
-            avatar_url: data.avatar_url ?? null,
+            // We won't set created_at and avatar_url since they don't exist in the table
           };
           setProfile(userProfile);
         }
