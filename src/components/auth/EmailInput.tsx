@@ -39,28 +39,6 @@ const EmailInput: React.FC<EmailInputProps> = ({
 
     // Don't check for existence during typing - let the registration process handle this
     setIsEmailValid(true);
-
-    /*
-    // Commented out email existence check - let the registration handle this
-    const checkEmailAvailability = async () => {
-      setIsCheckingEmail(true);
-      try {
-        console.log('Checking if email is available:', email);
-        const isRegistered = await isEmailRegistered(email);
-        console.log('Email check result:', email, isRegistered ? 'taken' : 'available');
-        setIsEmailValid(!isRegistered);
-      } catch (error) {
-        console.error('Error checking email availability:', error);
-        // On error, assume email is available
-        setIsEmailValid(true);
-      } finally {
-        setIsCheckingEmail(false);
-      }
-    };
-
-    const timerId = setTimeout(checkEmailAvailability, 600);
-    return () => clearTimeout(timerId);
-    */
   }, [email, registrationInProgress, setIsEmailValid]);
 
   return (
@@ -71,7 +49,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
           id="regemail" 
           type="email" 
           placeholder="hello@example.com" 
-          className={`bg-black/30 border-gray-700 ${
+          className={`bg-black/30 border-gray-700 text-white ${
             isEmailValid === false ? "border-red-500" : 
             isEmailValid === true ? "border-green-500" : ""
           }`}

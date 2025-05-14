@@ -80,7 +80,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({ pulseId, setPulseId, setPul
           <Input 
             id="pulse-id" 
             placeholder="yourname" 
-            className={`rounded-l-none bg-black/30 border-gray-700 ${
+            className={`rounded-l-none bg-black/30 border-gray-700 text-white ${
               pulseIdAvailable === false ? "border-red-500 pr-9" : 
               pulseIdAvailable === true ? "border-green-500 pr-9" : ""
             }`}
