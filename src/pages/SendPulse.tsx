@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -80,29 +79,17 @@ export default function SendPulse() {
       // Upload the audio file to Supabase Storage
       const audioFileName = `${user.id}-${Date.now()}.webm`;
       
-      // Check if the "pulses" bucket exists, if not, we'll handle it in the catch
+      // Check if the bucket exists and upload to it
+      const { data: buckets } = await supabase.storage.listBuckets();
+      console.log("Available buckets:", buckets?.map(b => b.name));
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('pulses')
         .upload(audioFileName, recordingData, { contentType: 'audio/webm' });
 
       if (uploadError) {
         console.error("Storage upload error:", uploadError);
-        
-        // Check if the error is because the bucket doesn't exist
-        if (uploadError.message.includes("does not exist")) {
-          toast({
-            title: "Storage Error",
-            description: "Storage bucket not configured. Please contact support.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Upload Error",
-            description: uploadError.message,
-            variant: "destructive"
-          });
-        }
-        return;
+        throw new Error(`Upload error: ${uploadError.message}`);
       }
 
       // Get the public URL of the uploaded audio
@@ -118,7 +105,7 @@ export default function SendPulse() {
         .from('users')
         .select('pulse_id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       if (userError) {
         console.error("Error fetching user pulse_id:", userError);
