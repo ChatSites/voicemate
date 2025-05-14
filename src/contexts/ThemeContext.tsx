@@ -17,7 +17,9 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const applyTheme = (newTheme: Theme) => {
     if (newTheme === "dark") {
       document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
     } else {
+      document.documentElement.classList.add("light");
       document.documentElement.classList.remove("dark");
     }
     // Save to localStorage
@@ -27,8 +29,13 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Check if theme is stored in localStorage
     const savedTheme = localStorage.getItem("theme") as Theme | null;
-    // Use saved theme or default to dark
-    const initialTheme = savedTheme || "dark";
+    
+    // Check for system preference if no saved theme
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Use saved theme or system preference as fallback, default to dark if neither is available
+    const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
+    
     setTheme(initialTheme);
     
     // Apply theme to the document
