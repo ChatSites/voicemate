@@ -17,6 +17,10 @@ export default function AuthCallback() {
         const code = searchParams.get("code") || 
                      new URLSearchParams(location.hash.substring(1)).get("code");
         
+        // Get type from query parameters
+        const type = searchParams.get("type");
+        console.log("Auth callback type:", type);
+        
         // Handle auth redirect with code
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -37,11 +41,23 @@ export default function AuthCallback() {
         // Handle hash-based redirects (older format)
         else if (location.hash) {
           try {
-            // Try to parse token from hash manually
+            // Parse token from hash manually
             const hashParams = new URLSearchParams(location.hash.substring(1));
             const accessToken = hashParams.get("access_token");
             
             if (accessToken) {
+              console.log("Found access token in hash, setting session");
+              // For recovery flow, don't set the session yet - just store the token
+              // and redirect to the update password page
+              if (type === 'recovery' || hashParams.get("type") === 'recovery') {
+                // Redirect to update password with token
+                setTimeout(() => {
+                  navigate(`/update-password${location.hash}`);
+                }, 1000);
+                return;
+              }
+              
+              // For other flows, set the session
               const { error } = await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: hashParams.get("refresh_token") || "",
@@ -53,10 +69,6 @@ export default function AuthCallback() {
             console.error("Error handling hash params:", e);
           }
         }
-
-        // Get type from query parameters
-        const type = searchParams.get("type");
-        console.log("Auth callback type:", type);
         
         switch (type) {
           case "signup":
@@ -82,17 +94,23 @@ export default function AuthCallback() {
               title: "Password Reset",
               description: "Please set your new password."
             });
-            // Ensure we pass the access token to the update-password page if it exists
+            
+            // Extract token from either query params or hash
             const accessToken = searchParams.get("access_token") || 
-                                new URLSearchParams(location.hash.substring(1)).get("access_token");
+                               new URLSearchParams(location.hash.substring(1)).get("access_token");
             
             setTimeout(() => {
+              // If we have a token in the URL, pass it along
               if (accessToken) {
                 navigate(`/update-password?access_token=${accessToken}`);
+              } else if (location.hash) {
+                // If no token in URL params but we have a hash, pass the entire hash
+                navigate(`/update-password${location.hash}`);
               } else {
+                // Fallback
                 navigate("/update-password");
               }
-            }, 1500);
+            }, 1000);
             break;
           case "email_change":
             setMessage("Email updated! Redirecting...");
@@ -103,8 +121,16 @@ export default function AuthCallback() {
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
           default:
-            setMessage("Authentication complete.");
-            setTimeout(() => navigate("/dashboard"), 1500);
+            // If no type is specified but we have a hash with recovery type
+            if (location.hash && location.hash.includes('type=recovery')) {
+              setMessage("Redirecting to password reset page...");
+              setTimeout(() => {
+                navigate(`/update-password${location.hash}`);
+              }, 1000);
+            } else {
+              setMessage("Authentication complete.");
+              setTimeout(() => navigate("/dashboard"), 1500);
+            }
             break;
         }
       } catch (err) {

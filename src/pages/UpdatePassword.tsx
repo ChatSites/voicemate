@@ -15,12 +15,20 @@ const UpdatePassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
   useEffect(() => {
     document.title = 'Update Password | VoiceMate ID';
+    
+    // Extract token from URL parameters or hash
+    const token = searchParams.get('access_token') || 
+                  new URLSearchParams(location.hash.replace('#', '?')).get('access_token');
+    
+    console.log('UpdatePassword: Access token found:', !!token);
+    setAccessToken(token);
     
     // Log params for debugging
     console.log('UpdatePassword params:', 
@@ -54,26 +62,25 @@ const UpdatePassword = () => {
 
     setLoading(true);
     try {
-      // Extract token from params or hash
-      const token = searchParams.get('access_token') || 
-                    new URLSearchParams(location.hash.replace('#', '?')).get('access_token');
-      
       let updateResult;
       
-      if (token) {
-        // If we have a token, use it directly to reset the password
+      if (accessToken) {
         console.log('Updating password with token');
         
         // Set the auth token in the session
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: '',
+        });
         
-        if (!sessionData.session) {
-          // If no session exists, we need to use the token first
-          // This tells Supabase to use the provided token for this request
-          await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+        if (sessionError) {
+          console.error('Error setting session:', sessionError);
+          throw sessionError;
         }
         
-        // Now update the password (the token is already being used in the session)
+        console.log('Session set successfully, updating password');
+        
+        // Now update the password
         updateResult = await supabase.auth.updateUser({ password });
       } else {
         // Regular password update (user already authenticated)
@@ -90,6 +97,7 @@ const UpdatePassword = () => {
         description: "Your password has been successfully updated.",
       });
       
+      // Redirect to login page after successful password update
       navigate('/auth?tab=login');
     } catch (error: any) {
       toast({
@@ -102,10 +110,6 @@ const UpdatePassword = () => {
       setLoading(false);
     }
   };
-
-  // Check for access token to ensure user came from a reset link
-  const hasAccessToken = searchParams.get('access_token') !== null || 
-                          location.hash.includes('access_token=');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -124,7 +128,7 @@ const UpdatePassword = () => {
           
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
-              {!hasAccessToken && (
+              {!accessToken && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
@@ -143,7 +147,7 @@ const UpdatePassword = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="bg-black/30 border-gray-700 pr-10"
                     placeholder="••••••••"
-                    disabled={loading || !hasAccessToken}
+                    disabled={loading || !accessToken}
                     required
                   />
                   <button 
@@ -165,7 +169,7 @@ const UpdatePassword = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="bg-black/30 border-gray-700"
                   placeholder="••••••••"
-                  disabled={loading || !hasAccessToken}
+                  disabled={loading || !accessToken}
                   required
                 />
               </div>
@@ -179,7 +183,7 @@ const UpdatePassword = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90"
-                disabled={loading || !hasAccessToken}
+                disabled={loading || !accessToken}
               >
                 {loading ? "Updating..." : "Update Password"}
               </Button>

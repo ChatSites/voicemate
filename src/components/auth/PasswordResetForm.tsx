@@ -23,8 +23,14 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({ onGoBack }) => {
     setLoading(true);
     
     try {
+      // Get the current URL's origin for the redirect URL
+      const origin = window.location.origin;
+      const redirectUrl = `${origin}/auth/callback?type=recovery`;
+      
+      console.log(`Sending password reset email with redirect to: ${redirectUrl}`);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+        redirectTo: redirectUrl,
       });
       
       if (error) throw error;
