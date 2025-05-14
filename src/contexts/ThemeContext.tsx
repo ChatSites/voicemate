@@ -13,6 +13,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState<Theme>("dark");
 
+  // Apply theme function to ensure consistency
+  const applyTheme = (newTheme: Theme) => {
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    // Save to localStorage
+    localStorage.setItem("theme", newTheme);
+  };
+
   useEffect(() => {
     // Check if theme is stored in localStorage
     const savedTheme = localStorage.getItem("theme") as Theme | null;
@@ -21,27 +32,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     setTheme(initialTheme);
     
     // Apply theme to the document
-    if (initialTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    applyTheme(initialTheme);
   }, []);
 
   const toggleTheme = () => {
     setTheme(prevTheme => {
       const newTheme = prevTheme === "dark" ? "light" : "dark";
-      
-      // Save to localStorage
-      localStorage.setItem("theme", newTheme);
-      
-      // Toggle class on document
-      if (newTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      
+      // Apply the theme change
+      applyTheme(newTheme);
       return newTheme;
     });
   };
