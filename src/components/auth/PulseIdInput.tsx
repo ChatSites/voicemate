@@ -28,67 +28,62 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   const [pulseIdTouched, setPulseIdTouched] = useState(false);
   
-  // Memoized check function to avoid recreation on every render
-  const checkPulseIdAvailability = useCallback(async (id: string) => {
-    if (!id || id.length < 3 || registrationInProgress) return;
+  // Check PulseID availability whenever it changes
+  useEffect(() => {
+    if (!pulseId || pulseId.length < 3 || registrationInProgress) {
+      return;
+    }
+    
+    if (!pulseIdTouched) {
+      setPulseIdTouched(true);
+    }
+    
+    // Reset availability state when typing
+    setPulseIdAvailable(null);
     
     setIsCheckingPulseId(true);
-    try {
-      console.log('Checking if PulseID is available:', id);
-      const isTaken = await isPulseIdTaken(id);
-      console.log('PulseID check result:', id, isTaken ? 'taken' : 'available');
-      
-      setPulseIdAvailable(!isTaken);
-      
-      if (isTaken) {
-        // Generate suggestions if ID is taken
-        const suggestions = [
-          `${id}_${Math.floor(Math.random() * 1000)}`,
-          `${id}${Date.now().toString().slice(-4)}`,
-          `${id}123`,
-        ];
-        setPulseIdSuggestions(suggestions);
-      } else {
+    
+    const checkPulseIdAvailability = async () => {
+      try {
+        console.log('Checking if PulseID is available:', pulseId);
+        const isTaken = await isPulseIdTaken(pulseId);
+        console.log('PulseID check result:', pulseId, isTaken ? 'taken' : 'available');
+        
+        setPulseIdAvailable(!isTaken);
+        
+        if (isTaken) {
+          // Generate suggestions if ID is taken
+          const suggestions = [
+            `${pulseId}_${Math.floor(Math.random() * 1000)}`,
+            `${pulseId}${Date.now().toString().slice(-4)}`,
+            `${pulseId}123`,
+          ];
+          setPulseIdSuggestions(suggestions);
+        } else {
+          setPulseIdSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error checking PulseID availability:', error);
+        // On error, assume ID is available to avoid blocking registration
+        setPulseIdAvailable(true);
         setPulseIdSuggestions([]);
+      } finally {
+        setIsCheckingPulseId(false);
       }
-    } catch (error) {
-      console.error('Error checking PulseID availability:', error);
-      // On error, assume ID is available to avoid blocking registration
-      setPulseIdAvailable(true);
-    } finally {
-      setIsCheckingPulseId(false);
-    }
-  }, [setPulseIdAvailable, setPulseIdSuggestions, registrationInProgress]);
-  
-  // Use effect with proper dependency array to prevent infinite loops
-  useEffect(() => {
-    if (!pulseIdTouched || pulseId.length < 3) return;
+    };
     
-    const timerId = setTimeout(() => {
-      checkPulseIdAvailability(pulseId);
-    }, 600);
-    
+    // Debounce the check to avoid too many requests
+    const timerId = setTimeout(checkPulseIdAvailability, 600);
     return () => clearTimeout(timerId);
-  }, [pulseId, pulseIdTouched, checkPulseIdAvailability]);
+  }, [pulseId, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions, registrationInProgress]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();
     setPulseId(value);
-    
-    if (!pulseIdTouched && value.length > 0) {
-      setPulseIdTouched(true);
-    }
-    
-    // Reset availability state when user types
-    if (pulseIdAvailable !== null) {
-      setPulseIdAvailable(null);
-    }
   };
   
   const handleSuggestionClick = (suggestion: string) => {
     setPulseId(suggestion);
-    // Check availability of the selected suggestion
-    checkPulseIdAvailability(suggestion);
   };
   
   return (
@@ -99,10 +94,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           id="pulseid" 
           type="text" 
           placeholder="yourname" 
-          className={`bg-black/30 border-gray-700 text-white ${
-            pulseIdAvailable === false ? "border-red-500" : 
-            pulseIdAvailable === true ? "border-green-500" : ""
-          }`}
+          className="bg-black/30 border-gray-700 text-white"
           value={pulseId}
           onChange={handlePulseIdChange}
           required

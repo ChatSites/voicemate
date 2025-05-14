@@ -53,9 +53,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
           id="password"
           type={showPassword ? "text" : "password"}
           placeholder="••••••••"
-          className={`bg-black/30 border-gray-700 pr-10 ${
-            (showComplexityWarning || showLengthWarning) ? "border-amber-500" : ""
-          }`}
+          className="bg-black/30 border-gray-700 text-white pr-10"
           value={password}
           onChange={handleChange}
           required

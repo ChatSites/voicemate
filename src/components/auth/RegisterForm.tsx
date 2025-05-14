@@ -68,6 +68,26 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
       return false;
     }
     
+    // Check if email is valid
+    if (formState.isEmailValid === false) {
+      toast({
+        title: "Email already registered",
+        description: "This email is already taken. Please use another one or log in.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    // Check if PulseID is available
+    if (formState.pulseIdAvailable === false) {
+      toast({
+        title: "PulseID already taken",
+        description: "This PulseID is already taken. Please choose another one.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
     // Check if password meets complexity requirements
     const hasLowercase = /[a-z]/.test(formState.registerPassword);
     const hasUppercase = /[A-Z]/.test(formState.registerPassword);

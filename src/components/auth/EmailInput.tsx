@@ -22,7 +22,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
 }) => {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
-  // Email validation - now we just validate format, not existence
+  // Email validation with existence check
   useEffect(() => {
     if (registrationInProgress || !email) {
       return;
@@ -31,14 +31,38 @@ const EmailInput: React.FC<EmailInputProps> = ({
     // Reset the email validity state when email changes
     setIsEmailValid(null);
 
-    // Validate email format first - this is the basic check we'll do here
+    // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      if (email.length > 0) {
+        setIsEmailValid(false);
+      }
       return;
     }
 
-    // Don't check for existence during typing - let the registration process handle this
-    setIsEmailValid(true);
+    // Only check with the server if the email format is valid
+    // and we have at least 5 characters (to avoid unnecessary checks)
+    if (email.length >= 5) {
+      setIsCheckingEmail(true);
+      
+      const checkEmailAvailability = async () => {
+        try {
+          console.log('Checking if email is available:', email);
+          const isRegistered = await isEmailRegistered(email);
+          console.log('Email check result:', email, isRegistered ? 'taken' : 'available');
+          setIsEmailValid(!isRegistered);
+        } catch (error) {
+          console.error('Error checking email availability:', error);
+          // On error, assume email is valid to allow form submission
+          setIsEmailValid(true);
+        } finally {
+          setIsCheckingEmail(false);
+        }
+      };
+
+      const timerId = setTimeout(checkEmailAvailability, 600);
+      return () => clearTimeout(timerId);
+    }
   }, [email, registrationInProgress, setIsEmailValid]);
 
   return (
@@ -49,10 +73,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
           id="regemail" 
           type="email" 
           placeholder="hello@example.com" 
-          className={`bg-black/30 border-gray-700 text-white ${
-            isEmailValid === false ? "border-red-500" : 
-            isEmailValid === true ? "border-green-500" : ""
-          }`}
+          className="bg-black/30 border-gray-700 text-white"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -74,7 +95,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         )}
       </div>
       {isEmailValid === false && (
-        <p className="text-sm text-red-400">This email is already registered. Please log in instead.</p>
+        <p className="text-sm text-red-400">This email is already registered or is invalid. Please use another email.</p>
       )}
     </div>
   );
