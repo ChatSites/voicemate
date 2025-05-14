@@ -44,7 +44,8 @@ export const useUserProfile = () => {
             id: data.id,
             name: user.user_metadata?.full_name || data.name || null,
             pulse_id: data.pulse_id || null,
-            created_at: data.created_at,
+            // Add optional properties with undefined fallback
+            created_at: data.created_at || undefined,
             avatar_url: data.avatar_url || null
           };
           setProfile(userProfile);
