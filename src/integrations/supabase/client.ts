@@ -45,27 +45,21 @@ export const cleanupAuthState = () => {
 };
 
 /**
- * Check if an email is already registered - using a more reliable approach
- * that doesn't hit rate limits as easily
+ * Check if an email is already registered using format check only
  */
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
-    console.log('Checking if email exists:', email);
-    
-    // Instead of using OTP which hits rate limits, we'll do a basic email format check
-    // and assume the email is valid unless it's clearly invalid
+    // Simple format check - don't call Supabase API to avoid rate limits
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return false; // Invalid email format
     }
     
-    // For this implementation, we'll consider all properly formatted emails as valid
+    // Consider all properly formatted emails as valid for registration
     // This avoids hitting rate limits with the Supabase API
-    // In a production app, you might want a more sophisticated check
     return false;
   } catch (error) {
     console.error('Error checking email existence:', error);
-    // On error, assume email is not registered to avoid false positives
     return false;
   }
 };

@@ -23,8 +23,12 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      document.documentElement.classList.toggle("light", theme === "light");
+      // Apply theme class to html element
+      const root = document.documentElement;
+      root.classList.remove("dark", "light");
+      root.classList.add(theme);
+      
+      // Store theme preference
       localStorage.setItem("theme", theme);
     }
   }, [theme]);

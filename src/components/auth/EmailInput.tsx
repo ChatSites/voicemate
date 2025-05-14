@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
-import { isEmailRegistered } from '@/integrations/supabase/client';
 import FormFeedback from '@/components/ui/form-feedback';
 
 type EmailInputProps = {
@@ -25,13 +24,13 @@ const EmailInput: React.FC<EmailInputProps> = ({
   const [isTouched, setIsTouched] = useState(false);
   const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Email validation - simpler approach to avoid rate limits
+  // Simple email validation with format check only
   useEffect(() => {
     if (registrationInProgress || !email) {
       return;
     }
 
-    // Clear any existing timeout to prevent multiple checks
+    // Clear any existing timeout
     if (emailCheckTimeoutRef.current) {
       clearTimeout(emailCheckTimeoutRef.current);
     }
@@ -44,27 +43,20 @@ const EmailInput: React.FC<EmailInputProps> = ({
       if (email.length > 0 && isTouched) {
         setIsEmailValid(false);
       } else {
-        // Reset validation state when email is emptied or not touched yet
         setIsEmailValid(null);
       }
       return;
     }
 
-    // Only check if the email is properly formatted and touched
+    // For formatted emails that are touched, mark as valid immediately
     if (isValidFormat && isTouched) {
       setIsCheckingEmail(true);
       
-      emailCheckTimeoutRef.current = setTimeout(async () => {
-        try {
-          // Consider all properly formatted emails as valid for registration
-          // This avoids the rate limit issues with Supabase
-          setIsEmailValid(true);
-        } finally {
-          setIsCheckingEmail(false);
-        }
-      }, 600);
+      emailCheckTimeoutRef.current = setTimeout(() => {
+        setIsEmailValid(true);
+        setIsCheckingEmail(false);
+      }, 300);
     } else if (!isTouched) {
-      // Reset validation if not touched yet
       setIsEmailValid(null);
     }
 

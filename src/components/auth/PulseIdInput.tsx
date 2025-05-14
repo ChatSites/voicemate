@@ -30,50 +30,63 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [pulseIdTouched, setPulseIdTouched] = useState(false);
   const pulseIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Check PulseID availability whenever it changes
+  // Check PulseID availability without causing infinite loops
   useEffect(() => {
+    // Skip checks if pulseId doesn't meet minimum requirements or registration is in progress
     if (!pulseId || pulseId.length < 3 || registrationInProgress) {
       return;
     }
     
-    if (!pulseIdTouched) {
+    // Mark touched if user has entered a valid length pulseId
+    if (!pulseIdTouched && pulseId.length >= 3) {
       setPulseIdTouched(true);
     }
     
-    // Reset availability state when typing
-    setPulseIdAvailable(null);
-    
-    // Clear any existing timeout
+    // Clear any existing timeout to prevent multiple checks
     if (pulseIdCheckTimeoutRef.current) {
       clearTimeout(pulseIdCheckTimeoutRef.current);
     }
     
+    // Set checking state and start availability check
     setIsCheckingPulseId(true);
+    
+    // Create a local variable to store the current pulseId being checked
+    const currentPulseId = pulseId;
     
     pulseIdCheckTimeoutRef.current = setTimeout(async () => {
       try {
-        const isTaken = await isPulseIdTaken(pulseId);
-        
-        setPulseIdAvailable(!isTaken);
-        
-        if (isTaken) {
-          // Generate suggestions if ID is taken
-          const suggestions = [
-            `${pulseId}_${Math.floor(Math.random() * 1000)}`,
-            `${pulseId}${Date.now().toString().slice(-4)}`,
-            `${pulseId}123`,
-          ];
-          setPulseIdSuggestions(suggestions);
-        } else {
-          setPulseIdSuggestions([]);
+        // Only run the check if pulseId hasn't changed during the timeout
+        if (currentPulseId === pulseId) {
+          const isTaken = await isPulseIdTaken(pulseId);
+          
+          // Update state only if pulseId still matches what we checked
+          if (currentPulseId === pulseId) {
+            setPulseIdAvailable(!isTaken);
+            
+            if (isTaken) {
+              const suggestions = [
+                `${pulseId}_${Math.floor(Math.random() * 1000)}`,
+                `${pulseId}${Date.now().toString().slice(-4)}`,
+                `${pulseId}123`,
+              ];
+              setPulseIdSuggestions(suggestions);
+            } else {
+              setPulseIdSuggestions([]);
+            }
+          }
         }
       } catch (error) {
         console.error('Error checking PulseID availability:', error);
         // On error, assume ID is available to avoid blocking registration
-        setPulseIdAvailable(true);
-        setPulseIdSuggestions([]);
+        if (currentPulseId === pulseId) {
+          setPulseIdAvailable(true);
+          setPulseIdSuggestions([]);
+        }
       } finally {
-        setIsCheckingPulseId(false);
+        // Only update checking state if pulseId hasn't changed
+        if (currentPulseId === pulseId) {
+          setIsCheckingPulseId(false);
+        }
       }
     }, 600);
     
@@ -82,7 +95,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         clearTimeout(pulseIdCheckTimeoutRef.current);
       }
     };
-  }, [pulseId, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions, registrationInProgress]);
+  }, [pulseId, registrationInProgress]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();

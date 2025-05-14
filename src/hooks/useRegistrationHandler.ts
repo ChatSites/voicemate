@@ -69,13 +69,13 @@ export const useRegistrationHandler = (
         }
       }
       
-      // Navigate directly to dashboard or success page based on login status
+      // Registration successful - show toast and navigate to dashboard
       toast({
         title: "Registration successful",
         description: "Welcome to VoiceMate!",
       });
       
-      // Navigate to dashboard directly instead of registration success page
+      // Always navigate to dashboard on successful registration
       navigate('/dashboard');
       
     } catch (error: any) {
