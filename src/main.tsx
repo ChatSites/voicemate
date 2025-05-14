@@ -5,10 +5,12 @@ import './index.css'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AuthProvider } from './contexts/AuthContext'
 
-createRoot(document.getElementById("root")!).render(
+// Create a single root instance
+const root = createRoot(document.getElementById("root")!);
+
+// Render the application with providers
+root.render(
   <ThemeProvider>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <App />
   </ThemeProvider>
 );

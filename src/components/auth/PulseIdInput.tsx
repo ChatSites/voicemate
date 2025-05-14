@@ -3,19 +3,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
+import { FormFeedback } from '@/components/ui/form-feedback';
 import { isPulseIdTaken } from '@/integrations/supabase/client';
 import PulseIdSuggestions from './PulseIdSuggestions';
-import FormFeedback from '@/components/ui/form-feedback';
 
-type PulseIdInputProps = {
+interface PulseIdInputProps {
   pulseId: string;
   setPulseId: (pulseId: string) => void;
   pulseIdAvailable: boolean | null;
-  setPulseIdAvailable: (available: boolean | null) => void;
+  setPulseIdAvailable: (isAvailable: boolean | null) => void;
   pulseIdSuggestions: string[];
   setPulseIdSuggestions: (suggestions: string[]) => void;
   registrationInProgress: boolean;
-};
+}
 
 const PulseIdInput: React.FC<PulseIdInputProps> = ({
   pulseId,
@@ -29,11 +29,17 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   const [pulseIdTouched, setPulseIdTouched] = useState(false);
   const pulseIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const lastCheckedPulseIdRef = useRef<string>('');
+
   // Check PulseID availability without causing infinite loops
   useEffect(() => {
-    // Skip checks if pulseId doesn't meet minimum requirements or registration is in progress
+    // Skip checks if pulseId doesn't meet minimum requirements or not touched yet or registration in progress
     if (!pulseId || pulseId.length < 3 || registrationInProgress || !pulseIdTouched) {
+      return;
+    }
+    
+    // Skip if we already checked this exact pulse ID recently
+    if (lastCheckedPulseIdRef.current === pulseId) {
       return;
     }
     
@@ -42,48 +48,37 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       clearTimeout(pulseIdCheckTimeoutRef.current);
     }
     
-    // Set checking state and start availability check
     setIsCheckingPulseId(true);
+    setPulseIdAvailable(null);
     
-    // Create a local variable to store the current pulseId being checked
-    const currentPulseId = pulseId;
-    
+    // Use timeout to debounce and prevent excessive API calls
     pulseIdCheckTimeoutRef.current = setTimeout(async () => {
       try {
-        // Only run the check if pulseId hasn't changed during the timeout
-        if (currentPulseId === pulseId) {
-          const isTaken = await isPulseIdTaken(pulseId);
+        lastCheckedPulseIdRef.current = pulseId;
+        const isTaken = await isPulseIdTaken(pulseId);
+        
+        if (isTaken) {
+          // If taken, generate some alternative suggestions
+          const suggestions = [
+            `${pulseId}${Math.floor(Math.random() * 1000)}`,
+            `${pulseId}_${Math.floor(Math.random() * 100)}`,
+            `${pulseId}.${new Date().getFullYear() % 100}`
+          ];
           
-          // Update state only if pulseId still matches what we checked
-          if (currentPulseId === pulseId) {
-            setPulseIdAvailable(!isTaken);
-            
-            if (isTaken) {
-              const suggestions = [
-                `${pulseId}_${Math.floor(Math.random() * 1000)}`,
-                `${pulseId}${Date.now().toString().slice(-4)}`,
-                `${pulseId}123`,
-              ];
-              setPulseIdSuggestions(suggestions);
-            } else {
-              setPulseIdSuggestions([]);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking PulseID availability:', error);
-        // On error, assume ID is available to avoid blocking registration
-        if (currentPulseId === pulseId) {
+          setPulseIdSuggestions(suggestions);
+          setPulseIdAvailable(false);
+        } else {
           setPulseIdAvailable(true);
           setPulseIdSuggestions([]);
         }
+      } catch (error) {
+        console.error('Error checking PulseID:', error);
+        // On error, assume ID is not taken to avoid blocking registration
+        setPulseIdAvailable(true);
       } finally {
-        // Only update checking state if pulseId hasn't changed
-        if (currentPulseId === pulseId) {
-          setIsCheckingPulseId(false);
-        }
+        setIsCheckingPulseId(false);
       }
-    }, 600);
+    }, 500);
     
     return () => {
       if (pulseIdCheckTimeoutRef.current) {
@@ -95,26 +90,34 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();
     setPulseId(value);
+    
+    // Only mark as touched if user has entered a valid length pulseId
+    if (value.length >= 3 && !pulseIdTouched) {
+      setPulseIdTouched(true);
+    }
   };
   
-  const handleSuggestionClick = (suggestion: string) => {
+  const selectSuggestion = (suggestion: string) => {
     setPulseId(suggestion);
+    lastCheckedPulseIdRef.current = suggestion; // Update the last checked ref
+    setPulseIdAvailable(true);
+    setPulseIdSuggestions([]);
   };
   
   return (
     <div className="space-y-2">
-      <Label htmlFor="pulseid">VoiceMate ID</Label>
+      <Label htmlFor="pulseId">PulseID</Label>
       <div className="relative">
-        <Input 
-          id="pulseid" 
-          type="text" 
-          placeholder="yourname" 
-          className="bg-black/30 border-gray-700 text-white"
+        <Input
+          id="pulseId"
+          type="text"
           value={pulseId}
           onChange={handlePulseIdChange}
-          onBlur={() => setPulseIdTouched(true)}
-          required
+          onBlur={() => pulseId.length >= 1 && setPulseIdTouched(true)}
+          placeholder="Enter your unique PulseID"
+          className="bg-black/30 border-gray-700 pr-10"
           disabled={registrationInProgress}
+          required
         />
         {isCheckingPulseId && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -131,20 +134,30 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           </div>
         )}
       </div>
-      <p className="text-xs text-gray-400">
-        Choose a unique ID for your VoiceMate. This will be your identity on the platform.
-      </p>
+      
       {pulseIdTouched && pulseId.length > 0 && pulseId.length < 3 && (
-        <FormFeedback
-          type="warning"
-          message="ID must be at least 3 characters"
-        />
+        <FormFeedback variant="warning">
+          PulseID must be at least 3 characters
+        </FormFeedback>
       )}
-      {pulseIdAvailable === false && pulseIdSuggestions.length > 0 && (
+      
+      {pulseIdTouched && !pulseIdAvailable && !isCheckingPulseId && pulseId.length >= 3 && (
+        <FormFeedback variant="error">
+          This PulseID is already taken
+        </FormFeedback>
+      )}
+      
+      {pulseIdSuggestions.length > 0 && (
         <PulseIdSuggestions 
           suggestions={pulseIdSuggestions}
-          onSelectSuggestion={handleSuggestionClick}
+          onSelect={selectSuggestion}
         />
+      )}
+      
+      {pulseIdTouched && pulseIdAvailable && !isCheckingPulseId && pulseId.length >= 3 && (
+        <FormFeedback variant="success">
+          This PulseID is available!
+        </FormFeedback>
       )}
     </div>
   );

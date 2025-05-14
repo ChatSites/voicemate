@@ -46,6 +46,7 @@ export const cleanupAuthState = () => {
 
 /**
  * Check if an email is already registered using format check only
+ * IMPORTANT: This function only does format validation to avoid 429 rate limits
  */
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
@@ -66,12 +67,26 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 
 /**
  * Check if a PulseID is already taken by another user
+ * Includes rate limiting protection
  */
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     // Skip validation for very short pulse IDs to avoid unnecessary requests
     if (pulseId.length < 3) {
       return false;
+    }
+    
+    // Use a cache timestamp to limit API calls
+    const cacheKey = `pulseId_check_${pulseId}`;
+    const cachedResult = localStorage.getItem(cacheKey);
+    
+    if (cachedResult) {
+      const { result, timestamp } = JSON.parse(cachedResult);
+      
+      // Use cached result if less than 30 seconds old
+      if (Date.now() - timestamp < 30000) {
+        return result;
+      }
     }
     
     const { data, error, status } = await supabase
@@ -84,7 +99,15 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       throw error;
     }
     
-    return !!data; // If data exists, the pulseId is taken
+    const result = !!data;
+    
+    // Cache the result for 30 seconds
+    localStorage.setItem(cacheKey, JSON.stringify({
+      result,
+      timestamp: Date.now()
+    }));
+    
+    return result;
   } catch (error) {
     console.error('Error checking PulseID:', error);
     // On error, assume ID is not taken to avoid blocking registration

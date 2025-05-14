@@ -25,6 +25,11 @@ export const useRegistrationHandler = (
     
     // Form validation
     if (!validateRegistrationForm(formState)) {
+      toast({
+        title: "Please complete all fields",
+        description: "Make sure all fields are filled out properly before registering.",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -75,8 +80,8 @@ export const useRegistrationHandler = (
         description: "Welcome to VoiceMate!",
       });
       
-      // Always navigate to dashboard on successful registration
-      navigate('/dashboard');
+      // Navigate to dashboard on successful registration
+      setTimeout(() => navigate('/dashboard'), 500);
       
     } catch (error: any) {
       console.error('Registration error:', error);
