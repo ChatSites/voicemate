@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Inbox, Send, PieChart, ArrowRight, Loader2 } from 'lucide-react';
+import { Inbox, Send, PieChart, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -14,6 +14,15 @@ export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useUserProfile();
   const navigate = useNavigate();
+
+  // Add debugging information
+  React.useEffect(() => {
+    console.log("Dashboard render - Auth loading:", authLoading);
+    console.log("Dashboard render - User:", user);
+    console.log("Dashboard render - Profile loading:", profileLoading);
+    console.log("Dashboard render - Profile:", profile);
+    console.log("Dashboard render - Profile error:", profileError);
+  }, [authLoading, user, profileLoading, profile, profileError]);
 
   // Redirect to auth page if not authenticated and not still loading
   React.useEffect(() => {
@@ -31,12 +40,12 @@ export default function Dashboard() {
   }, [authLoading, user, navigate]);
 
   // Show loading state while authentication or profile is being checked
-  if (authLoading || (profileLoading && user)) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-voicemate-purple" />
-          <p className="text-white">Loading your dashboard...</p>
+          <p className="text-white">Checking authentication...</p>
         </div>
       </div>
     );
@@ -48,10 +57,44 @@ export default function Dashboard() {
     return <div className="min-h-screen bg-black"></div>;
   }
 
-  // Handle profile error
-  if (profileError && user) {
-    console.error("Failed to load profile:", profileError);
+  // Show loading state for profile separately
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-black">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 pb-12 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-voicemate-purple" />
+            <p className="text-white">Loading your profile data...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // Handle profile error
+  if (profileError) {
+    console.error("Failed to load profile:", profileError);
+    return (
+      <div className="min-h-screen bg-black">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 pb-12 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+            <h2 className="text-xl font-bold text-white mb-2">Profile Error</h2>
+            <p className="text-gray-300 mb-4">There was a problem loading your profile data.</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default value for username in case profile data is incomplete
+  const displayName = profile?.name || user.email?.split('@')[0] || 'User';
+  const displayPulseId = profile?.pulse_id || 'loading...';
 
   return (
     <div className="min-h-screen bg-black">
@@ -64,10 +107,10 @@ export default function Dashboard() {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-white">
-            Welcome, {profile?.name || user.email?.split('@')[0] || 'User'}
+            Welcome, {displayName}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            @{profile?.pulse_id || 'loading...'}
+            @{displayPulseId}
           </p>
           <p className="text-muted-foreground mt-2">
             Manage your voice messages and interactions

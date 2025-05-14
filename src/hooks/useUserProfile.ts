@@ -18,12 +18,15 @@ export const useUserProfile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user?.id) {
-        setLoading(false);
-        return;
-      }
-
       try {
+        if (!user?.id) {
+          console.log("No user ID available for profile fetch");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Fetching profile for user ID:", user.id);
+
         // Only select columns that exist in the users table
         const { data, error: profileError } = await supabase
           .from('users')
@@ -35,10 +38,21 @@ export const useUserProfile = () => {
           console.error("Profile fetch error:", profileError);
           setError(profileError.message);
         } else if (data) {
+          console.log("Profile data received:", data);
           const userProfile: UserProfile = {
             id: data.id,
+            // Use user metadata if available, otherwise fall back to profile data
             name: user.user_metadata?.full_name ?? data.name ?? null,
             pulse_id: data.pulse_id ?? null,
+          };
+          setProfile(userProfile);
+        } else {
+          console.log("No profile data found for user");
+          // Handle case where user exists in auth but not in users table
+          const userProfile: UserProfile = {
+            id: user.id,
+            name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? null,
+            pulse_id: user.user_metadata?.pulse_id ?? null,
           };
           setProfile(userProfile);
         }
