@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FormFeedback from '@/components/ui/form-feedback';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 type PasswordInputProps = {
   password: string;
@@ -115,6 +116,11 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
           )}
         </Button>
       </div>
+      
+      {/* Add the password strength indicator */}
+      {password.length > 0 && (
+        <PasswordStrengthIndicator password={password} />
+      )}
       
       {renderPasswordRequirements()}
     </div>
