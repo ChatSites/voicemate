@@ -85,7 +85,7 @@ const RecordingArea: React.FC<RecordingAreaProps> = ({
                         key={index}
                         variant="outline"
                         size="sm"
-                        className="border-gray-700 hover:bg-gray-800 whitespace-nowrap"
+                        className="border-gray-700 hover:bg-gray-800 hover:text-white whitespace-nowrap"
                         onClick={() => handleCTAClick(cta)}
                       >
                         {cta.label}

@@ -101,7 +101,6 @@ const PulseForm: React.FC<PulseFormProps> = ({
         </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
-        {/* Remove the duplicate CTAs section here - they're already shown in RecordingArea */}
         <Button 
           className="bg-voicemate-purple hover:bg-purple-700 text-white w-full"
           disabled={!recordingData || isSending || !pulseTitle.trim()}
