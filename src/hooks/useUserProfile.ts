@@ -7,10 +7,9 @@ export interface UserProfile {
   id: string;
   name: string | null;
   pulse_id: string | null;
-  created_at?: string; // ✅ Optional
-  avatar_url?: string | null; // ✅ Optional
+  created_at?: string; // ✅ Added as optional property
+  avatar_url?: string | null; // ✅ Added as optional property
 }
-
 
 export const useUserProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -27,11 +26,10 @@ export const useUserProfile = () => {
 
       try {
         const { data, error: profileError } = await supabase
-  .from<UserProfile>('users')
-  .select('id, name, pulse_id, created_at, avatar_url')
-  .eq('id', user.id)
-  .maybeSingle();
-
+          .from('users')
+          .select('id, name, pulse_id, created_at, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
 
         if (profileError) {
           setError(profileError.message);
