@@ -18,6 +18,13 @@ export default function Dashboard() {
     displayPulseId
   } = useDashboardAuth();
 
+  // Consistent logging with the hook
+  console.info('Dashboard component - Auth loading:', isLoading);
+  console.info('Dashboard component - isAuthenticated:', isAuthenticated);
+  console.info('Dashboard component - Profile loading:', isProfileLoading);
+  console.info('Dashboard component - Has profile error:', hasProfileError);
+  console.info('Dashboard component - Profile error message:', profileErrorMessage);
+
   // Show loading state while authentication is being checked
   if (isLoading) {
     return <DashboardLoading message="Checking authentication..." />;
