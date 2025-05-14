@@ -1,11 +1,10 @@
 
 import React, { useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Send, Lightbulb } from 'lucide-react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import RecordingArea from './RecordingArea';
+import FormHeader from './FormHeader';
+import FormFields from './FormFields';
+import SendButton from './SendButton';
 import { CTAVariant } from './types/speechRecognition';
 
 interface PulseFormProps {
@@ -67,24 +66,15 @@ const PulseForm: React.FC<PulseFormProps> = ({
 
   return (
     <Card className="bg-voicemate-card border-gray-800">
-      <CardHeader>
-        <CardTitle>Record Voice Message</CardTitle>
-        <CardDescription>Record a clear message for the best experience</CardDescription>
-      </CardHeader>
+      <FormHeader />
+      
       <CardContent>
         <div className="space-y-4">
-          <Input
-            placeholder="Pulse Title"
-            value={pulseTitle}
-            onChange={(e) => onTitleChange(e.target.value)}
-            className="bg-black/20 border-gray-700"
-          />
-          
-          <Textarea
-            placeholder="Description (optional)"
-            value={pulseDescription}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            className="bg-black/20 border-gray-700 min-h-[120px]"
+          <FormFields
+            pulseTitle={pulseTitle}
+            pulseDescription={pulseDescription}
+            onTitleChange={onTitleChange}
+            onDescriptionChange={onDescriptionChange}
           />
           
           <RecordingArea
@@ -100,20 +90,13 @@ const PulseForm: React.FC<PulseFormProps> = ({
           />
         </div>
       </CardContent>
+      
       <CardFooter className="flex flex-col space-y-4">
-        <Button 
-          className="bg-voicemate-purple hover:bg-purple-700 text-white w-full"
+        <SendButton 
           disabled={!recordingData || isSending || !pulseTitle.trim()}
-          onClick={onSendPulse}
-        >
-          {isSending ? (
-            <>Sending Pulse...</>
-          ) : (
-            <>
-              <Send className="mr-2 h-4 w-4" /> Send Pulse
-            </>
-          )}
-        </Button>
+          isSending={isSending}
+          onSendPulse={onSendPulse}
+        />
       </CardFooter>
     </Card>
   );
