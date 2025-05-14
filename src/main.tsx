@@ -11,6 +11,8 @@ const root = createRoot(document.getElementById("root")!);
 // Render the application with providers
 root.render(
   <ThemeProvider>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </ThemeProvider>
 );

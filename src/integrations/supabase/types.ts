@@ -83,16 +83,19 @@ export type Database = {
       }
       users: {
         Row: {
+          email: string | null
           id: string
           name: string | null
           pulse_id: string | null
         }
         Insert: {
+          email?: string | null
           id?: string
           name?: string | null
           pulse_id?: string | null
         }
         Update: {
+          email?: string | null
           id?: string
           name?: string | null
           pulse_id?: string | null
