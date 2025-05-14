@@ -56,46 +56,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log('Auth state changed:', event);
-        
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Signed in successfully",
-            description: "Welcome back!"
-          });
-        } else if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Signed out",
-            description: "You have been signed out"
-          });
-        } else if (event === 'USER_UPDATED') {
-          toast({
-            title: "Account updated",
-            description: "Your account information has been updated"
-          });
+    const setupAuth = async () => {
+      // Set up auth state listener FIRST
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, currentSession) => {
+          console.log('Auth state changed:', event);
+          
+          if (event === 'SIGNED_IN') {
+            toast({
+              title: "Signed in successfully",
+              description: "Welcome back!"
+            });
+          } else if (event === 'SIGNED_OUT') {
+            toast({
+              title: "Signed out",
+              description: "You have been signed out"
+            });
+          } else if (event === 'USER_UPDATED') {
+            toast({
+              title: "Account updated",
+              description: "Your account information has been updated"
+            });
+          }
+          
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          setLoading(false);
         }
-        
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setLoading(false);
-      }
-    );
+      );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log('Got existing session:', currentSession ? 'yes' : 'no');
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      // THEN check for existing session
+      const { data } = await supabase.auth.getSession();
+      console.log('Got existing session:', data.session ? 'yes' : 'no');
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
       setLoading(false);
-    });
 
-    return () => {
-      subscription.unsubscribe();
+      return () => {
+        subscription.unsubscribe();
+      };
     };
+
+    setupAuth();
   }, []);
+
+  console.log('AuthContext state:', { hasUser: !!user, isLoading: loading });
 
   return (
     <AuthContext.Provider value={{ session, user, loading, signOut }}>

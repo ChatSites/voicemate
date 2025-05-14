@@ -1,32 +1,56 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Inbox, Send, PieChart, ArrowRight } from 'lucide-react';
+import { Inbox, Send, PieChart, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { toast } from "@/components/ui/use-toast";
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useUserProfile();
   const navigate = useNavigate();
 
+  // Redirect to auth page if not authenticated and not still loading
   React.useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
+      console.log("No authenticated user found, redirecting to auth page");
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to access the dashboard",
+        variant: "destructive"
+      });
       navigate('/auth');
+    } else if (user) {
+      console.log("Authenticated user found:", user.email);
     }
-  }, [loading, user, navigate]);
+  }, [authLoading, user, navigate]);
 
-  if (loading || profileLoading) {
+  // Show loading state while authentication or profile is being checked
+  if (authLoading || (profileLoading && user)) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground">Loading your dashboard...</p>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-voicemate-purple" />
+          <p className="text-white">Loading your dashboard...</p>
         </div>
       </div>
     );
+  }
+
+  // If no user is authenticated, this will trigger the redirect in useEffect
+  // But we return an empty div to prevent flash of content
+  if (!user) {
+    return <div className="min-h-screen bg-black"></div>;
+  }
+
+  // Handle profile error
+  if (profileError && user) {
+    console.error("Failed to load profile:", profileError);
   }
 
   return (
@@ -39,8 +63,8 @@ export default function Dashboard() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold">
-            Welcome, {profile?.name ? profile.name : 'VoiceMate'}
+          <h1 className="text-3xl font-bold text-white">
+            Welcome, {profile?.name || user.email?.split('@')[0] || 'User'}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             @{profile?.pulse_id || 'loading...'}
