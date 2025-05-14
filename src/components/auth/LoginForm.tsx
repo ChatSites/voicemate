@@ -23,6 +23,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
     setLoading(true);
     
     try {
+      console.log("Login attempt with:", loginEmail);
+      
       // Clean up existing state
       cleanupAuthState();
       
@@ -31,6 +33,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         // Continue even if this fails
+        console.error("Sign out before login failed:", err);
       }
       
       // Sign in with email/password
@@ -38,6 +41,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
         email: loginEmail,
         password: loginPassword,
       });
+      
+      console.log("Login response:", { data, error });
       
       if (error) throw error;
       
@@ -49,6 +54,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
         navigate('/');
       }
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: error?.message || "Please check your credentials and try again",
