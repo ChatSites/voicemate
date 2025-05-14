@@ -93,15 +93,16 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
       // This fixes the type error with Supabase's Json type
       const ctasForDb = JSON.parse(JSON.stringify(suggestedCTAs));
 
-      // Insert the record into the pulses table
+      // Insert the record into the pulses table - MODIFIED to match actual schema
+      // Removed 'description' field which doesn't exist in the database
       const { data: pulseData, error: insertError } = await supabase
         .from('pulses')
         .insert({
           audio_url: audioUrl,
           transcript: transcription || "No transcript available",
-          title: pulseTitle,
-          description: pulseDescription,
+          title: pulseTitle, // We're storing this in the database but it's not actually used yet
           pulse_id: userPulseId,
+          intent: pulseDescription || null, // Store description as intent for now
           ctas: ctasForDb
         })
         .select();
