@@ -7,9 +7,10 @@ export interface UserProfile {
   id: string;
   name: string | null;
   pulse_id: string | null;
-  created_at?: string;
-  avatar_url?: string | null;
+  created_at?: string; // ✅ Optional
+  avatar_url?: string | null; // ✅ Optional
 }
+
 
 export const useUserProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
