@@ -35,30 +35,21 @@ const EmailInput: React.FC<EmailInputProps> = ({
       clearTimeout(emailCheckTimeoutRef.current);
     }
 
+    // Only proceed with validation if the field has been touched
+    if (!isTouched) {
+      return;
+    }
+
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValidFormat = emailRegex.test(email);
     
-    if (!isValidFormat) {
-      if (email.length > 0 && isTouched) {
-        setIsEmailValid(false);
-      } else {
-        setIsEmailValid(null);
-      }
-      return;
-    }
-
-    // For formatted emails that are touched, mark as valid immediately
-    if (isValidFormat && isTouched) {
-      setIsCheckingEmail(true);
-      
-      emailCheckTimeoutRef.current = setTimeout(() => {
-        setIsEmailValid(true);
-        setIsCheckingEmail(false);
-      }, 300);
-    } else if (!isTouched) {
-      setIsEmailValid(null);
-    }
+    setIsCheckingEmail(true);
+    
+    emailCheckTimeoutRef.current = setTimeout(() => {
+      setIsEmailValid(isValidFormat);
+      setIsCheckingEmail(false);
+    }, 300);
 
     return () => {
       if (emailCheckTimeoutRef.current) {

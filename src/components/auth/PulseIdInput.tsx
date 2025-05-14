@@ -33,13 +33,8 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   // Check PulseID availability without causing infinite loops
   useEffect(() => {
     // Skip checks if pulseId doesn't meet minimum requirements or registration is in progress
-    if (!pulseId || pulseId.length < 3 || registrationInProgress) {
+    if (!pulseId || pulseId.length < 3 || registrationInProgress || !pulseIdTouched) {
       return;
-    }
-    
-    // Mark touched if user has entered a valid length pulseId
-    if (!pulseIdTouched && pulseId.length >= 3) {
-      setPulseIdTouched(true);
     }
     
     // Clear any existing timeout to prevent multiple checks
@@ -95,7 +90,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         clearTimeout(pulseIdCheckTimeoutRef.current);
       }
     };
-  }, [pulseId, registrationInProgress]);
+  }, [pulseId, registrationInProgress, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();
@@ -126,7 +121,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
             <Loader2 className="h-4 w-4 text-voicemate-purple animate-spin" />
           </div>
         )}
-        {!isCheckingPulseId && pulseIdAvailable !== null && pulseId.length >= 3 && (
+        {!isCheckingPulseId && pulseIdAvailable !== null && pulseId.length >= 3 && pulseIdTouched && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             {pulseIdAvailable ? (
               <CircleCheck className="h-4 w-4 text-green-500" />

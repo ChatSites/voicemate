@@ -49,14 +49,14 @@ export const cleanupAuthState = () => {
  */
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
-    // Simple format check - don't call Supabase API to avoid rate limits
+    // Only do format validation to avoid rate limits
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return false; // Invalid email format
     }
     
-    // Consider all properly formatted emails as valid for registration
-    // This avoids hitting rate limits with the Supabase API
+    // Don't actually check with Supabase to avoid rate limits
+    // Just return false to allow registration attempt
     return false;
   } catch (error) {
     console.error('Error checking email existence:', error);
@@ -69,8 +69,13 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
  */
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
+    // Skip validation for very short pulse IDs to avoid unnecessary requests
+    if (pulseId.length < 3) {
+      return false;
+    }
+    
     const { data, error, status } = await supabase
-      .from('users')  // Using 'users' table since that's what exists in your DB
+      .from('users')
       .select('id')
       .eq('pulse_id', pulseId)
       .maybeSingle();
