@@ -32,7 +32,7 @@ export const useDashboardAuth = () => {
   // Add debugging information
   useEffect(() => {
     console.log("Dashboard auth hook - Auth loading:", authLoading);
-    console.log("Dashboard auth hook - User:", user);
+    console.log("Dashboard auth hook - User:", user ? 'authenticated' : 'not authenticated');
     console.log("Dashboard auth hook - Profile loading:", profileLoading);
     console.log("Dashboard auth hook - Profile:", profile);
     console.log("Dashboard auth hook - Profile error:", profileError);

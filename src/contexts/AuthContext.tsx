@@ -56,6 +56,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('Setting up AuthContext...');
+    
     const setupAuth = async () => {
       // Set up auth state listener FIRST
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -88,6 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // THEN check for existing session
       const { data } = await supabase.auth.getSession();
       console.log('Got existing session:', data.session ? 'yes' : 'no');
+      if (data.session) {
+        console.log('Session user:', data.session.user.email);
+      }
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
@@ -100,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setupAuth();
   }, []);
 
-  console.log('AuthContext state:', { hasUser: !!user, isLoading: loading });
+  console.log('AuthContext state:', { hasUser: !!user, isLoading: loading, userEmail: user?.email });
 
   return (
     <AuthContext.Provider value={{ session, user, loading, signOut }}>

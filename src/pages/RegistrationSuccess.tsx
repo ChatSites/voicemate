@@ -11,23 +11,32 @@ const RegistrationSuccess = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
+  // Handle dashboard navigation - use direct path instead of relative navigation
   const handleGoToDashboard = () => {
-    navigate('/dashboard');
+    // Force navigation to the absolute path
+    window.location.href = '/dashboard';
   };
+
+  // Log authentication state for debugging
+  console.log('RegistrationSuccess - Auth loading:', loading);
+  console.log('RegistrationSuccess - User:', user);
 
   // Redirect authenticated users directly to dashboard
   useEffect(() => {
     if (!loading) {
       // If user is authenticated, navigate to dashboard after short delay
       if (user) {
+        console.log('User is authenticated, will navigate to dashboard soon');
         const timer = setTimeout(() => {
-          navigate('/dashboard');
+          window.location.href = '/dashboard';
         }, 2000);
         
         return () => clearTimeout(timer);
+      } else {
+        console.log('User is not authenticated yet');
       }
     }
-  }, [loading, navigate, user]);
+  }, [loading, user]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
