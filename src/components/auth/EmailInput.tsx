@@ -25,7 +25,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
   const [isTouched, setIsTouched] = useState(false);
   const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Email validation with existence check
+  // Email validation - simpler approach to avoid rate limits
   useEffect(() => {
     if (registrationInProgress || !email) {
       return;
@@ -38,7 +38,9 @@ const EmailInput: React.FC<EmailInputProps> = ({
 
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const isValidFormat = emailRegex.test(email);
+    
+    if (!isValidFormat) {
       if (email.length > 0 && isTouched) {
         setIsEmailValid(false);
       } else {
@@ -48,23 +50,14 @@ const EmailInput: React.FC<EmailInputProps> = ({
       return;
     }
 
-    // Only check with the server if the email format is valid
-    // and we have at least 5 characters (to avoid unnecessary checks)
-    if (email.length >= 5 && isTouched) {
+    // Only check if the email is properly formatted and touched
+    if (isValidFormat && isTouched) {
       setIsCheckingEmail(true);
       
       emailCheckTimeoutRef.current = setTimeout(async () => {
         try {
-          console.log('Checking if email is registered:', email);
-          const isRegistered = await isEmailRegistered(email);
-          console.log('Email registration check result:', isRegistered);
-          
-          // If isRegistered is true, email exists and is NOT valid for registration
-          // If isRegistered is false, email doesn't exist and IS valid for registration
-          setIsEmailValid(!isRegistered);
-        } catch (error) {
-          console.error('Error checking email availability:', error);
-          // On error, assume email is valid to allow form submission
+          // Consider all properly formatted emails as valid for registration
+          // This avoids the rate limit issues with Supabase
           setIsEmailValid(true);
         } finally {
           setIsCheckingEmail(false);
@@ -115,7 +108,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
       {isEmailValid === false && isTouched && (
         <FormFeedback 
           type="error"
-          message="This email is already registered or is invalid. Please use another email."
+          message="Please enter a valid email address."
         />
       )}
     </div>
