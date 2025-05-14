@@ -1,8 +1,10 @@
+
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = React.useState(false);
@@ -31,34 +33,35 @@ export default function Navbar() {
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled 
-            ? "bg-black/80 backdrop-blur-md border-b border-border/50" 
-            : "bg-transparent"
+            ? "bg-black/80 dark:bg-black/80 backdrop-blur-md border-b border-border/50" 
+            : "bg-transparent dark:bg-transparent"
         }`}
       >
         <div className="container mx-auto flex justify-between items-center py-4">
           <a href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-white">VoiceMate</span>
+            <span className="text-xl font-bold text-white dark:text-white">VoiceMate</span>
             {profile?.pulse_id && (
-              <span className="text-sm text-voicemate-purple">@{profile.pulse_id}</span>
+              <span className="text-sm text-voicemate-purple dark:text-voicemate-purple">@{profile.pulse_id}</span>
             )}
           </a>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#how-it-works" className="text-sm text-gray-200 hover:text-white transition-colors">
+            <a href="#how-it-works" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
               How It Works
             </a>
-            <a href="#use-cases" className="text-sm text-gray-200 hover:text-white transition-colors">
+            <a href="#use-cases" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
               Use Cases
             </a>
 
             {user ? (
               <>
-                <a href="/dashboard" className="text-sm text-gray-200 hover:text-white transition-colors">Dashboard</a>
-                <a href="/create" className="text-sm text-gray-200 hover:text-white transition-colors">Send Pulse</a>
-                <a href="/inbox" className="text-sm text-gray-200 hover:text-white transition-colors">Inbox</a>
+                <a href="/dashboard" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">Dashboard</a>
+                <a href="/create" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">Send Pulse</a>
+                <a href="/inbox" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">Inbox</a>
                 {profile?.name && (
-                  <span className="text-sm text-gray-400 italic">{profile.name}</span>
+                  <span className="text-sm text-gray-400 dark:text-gray-400 italic">{profile.name}</span>
                 )}
+                <ThemeToggle />
                 <Button 
                   variant="destructive" 
                   size="sm" 
@@ -70,9 +73,10 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <a href="/reserve" className="text-sm text-gray-200 hover:text-white transition-colors">
+                <a href="/reserve" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
                   Reserve PulseID
                 </a>
+                <ThemeToggle />
                 <Button 
                   variant="destructive" 
                   size="sm" 
@@ -85,36 +89,39 @@ export default function Navbar() {
             )}
           </nav>
 
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="md:hidden border-gray-700"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" x2="20" y1="12" y2="12" />
-              <line x1="4" x2="20" y1="6" y2="6" />
-              <line x1="4" x2="20" y1="18" y2="18" />
-            </svg>
-          </Button>
+          <div className="md:hidden flex items-center gap-4">
+            <ThemeToggle />
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="border-gray-700 dark:border-gray-700"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+            </Button>
+          </div>
         </div>
       </header>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-black border-t border-gray-800 px-4 py-6 space-y-4 transition-all duration-300 ease-in-out">
+        <div className="md:hidden bg-black dark:bg-black border-t border-gray-800 dark:border-gray-800 px-4 py-6 space-y-4 transition-all duration-300 ease-in-out">
           {user ? (
             <>
-              <div className="text-white text-sm">
+              <div className="text-white dark:text-white text-sm">
                 <span className="block font-semibold">@{profile?.pulse_id || 'loading'}</span>
                 <span className="block text-muted-foreground">{profile?.name}</span>
               </div>
-              <a href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 hover:text-white transition-colors">
+              <a href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
                 Dashboard
               </a>
-              <a href="/create" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 hover:text-white transition-colors">
+              <a href="/create" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
                 Send Pulse
               </a>
-              <a href="/inbox" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 hover:text-white transition-colors">
+              <a href="/inbox" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
                 Inbox
               </a>
               <Button 
@@ -131,7 +138,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <a href="/reserve" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 hover:text-white transition-colors">
+              <a href="/reserve" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
                 Reserve PulseID
               </a>
               <Button 

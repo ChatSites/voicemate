@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -147,6 +146,9 @@ export default {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'hero-pattern': 'linear-gradient(to bottom, rgba(12, 15, 19, 0.9), rgba(0, 0, 0, 1))',
         'glow-conic': 'conic-gradient(from 180deg at 50% 50%, #9b5de5, #fa4b53, #9b5de5)'
+      },
+      transitionProperty: {
+        'colors': 'color, background-color, border-color, text-decoration-color, fill, stroke',
       }
     }
   },

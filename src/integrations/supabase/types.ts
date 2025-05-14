@@ -99,6 +99,24 @@ export type Database = {
         }
         Relationships: []
       }
+      voiceprints: {
+        Row: {
+          created_at: string
+          embedding: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          embedding?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
