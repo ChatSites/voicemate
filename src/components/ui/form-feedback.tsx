@@ -34,4 +34,6 @@ const FormFeedback = ({ message, type = 'info', className }: FormFeedbackProps) 
   );
 };
 
+// Export as both default and named export for compatibility
+export { FormFeedback };
 export default FormFeedback;

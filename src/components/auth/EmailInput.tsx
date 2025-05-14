@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
-import { FormFeedback } from '@/components/ui/form-feedback';
+import FormFeedback from '@/components/ui/form-feedback';
 
 interface EmailInputProps {
   email: string;
@@ -23,19 +23,20 @@ const EmailInput: React.FC<EmailInputProps> = ({
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
   const emailCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCheckedEmailRef = useRef<string>('');
 
   // Validate email format when email changes
   useEffect(() => {
+    // Skip validation if the field hasn't been touched yet or email hasn't changed
+    if (!isTouched || email.length === 0 || lastCheckedEmailRef.current === email) {
+      return;
+    }
+
     // Clear any previous timeout to prevent multiple validations
     if (emailCheckTimeoutRef.current) {
       clearTimeout(emailCheckTimeoutRef.current);
     }
-
-    // Skip validation if the field hasn't been touched yet
-    if (!isTouched || email.length === 0) {
-      return;
-    }
-
+    
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValidFormat = emailRegex.test(email);
@@ -44,6 +45,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
     
     // Use timeout to debounce and prevent excessive state updates
     emailCheckTimeoutRef.current = setTimeout(() => {
+      lastCheckedEmailRef.current = email;
       setIsEmailValid(isValidFormat);
       setIsCheckingEmail(false);
     }, 300);
@@ -54,7 +56,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         clearTimeout(emailCheckTimeoutRef.current);
       }
     };
-  }, [email, isTouched, setIsEmailValid]); // Add proper dependencies
+  }, [email, isTouched, setIsEmailValid]);
 
   // Handle email input changes
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,9 +94,10 @@ const EmailInput: React.FC<EmailInputProps> = ({
         )}
       </div>
       {isEmailValid === false && isTouched && !isCheckingEmail && (
-        <FormFeedback variant="error">
-          Please enter a valid email address
-        </FormFeedback>
+        <FormFeedback
+          type="error"
+          message="Please enter a valid email address"
+        />
       )}
     </div>
   );

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
-import { FormFeedback } from '@/components/ui/form-feedback';
+import FormFeedback from '@/components/ui/form-feedback';
 import { isPulseIdTaken } from '@/integrations/supabase/client';
 import PulseIdSuggestions from './PulseIdSuggestions';
 
@@ -136,28 +136,31 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       </div>
       
       {pulseIdTouched && pulseId.length > 0 && pulseId.length < 3 && (
-        <FormFeedback variant="warning">
-          PulseID must be at least 3 characters
-        </FormFeedback>
+        <FormFeedback
+          type="warning"
+          message="PulseID must be at least 3 characters"
+        />
       )}
       
       {pulseIdTouched && !pulseIdAvailable && !isCheckingPulseId && pulseId.length >= 3 && (
-        <FormFeedback variant="error">
-          This PulseID is already taken
-        </FormFeedback>
+        <FormFeedback
+          type="error"
+          message="This PulseID is already taken"
+        />
       )}
       
       {pulseIdSuggestions.length > 0 && (
         <PulseIdSuggestions 
           suggestions={pulseIdSuggestions}
-          onSelect={selectSuggestion}
+          onSelectSuggestion={selectSuggestion}
         />
       )}
       
       {pulseIdTouched && pulseIdAvailable && !isCheckingPulseId && pulseId.length >= 3 && (
-        <FormFeedback variant="success">
-          This PulseID is available!
-        </FormFeedback>
+        <FormFeedback
+          type="success"
+          message="This PulseID is available!"
+        />
       )}
     </div>
   );
