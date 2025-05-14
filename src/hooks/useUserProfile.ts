@@ -27,10 +27,11 @@ export const useUserProfile = () => {
 
       try {
         const { data, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
+  .from<UserProfile>('users')
+  .select('id, name, pulse_id, created_at, avatar_url')
+  .eq('id', user.id)
+  .maybeSingle();
+
 
         if (profileError) {
           setError(profileError.message);
