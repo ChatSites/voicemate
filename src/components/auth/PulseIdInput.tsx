@@ -30,9 +30,16 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [pulseIdTouched, setPulseIdTouched] = useState(false);
   const pulseIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastCheckedPulseIdRef = useRef<string>('');
+  const isFirstRun = useRef(true);
 
   // Check PulseID availability without causing infinite loops
   useEffect(() => {
+    // Skip the first run to avoid immediate checks on component mount
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    
     // Skip checks if pulseId doesn't meet minimum requirements or not touched yet or registration in progress
     if (!pulseId || pulseId.length < 3 || registrationInProgress || !pulseIdTouched) {
       return;
@@ -49,7 +56,6 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     }
     
     setIsCheckingPulseId(true);
-    setPulseIdAvailable(null);
     
     // Use timeout to debounce and prevent excessive API calls
     pulseIdCheckTimeoutRef.current = setTimeout(async () => {
@@ -85,7 +91,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         clearTimeout(pulseIdCheckTimeoutRef.current);
       }
     };
-  }, [pulseId, registrationInProgress, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions]);
+  }, [pulseId, registrationInProgress, pulseIdTouched]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();

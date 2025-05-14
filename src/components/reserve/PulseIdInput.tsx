@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { isPulseIdTaken } from '@/integrations/supabase/client';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
@@ -21,19 +21,40 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [touched, setTouched] = useState(false);
+  const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCheckedPulseIdRef = useRef<string>('');
+  const isFirstRun = useRef(true);
   
   // Check PulseID availability whenever it changes
   useEffect(() => {
-    if (!pulseId || pulseId.length < 3) {
+    // Skip the first run to avoid immediate checks on component mount
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    
+    if (!pulseId || pulseId.length < 3 || !touched) {
       setIsAvailable(null);
       setPulseIdAvailable(null);
       return;
     }
     
+    // Skip if we already checked this exact pulse ID recently
+    if (lastCheckedPulseIdRef.current === pulseId) {
+      return;
+    }
+    
+    // Clear any existing timeout
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current);
+    }
+    
     setIsChecking(true);
     
-    const checkAvailability = async () => {
+    // Debounce to avoid too many API calls
+    checkTimeoutRef.current = setTimeout(async () => {
       try {
+        lastCheckedPulseIdRef.current = pulseId;
         const isTaken = await isPulseIdTaken(pulseId);
         setIsAvailable(!isTaken);
         setPulseIdAvailable(!isTaken);
@@ -56,12 +77,14 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       } finally {
         setIsChecking(false);
       }
-    };
+    }, 600);
     
-    // Debounce to avoid too many API calls
-    const timerId = setTimeout(checkAvailability, 600);
-    return () => clearTimeout(timerId);
-  }, [pulseId, setPulseIdAvailable]);
+    return () => {
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
+      }
+    };
+  }, [pulseId, touched]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove spaces and convert to lowercase
