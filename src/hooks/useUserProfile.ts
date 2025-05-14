@@ -1,6 +1,7 @@
+
 import { useEffect, useState } from 'react';
-import { supabase } from '../../integrations/supabase/client'; // Use relative if alias breaks
-import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client'; // Using @ alias instead of relative path
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface UserProfile {
   id: string;
@@ -25,11 +26,10 @@ export const useUserProfile = () => {
 
       try {
         const { data, error: profileError } = await supabase
-  .from<UserProfile>('users') // 👈 THIS is the fix
-  .select('*')
-  .eq('id', user.id)
-  .maybeSingle();
-
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
 
         if (profileError) {
           setError(profileError.message);
