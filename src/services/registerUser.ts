@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const registerUser = async (
@@ -34,7 +35,7 @@ export const registerUser = async (
       };
     }
 
-    // Step 2: Sign up user via Supabase Auth
+    // Step 2: Sign up user via Supabase Auth - ENSURE email confirmation is required
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -43,6 +44,7 @@ export const registerUser = async (
           full_name: fullName,
           pulse_id: pulseId,
         },
+        // Always redirect to auth/callback with signup type
         emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
       },
     });

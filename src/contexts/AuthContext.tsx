@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
+import { toast } from "@/components/ui/use-toast";
 
 type AuthContextType = {
   session: Session | null;
@@ -36,10 +37,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Ignore errors
       }
       
+      // Clear any toast notifications
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully"
+      });
+      
       // Force page reload for a clean state
       window.location.href = '/auth';
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "Sign out failed",
+        description: "There was an issue signing you out. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -48,6 +60,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log('Auth state changed:', event);
+        
+        if (event === 'SIGNED_IN') {
+          toast({
+            title: "Signed in successfully",
+            description: "Welcome back!"
+          });
+        } else if (event === 'SIGNED_OUT') {
+          toast({
+            title: "Signed out",
+            description: "You have been signed out"
+          });
+        } else if (event === 'USER_UPDATED') {
+          toast({
+            title: "Account updated",
+            description: "Your account information has been updated"
+          });
+        }
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);

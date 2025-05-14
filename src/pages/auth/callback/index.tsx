@@ -23,6 +23,7 @@ export default function AuthCallback() {
         
         // Handle auth redirect with code
         if (code) {
+          setMessage("Processing authentication...");
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           
           if (error) {
@@ -33,10 +34,16 @@ export default function AuthCallback() {
               description: error.message,
               variant: "destructive"
             });
+            setTimeout(() => navigate('/auth'), 3000);
             return;
           }
           
           console.log("Auth flow completed successfully", data);
+          setMessage("Authentication successful!");
+          toast({
+            title: "Authentication Successful",
+            description: "Your account has been verified!"
+          });
         } 
         // Handle hash-based redirects (older format)
         else if (location.hash) {
@@ -47,6 +54,7 @@ export default function AuthCallback() {
             
             if (accessToken) {
               console.log("Found access token in hash, setting session");
+              setMessage("Setting up your session...");
               // For recovery flow, don't set the session yet - just store the token
               // and redirect to the update password page
               if (type === 'recovery' || hashParams.get("type") === 'recovery') {
@@ -75,7 +83,7 @@ export default function AuthCallback() {
             setMessage("Welcome! Redirecting you to your dashboard...");
             toast({
               title: "Registration Successful",
-              description: "Your account has been created successfully."
+              description: "Your account has been created and verified successfully."
             });
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
@@ -128,7 +136,7 @@ export default function AuthCallback() {
                 navigate(`/update-password${location.hash}`);
               }, 1000);
             } else {
-              setMessage("Authentication complete.");
+              setMessage("Authentication complete. Redirecting to dashboard...");
               setTimeout(() => navigate("/dashboard"), 1500);
             }
             break;
@@ -138,9 +146,10 @@ export default function AuthCallback() {
         setMessage("Authentication process failed.");
         toast({
           title: "Authentication Failed",
-          description: "An error occurred during authentication.",
+          description: "An error occurred during authentication. Please try again.",
           variant: "destructive"
         });
+        setTimeout(() => navigate('/auth'), 3000);
       }
     };
 
