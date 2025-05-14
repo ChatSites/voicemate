@@ -1,8 +1,6 @@
-
 import { useEffect, useState } from 'react';
-// Fix the import path to point to the correct location
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '../../integrations/supabase/client'; // Use relative if alias breaks
+import { useAuth } from '../../contexts/AuthContext';
 
 export interface UserProfile {
   id: string;
@@ -27,7 +25,7 @@ export const useUserProfile = () => {
 
       try {
         const { data, error: profileError } = await supabase
-          .from('users')
+          .from<UserProfile>('users') // 👈 Fix is here
           .select('*')
           .eq('id', user.id)
           .maybeSingle();
