@@ -49,16 +49,24 @@ export const cleanupAuthState = () => {
  */
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
-    // We can't directly check auth.users, so we'll attempt a password reset
-    // If it returns success, the email exists
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+    console.log('Checking if email exists:', email);
+    
+    // Using signInWithOtp to check if email exists without sending a real reset
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email,
+      options: {
+        // Set shouldCreateUser to false so it only works for existing users
+        shouldCreateUser: false
+      }
     });
     
-    // If there's no error or it's not a "user not found" error, the email likely exists
-    return !error || !error.message.includes("not found");
+    // If there's no error or it's a specific error that indicates the user exists
+    const userExists = !error || (error.message && !error.message.includes("Email not confirmed"));
+    
+    console.log('Email check result:', userExists, 'Error:', error?.message);
+    return userExists;
   } catch (error) {
-    console.error('Error checking email:', error);
+    console.error('Error checking email existence:', error);
     // On error, assume email is not registered to avoid false positives
     return false;
   }

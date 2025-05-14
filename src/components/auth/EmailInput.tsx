@@ -41,6 +41,9 @@ const EmailInput: React.FC<EmailInputProps> = ({
     if (!emailRegex.test(email)) {
       if (email.length > 0 && isTouched) {
         setIsEmailValid(false);
+      } else {
+        // Reset validation state when email is emptied or not touched yet
+        setIsEmailValid(null);
       }
       return;
     }
@@ -52,7 +55,12 @@ const EmailInput: React.FC<EmailInputProps> = ({
       
       emailCheckTimeoutRef.current = setTimeout(async () => {
         try {
+          console.log('Checking if email is registered:', email);
           const isRegistered = await isEmailRegistered(email);
+          console.log('Email registration check result:', isRegistered);
+          
+          // If isRegistered is true, email exists and is NOT valid for registration
+          // If isRegistered is false, email doesn't exist and IS valid for registration
           setIsEmailValid(!isRegistered);
         } catch (error) {
           console.error('Error checking email availability:', error);
@@ -62,6 +70,9 @@ const EmailInput: React.FC<EmailInputProps> = ({
           setIsCheckingEmail(false);
         }
       }, 600);
+    } else if (!isTouched) {
+      // Reset validation if not touched yet
+      setIsEmailValid(null);
     }
 
     return () => {
@@ -69,7 +80,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         clearTimeout(emailCheckTimeoutRef.current);
       }
     };
-  }, [email, registrationInProgress, isTouched]);
+  }, [email, registrationInProgress, isTouched, setIsEmailValid]);
 
   return (
     <div className="space-y-2">
@@ -91,7 +102,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
             <Loader2 className="h-4 w-4 text-voicemate-purple animate-spin" />
           </div>
         )}
-        {!isCheckingEmail && isEmailValid !== null && (
+        {!isCheckingEmail && isEmailValid !== null && isTouched && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             {isEmailValid ? (
               <CircleCheck className="h-4 w-4 text-green-500" />

@@ -75,7 +75,7 @@ export const useRegistrationHandler = (
         description: "Welcome to VoiceMate!",
       });
       
-      // Navigate to dashboard directly
+      // Navigate to dashboard directly instead of registration success page
       navigate('/dashboard');
       
     } catch (error: any) {
