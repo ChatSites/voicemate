@@ -74,14 +74,14 @@ export const useRegistrationHandler = (
         }
       }
       
-      // Registration successful - show toast and navigate to dashboard
+      // Registration successful - show toast and navigate to success page
       toast({
         title: "Registration successful",
-        description: "Welcome to VoiceMate!",
+        description: "Please check your email to verify your account.",
       });
       
-      // Navigate to dashboard on successful registration
-      setTimeout(() => navigate('/dashboard'), 500);
+      // Navigate to registration success page
+      navigate('/registration-success');
       
     } catch (error: any) {
       console.error('Registration error:', error);

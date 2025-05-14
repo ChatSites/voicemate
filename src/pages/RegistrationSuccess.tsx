@@ -3,14 +3,14 @@ import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck } from 'lucide-react';
+import { CircleCheck, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const RegistrationSuccess = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Always direct to dashboard instead of auth
   const handleGoToDashboard = () => {
     navigate('/dashboard');
   };
@@ -18,15 +18,16 @@ const RegistrationSuccess = () => {
   // Redirect authenticated users directly to dashboard
   useEffect(() => {
     if (!loading) {
-      // If still loading, wait for auth state to resolve
-      // If not loading (regardless of user state), proceed to dashboard after short delay
-      const timer = setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000); // Short delay to show success message
-      
-      return () => clearTimeout(timer);
+      // If user is authenticated, navigate to dashboard after short delay
+      if (user) {
+        const timer = setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+        
+        return () => clearTimeout(timer);
+      }
     }
-  }, [loading, navigate]);
+  }, [loading, navigate, user]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -49,8 +50,15 @@ const RegistrationSuccess = () => {
           </CardHeader>
           
           <CardContent className="flex flex-col items-center">
+            <Alert className="mb-4 border-blue-500/20 bg-blue-500/10">
+              <Mail className="h-5 w-5 text-blue-500" />
+              <AlertDescription className="text-sm">
+                Check your email inbox for a verification link to complete your registration.
+              </AlertDescription>
+            </Alert>
+            
             <p className="text-center mb-6 text-gray-400">
-              Thank you for joining VoiceMate. You'll be redirected to the dashboard in a moment.
+              After verifying your email, you'll be able to access all features of VoiceMate.
             </p>
             
             <Button 
