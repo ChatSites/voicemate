@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CircleX, CircleCheck, Loader2 } from 'lucide-react';
+import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import { isEmailRegistered } from '@/integrations/supabase/client';
+import FormFeedback from '@/components/ui/form-feedback';
 
 type EmailInputProps = {
   email: string;
@@ -21,6 +22,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
   registrationInProgress
 }) => {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isTouched, setIsTouched] = useState(false);
 
   // Email validation with existence check
   useEffect(() => {
@@ -34,7 +36,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      if (email.length > 0) {
+      if (email.length > 0 && isTouched) {
         setIsEmailValid(false);
       }
       return;
@@ -63,7 +65,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
       const timerId = setTimeout(checkEmailAvailability, 600);
       return () => clearTimeout(timerId);
     }
-  }, [email, registrationInProgress, setIsEmailValid]);
+  }, [email, registrationInProgress, setIsEmailValid, isTouched]);
 
   return (
     <div className="space-y-2">
@@ -76,6 +78,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
           className="bg-black/30 border-gray-700 text-white"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => setIsTouched(true)}
           required
           disabled={registrationInProgress}
         />
@@ -94,8 +97,11 @@ const EmailInput: React.FC<EmailInputProps> = ({
           </div>
         )}
       </div>
-      {isEmailValid === false && (
-        <p className="text-sm text-red-400">This email is already registered or is invalid. Please use another email.</p>
+      {isEmailValid === false && isTouched && (
+        <FormFeedback 
+          type="error"
+          message="This email is already registered or is invalid. Please use another email."
+        />
       )}
     </div>
   );

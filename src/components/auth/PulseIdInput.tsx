@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import { isPulseIdTaken } from '@/integrations/supabase/client';
 import PulseIdSuggestions from './PulseIdSuggestions';
+import FormFeedback from '@/components/ui/form-feedback';
 
 type PulseIdInputProps = {
   pulseId: string;
@@ -97,6 +98,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           className="bg-black/30 border-gray-700 text-white"
           value={pulseId}
           onChange={handlePulseIdChange}
+          onBlur={() => setPulseIdTouched(true)}
           required
           disabled={registrationInProgress}
         />
@@ -119,7 +121,10 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         Choose a unique ID for your VoiceMate. This will be your identity on the platform.
       </p>
       {pulseIdTouched && pulseId.length > 0 && pulseId.length < 3 && (
-        <p className="text-sm text-amber-400">ID must be at least 3 characters</p>
+        <FormFeedback
+          type="warning"
+          message="ID must be at least 3 characters"
+        />
       )}
       {pulseIdAvailable === false && pulseIdSuggestions.length > 0 && (
         <PulseIdSuggestions 

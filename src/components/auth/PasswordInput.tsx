@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import FormFeedback from '@/components/ui/form-feedback';
 
 type PasswordInputProps = {
   password: string;
@@ -44,6 +45,44 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
+  
+  const renderPasswordRequirements = () => {
+    if (!passwordTouched || password.length === 0) return null;
+    
+    return (
+      <div className="mt-2">
+        {showLengthWarning && (
+          <FormFeedback
+            type="warning"
+            message="Password must be at least 8 characters"
+          />
+        )}
+        
+        {showComplexityWarning && (
+          <div className="space-y-1">
+            <FormFeedback
+              type="warning"
+              message="Password must include at least one of each:"
+            />
+            <ul className="list-disc list-inside ml-6 text-sm text-amber-400">
+              <li className={/[a-z]/.test(password) ? "text-green-500" : ""}>
+                Lowercase letter (a-z)
+              </li>
+              <li className={/[A-Z]/.test(password) ? "text-green-500" : ""}>
+                Uppercase letter (A-Z)
+              </li>
+              <li className={/[0-9]/.test(password) ? "text-green-500" : ""}>
+                Number (0-9)
+              </li>
+              <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password) ? "text-green-500" : ""}>
+                Special character (!@#$%^&*()_+-=[]{};&apos;:&quot;|\,&lt;&gt;?./`~)
+              </li>
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-2">
@@ -56,6 +95,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
           className="bg-black/30 border-gray-700 text-white pr-10"
           value={password}
           onChange={handleChange}
+          onBlur={() => setPasswordTouched(true)}
           required
           disabled={registrationInProgress}
         />
@@ -76,21 +116,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
         </Button>
       </div>
       
-      {showLengthWarning && (
-        <p className="text-sm text-amber-400">Password must be at least 8 characters</p>
-      )}
-      
-      {showComplexityWarning && (
-        <div className="text-sm text-amber-400">
-          <p>Password must include at least one of each:</p>
-          <ul className="list-disc list-inside ml-2">
-            <li>Lowercase letter (a-z)</li>
-            <li>Uppercase letter (A-Z)</li>
-            <li>Number (0-9)</li>
-            <li>Special character (!@#$%^&*()_+-=[]{};&apos;:&quot;|\,&lt;&gt;?./`~)</li>
-          </ul>
-        </div>
-      )}
+      {renderPasswordRequirements()}
     </div>
   );
 };

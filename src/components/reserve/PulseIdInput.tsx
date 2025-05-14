@@ -1,118 +1,127 @@
 
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { isPulseIdTaken } from '@/integrations/supabase/client';
-import { CircleCheck, CircleX } from 'lucide-react';
+import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import PulseIdSuggestions from './PulseIdSuggestions';
+import FormFeedback from '@/components/ui/form-feedback';
 
 type PulseIdInputProps = {
   pulseId: string;
-  setPulseId: (id: string) => void;
+  setPulseId: (value: string) => void;
   setPulseIdAvailable: (available: boolean | null) => void;
 }
 
-const PulseIdInput: React.FC<PulseIdInputProps> = ({ pulseId, setPulseId, setPulseIdAvailable }) => {
-  const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
-  const [pulseIdAvailable, setPulseIdAvailableLocal] = useState<boolean | null>(null);
-  const [pulseIdSuggestions, setPulseIdSuggestions] = useState<string[]>([]);
-
-  // Real-time PulseID verification
+const PulseIdInput: React.FC<PulseIdInputProps> = ({
+  pulseId,
+  setPulseId,
+  setPulseIdAvailable
+}) => {
+  const [isChecking, setIsChecking] = useState(false);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [touched, setTouched] = useState(false);
+  
+  // Check PulseID availability whenever it changes
   useEffect(() => {
-    const checkPulseId = async () => {
-      if (!pulseId || pulseId.length < 3) {
-        setPulseIdAvailableLocal(null);
-        setPulseIdAvailable(null);
-        setPulseIdSuggestions([]);
-        return;
-      }
-
-      setIsCheckingPulseId(true);
-      
+    if (!pulseId || pulseId.length < 3) {
+      setIsAvailable(null);
+      setPulseIdAvailable(null);
+      return;
+    }
+    
+    setIsChecking(true);
+    
+    const checkAvailability = async () => {
       try {
-        console.log(`Checking availability for PulseID: ${pulseId}`);
-        
         const isTaken = await isPulseIdTaken(pulseId);
-        const isAvailable = !isTaken;
+        setIsAvailable(!isTaken);
+        setPulseIdAvailable(!isTaken);
         
-        console.log(`PulseID ${pulseId} is ${isAvailable ? 'available' : 'taken'}`);
-        
-        setPulseIdAvailableLocal(isAvailable);
-        setPulseIdAvailable(isAvailable);
-        
-        // Generate suggestions if not available
-        if (!isAvailable) {
-          const suggestions = [
-            `${pulseId}${Math.floor(Math.random() * 100)}`,
-            `${pulseId}_${Math.floor(Math.random() * 100)}`,
-            `${pulseId}${Math.floor(Math.random() * 900) + 100}`,
+        if (isTaken) {
+          // Generate random variations as suggestions
+          const randomSuggestions = [
+            `${pulseId}_${Math.floor(Math.random() * 1000)}`,
+            `${pulseId}${Date.now().toString().slice(-4)}`,
+            `${pulseId}123`,
           ];
-          setPulseIdSuggestions(suggestions);
+          setSuggestions(randomSuggestions);
         } else {
-          setPulseIdSuggestions([]);
+          setSuggestions([]);
         }
       } catch (error) {
-        console.error('Error checking PulseID:', error);
-        setPulseIdAvailableLocal(null);
+        console.error('Error checking PulseID availability:', error);
+        setIsAvailable(null);
         setPulseIdAvailable(null);
       } finally {
-        setIsCheckingPulseId(false);
+        setIsChecking(false);
       }
     };
     
-    // Debounce the check to avoid too many requests
-    const timerId = setTimeout(checkPulseId, 500);
+    // Debounce to avoid too many API calls
+    const timerId = setTimeout(checkAvailability, 600);
     return () => clearTimeout(timerId);
   }, [pulseId, setPulseIdAvailable]);
   
-  const selectSuggestion = (suggestion: string) => {
-    setPulseId(suggestion);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove spaces and convert to lowercase
+    const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();
+    setPulseId(value);
+    if (!touched && value) {
+      setTouched(true);
+    }
   };
-
+  
   return (
-    <div className="space-y-3">
-      <Label htmlFor="pulse-id">Choose Your PulseID</Label>
-      <div className="flex">
-        <span className="inline-flex items-center px-3 text-sm bg-black/50 rounded-l-md border border-r-0 border-gray-700 text-gray-400">
-          pulse/
-        </span>
-        <div className="relative flex-1">
-          <Input 
-            id="pulse-id" 
-            placeholder="yourname" 
-            className={`rounded-l-none bg-black/30 border-gray-700 text-white ${
-              pulseIdAvailable === false ? "border-red-500 pr-9" : 
-              pulseIdAvailable === true ? "border-green-500 pr-9" : ""
-            }`}
-            value={pulseId}
-            onChange={(e) => setPulseId(e.target.value)}
-            required
-          />
-          {isCheckingPulseId && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="h-4 w-4 border-2 border-t-transparent border-voicemate-purple rounded-full animate-spin"></div>
-            </div>
-          )}
-          {!isCheckingPulseId && pulseIdAvailable !== null && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              {pulseIdAvailable ? (
-                <CircleCheck className="h-4 w-4 text-green-500" />
-              ) : (
-                <CircleX className="h-4 w-4 text-red-500" />
-              )}
-            </div>
-          )}
-        </div>
+    <div className="space-y-2">
+      <div className="relative">
+        <Input
+          placeholder="Choose your PulseID"
+          value={pulseId}
+          onChange={handleChange}
+          onBlur={() => setTouched(true)}
+          className="bg-black/30 border-gray-700 text-white pr-10"
+        />
+        {isChecking && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-4 w-4 text-voicemate-purple animate-spin" />
+          </div>
+        )}
+        {!isChecking && isAvailable !== null && pulseId.length >= 3 && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            {isAvailable ? (
+              <CircleCheck className="h-4 w-4 text-green-500" />
+            ) : (
+              <CircleX className="h-4 w-4 text-red-500" />
+            )}
+          </div>
+        )}
       </div>
-
-      {pulseId.length > 0 && pulseId.length < 3 && (
-        <p className="text-sm text-amber-400">PulseID must be at least 3 characters</p>
+      
+      {touched && pulseId.length > 0 && pulseId.length < 3 && (
+        <FormFeedback
+          type="warning"
+          message="ID must be at least 3 characters"
+        />
       )}
-
-      {pulseIdAvailable === false && pulseIdSuggestions.length > 0 && (
-        <PulseIdSuggestions 
-          suggestions={pulseIdSuggestions}
-          onSelectSuggestion={selectSuggestion}
+      
+      {isAvailable === false && suggestions.length > 0 && (
+        <div className="mt-2">
+          <FormFeedback
+            type="error"
+            message="This PulseID is already taken. Try one of these instead:"
+          />
+          <PulseIdSuggestions 
+            suggestions={suggestions} 
+            onSelectSuggestion={(suggestion) => setPulseId(suggestion)} 
+          />
+        </div>
+      )}
+      
+      {isAvailable === true && pulseId.length >= 3 && (
+        <FormFeedback
+          type="success"
+          message="This PulseID is available!"
         />
       )}
     </div>

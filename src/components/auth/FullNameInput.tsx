@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import FormFeedback from '@/components/ui/form-feedback';
 
 type FullNameInputProps = {
   fullName: string;
@@ -14,9 +15,14 @@ const FullNameInput: React.FC<FullNameInputProps> = ({
   setFullName,
   registrationInProgress
 }) => {
+  const [isTouched, setIsTouched] = useState(false);
+  
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFullName(e.target.value);
+    if (!isTouched) setIsTouched(true);
   };
+  
+  const showError = isTouched && fullName.length > 0 && fullName.length < 3;
 
   return (
     <div className="space-y-2">
@@ -25,16 +31,20 @@ const FullNameInput: React.FC<FullNameInputProps> = ({
         id="fullname" 
         type="text" 
         placeholder="John Doe" 
-        className={`bg-black/30 border-gray-700 ${
-          fullName.length > 0 && fullName.length < 3 ? "border-amber-500" : ""
+        className={`bg-black/30 border-gray-700 text-white ${
+          showError ? "border-amber-500" : ""
         }`}
         value={fullName}
         onChange={handleNameChange}
+        onBlur={() => setIsTouched(true)}
         required
         disabled={registrationInProgress}
       />
-      {fullName.length > 0 && fullName.length < 3 && (
-        <p className="text-sm text-amber-400">Name should be at least 3 characters</p>
+      {showError && (
+        <FormFeedback 
+          type="warning"
+          message="Name should be at least 3 characters"
+        />
       )}
     </div>
   );
