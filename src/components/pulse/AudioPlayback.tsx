@@ -100,7 +100,7 @@ const AudioPlayback: React.FC<AudioPlaybackProps> = ({ audioBlob, onReset }) => 
         <Button
           variant="outline"
           size="sm"
-          className="border-gray-700 bg-gray-800 hover:bg-gray-700 text-white hover:text-white"
+          className="border-voicemate-purple bg-voicemate-purple/20 hover:bg-voicemate-purple text-white hover:text-white"
           onClick={handlePlayPause}
           disabled={!audioLoaded}
         >
@@ -114,7 +114,7 @@ const AudioPlayback: React.FC<AudioPlaybackProps> = ({ audioBlob, onReset }) => 
         <Button
           variant="outline"
           size="sm"
-          className="border-gray-700 bg-gray-800 hover:bg-gray-700 text-white hover:text-white"
+          className="border-voicemate-purple bg-voicemate-purple/20 hover:bg-voicemate-purple text-white hover:text-white"
           onClick={onReset}
         >
           <Trash2 className="h-4 w-4" />
