@@ -9,7 +9,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  refreshSession: () => Promise<void>;
+  refreshSession: () => Promise<Session | null>; // Updated return type to match implementation
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signOut: async () => {},
-  refreshSession: async () => {},
+  refreshSession: async () => null, // Updated default implementation to return null
 });
 
 export const useAuth = () => useContext(AuthContext);
