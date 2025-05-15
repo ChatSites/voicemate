@@ -1,5 +1,6 @@
 
 import { useToast } from "@/components/ui/use-toast"
+import { __setToastContextValue } from "@/hooks/use-toast"
 import {
   Toast,
   ToastClose,
@@ -8,11 +9,31 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useEffect } from "react"
 
 export function Toaster() {
   // Add robust error handling to useToast
   const toastContext = useToast();
   const toasts = toastContext?.toasts || [];
+  
+  // Connect the toast context to the global toast function
+  useEffect(() => {
+    if (toastContext) {
+      // @ts-ignore - internal API
+      __setToastContextValue({
+        toasts: toastContext.toasts,
+        addToast: toastContext.toast,
+        updateToast: toastContext.update,
+        dismissToast: toastContext.dismiss,
+        removeToast: toastContext.remove,
+      });
+    }
+    
+    return () => {
+      // @ts-ignore - internal API
+      __setToastContextValue(null);
+    };
+  }, [toastContext]);
 
   return (
     <ToastProvider>

@@ -1,26 +1,12 @@
 
-// Re-export a simpler version from the hooks directory
-import { useToast as useToastOriginal, toast as toastFunction, ToastProvider } from "@/hooks/use-toast";
+// Re-export from either hooks or sonner based on the more stable implementation
+import { toast as toastImpl, useToast as useToastHook, ToastProvider } from "@/hooks/use-toast";
 import type { ToasterToast } from "@/hooks/use-toast";
 
-// Safe wrapper for useToast that won't crash if used outside provider
-export const useToast = () => {
-  try {
-    return useToastOriginal();
-  } catch (error) {
-    console.warn("Toast context not available");
-    // Return minimal implementation that won't crash
-    return {
-      toasts: [],
-      toast: () => "",
-      dismiss: () => {},
-      update: () => {},
-      remove: () => {},
-    };
-  }
-};
+// Export a safe toast function that won't throw errors
+export const useToast = useToastHook;
 
 // Export the toast function directly
-export const toast = toastFunction;
+export const toast = toastImpl;
 export { ToastProvider };
 export type { ToasterToast };

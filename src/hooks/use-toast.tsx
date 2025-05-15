@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,7 +8,7 @@ import {
 } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 2000; // Reduced delay to make toasts disappear faster
+const TOAST_REMOVE_DELAY = 2000; 
 
 type ToasterToast = Omit<ToastProps, "children"> & {
   id: string;
@@ -123,15 +122,7 @@ interface ToastContextType {
 }
 
 // Create context with default values
-const defaultValue: ToastContextType = {
-  toasts: [],
-  addToast: () => "",
-  updateToast: () => {},
-  dismissToast: () => {},
-  removeToast: () => {},
-};
-
-const ToastContext = React.createContext<ToastContextType>(defaultValue);
+const ToastContext = React.createContext<ToastContextType | null>(null);
 
 // Make useToast safer
 export function useToast() {
@@ -245,53 +236,50 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Create a single toast function that can be called directly
-// This fixes the "has no call signatures" error
+// Create a safe toast function that can be called outside of components
+// This is a simplified version that won't throw errors
+let toastContextValue: ToastContextType | null = null;
+
+// Mechanism to store the toast context value for use by the global toast function
+export function __setToastContextValue(context: ToastContextType | null) {
+  toastContextValue = context;
+}
+
+// The actual toast function that can be imported and used anywhere
 export const toast = (props: Omit<ToasterToast, "id">): string => {
-  try {
-    // Get the current React context
-    const currentToast = React.useContext(ToastContext);
-    
-    // If context exists, use it to add a toast
-    if (currentToast && currentToast.addToast) {
-      return currentToast.addToast(props);
+  // If we're in a component with the toast context
+  if (typeof window !== "undefined") {
+    try {
+      // If there's a stored context value, use it
+      if (toastContextValue) {
+        return toastContextValue.addToast(props);
+      }
+      
+      // Otherwise just log the toast content and don't crash
+      console.log("Toast (context not available):", props);
+    } catch (err) {
+      console.error("Error showing toast:", err);
     }
-    
-    console.warn("Toast context not available, toast not shown");
-    return "";
-  } catch (err) {
-    console.error("Error showing toast:", err);
-    return "";
   }
+  return "";
 };
 
-// Export the toast2 object (for backward compatibility)
+// Export the toast object for backward compatibility
 export const toast2 = {
-  toast: (props: Omit<ToasterToast, "id">): string => {
-    return toast(props);
-  },
+  toast,
   dismiss: (toastId?: string): void => {
-    try {
-      const context = React.useContext(ToastContext);
-      context?.dismissToast(toastId);
-    } catch (err) {
-      console.error("Error dismissing toast:", err);
+    if (toastContextValue) {
+      toastContextValue.dismissToast(toastId);
     }
   },
   update: (toast: ToasterToast): void => {
-    try {
-      const context = React.useContext(ToastContext);
-      context?.updateToast(toast);
-    } catch (err) {
-      console.error("Error updating toast:", err);
+    if (toastContextValue) {
+      toastContextValue.updateToast(toast);
     }
   },
   remove: (toastId?: string): void => {
-    try {
-      const context = React.useContext(ToastContext);
-      context?.removeToast(toastId);
-    } catch (err) {
-      console.error("Error removing toast:", err);
+    if (toastContextValue) {
+      toastContextValue.removeToast(toastId);
     }
   }
 };
