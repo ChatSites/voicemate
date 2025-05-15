@@ -53,7 +53,8 @@ export const useDashboardAuth = () => {
         console.error("Failed to show toast notification:", err);
       }
       
-      navigate('/auth');
+      // Ensure the redirect happens even if toast fails
+      setTimeout(() => navigate('/auth'), 100);
     } else if (user) {
       console.log("Authenticated user found:", user.email);
       setState(prev => ({

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/toast"
 
 export function Toaster() {
-  // Add error handling to useToast
+  // Add robust error handling to useToast
   const toastContext = useToast();
   const toasts = toastContext?.toasts || [];
 
