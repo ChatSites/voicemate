@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -236,52 +237,30 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Create a safe toast function that can be called outside of components
-// This is a simplified version that won't throw errors
-let toastContextValue: ToastContextType | null = null;
+// Create a standalone toast function for use outside of components
+// Create a global instance for use by the toast function
+let contextValue: ToastContextType | null = null;
 
-// Mechanism to store the toast context value for use by the global toast function
-export function __setToastContextValue(context: ToastContextType | null) {
-  toastContextValue = context;
+// Function to set the toast context value
+export function __setToastContextValue(value: ToastContextType | null) {
+  contextValue = value;
 }
 
-// The actual toast function that can be imported and used anywhere
+// The actual toast function exported for use throughout the app
 export const toast = (props: Omit<ToasterToast, "id">): string => {
-  // If we're in a component with the toast context
   if (typeof window !== "undefined") {
+    // Check if context is available directly
     try {
-      // If there's a stored context value, use it
-      if (toastContextValue) {
-        return toastContextValue.addToast(props);
+      if (contextValue) {
+        return contextValue.addToast(props);
       }
-      
-      // Otherwise just log the toast content and don't crash
+      // Fallback for when context isn't available
       console.log("Toast (context not available):", props);
     } catch (err) {
       console.error("Error showing toast:", err);
     }
   }
   return "";
-};
-
-// Export the toast object for backward compatibility
-export const toast2 = {
-  toast,
-  dismiss: (toastId?: string): void => {
-    if (toastContextValue) {
-      toastContextValue.dismissToast(toastId);
-    }
-  },
-  update: (toast: ToasterToast): void => {
-    if (toastContextValue) {
-      toastContextValue.updateToast(toast);
-    }
-  },
-  remove: (toastId?: string): void => {
-    if (toastContextValue) {
-      toastContextValue.removeToast(toastId);
-    }
-  }
 };
 
 export type { ToasterToast };
