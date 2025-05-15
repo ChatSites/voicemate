@@ -14,7 +14,7 @@ const PulseLayout: React.FC<PulseLayoutProps> = ({ children, title }) => {
   const isDark = theme === 'dark';
   
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-gray-50'} ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>
       <Navbar />
       <div className="container mx-auto px-4 pt-24 pb-12">
         <motion.div

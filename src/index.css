@@ -211,7 +211,7 @@
 
 /* Light mode specific overrides */
 .light .bg-black {
-  background-color: white;
+  background-color: #f8f9fa;
 }
 
 .light .text-white {
@@ -226,6 +226,7 @@
 /* Light mode card styles */
 .light .bg-voicemate-card {
   background-color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .light .border-gray-800 {
@@ -235,6 +236,7 @@
 /* Light mode form element styles */
 .light .bg-black\/30 {
   background-color: #f9fafb; /* bg-gray-50 */
+  border-color: #d1d5db; /* border-gray-300 */
 }
 
 .light .border-gray-700 {
@@ -274,4 +276,41 @@
 /* Fix for gradient border in light mode */
 .light .gradient-border {
   background: #f8f8f8;
+}
+
+.light .bg-black\/30 {
+  background-color: #f9fafb;
+}
+
+.light input.bg-black\/30 {
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.light input.text-white {
+  color: #111827;
+}
+
+.light .PulseIdInput-container {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Improved card styles in light mode */
+.light .card {
+  background-color: white;
+  border-color: #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Improved button styles in light mode */
+.light .button {
+  background-color: #9b5de5;
+  color: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Fixes for PulseLayout in light mode */
+.light .min-h-screen.bg-black {
+  background-color: #f8f9fa;
 }
