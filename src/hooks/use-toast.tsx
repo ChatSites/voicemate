@@ -116,13 +116,13 @@ const reducer = (state: State, action: Action): State => {
 
 const ToastContext = createContext<{
   toasts: ToasterToast[];
-  addToast: (toast: Omit<ToasterToast, "id">) => void;
+  addToast: (toast: Omit<ToasterToast, "id">) => string;
   updateToast: (toast: ToasterToast) => void;
   dismissToast: (toastId?: string) => void;
   removeToast: (toastId?: string) => void;
 }>({
   toasts: [],
-  addToast: () => {},
+  addToast: () => "",
   updateToast: () => {},
   dismissToast: () => {},
   removeToast: () => {},
@@ -134,7 +134,7 @@ export function useToast() {
   return {
     toasts,
     toast: (props: Omit<ToasterToast, "id">) => {
-      addToast(props);
+      return addToast(props);
     },
     dismiss: (toastId?: string) => dismissToast(toastId),
     update: (props: ToasterToast) => updateToast(props),
@@ -146,7 +146,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>({ toasts: [] });
 
   const addToast = useCallback((toast: Omit<ToasterToast, "id">) => {
-    const id = toast.id || genId();
+    const id = genId();
 
     setState((prev) => ({
       ...prev,
@@ -224,5 +224,5 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 export const toast = (props: Omit<ToasterToast, "id">) => {
   const { toast } = useToast();
-  toast(props);
+  return toast(props);
 };
