@@ -15,21 +15,6 @@ export function Toaster() {
   // Get toast context
   const { toasts, toast: addToast, dismiss, update, remove } = useToast();
   
-  // Connect the toast context to the global toast function
-  useEffect(() => {
-    __setToastContextValue({
-      toasts,
-      addToast,
-      updateToast: update,
-      dismissToast: dismiss,
-      removeToast: remove,
-    });
-    
-    return () => {
-      __setToastContextValue(null);
-    };
-  }, [toasts, addToast, dismiss, update, remove]);
-
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {

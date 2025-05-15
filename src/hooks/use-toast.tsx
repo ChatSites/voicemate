@@ -11,7 +11,7 @@ import {
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 2000; 
 
-type ToasterToast = Omit<ToastProps, "children"> & {
+export type ToasterToast = Omit<ToastProps, "children"> & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -123,7 +123,15 @@ interface ToastContextType {
 }
 
 // Create context with default values
-const ToastContext = React.createContext<ToastContextType | null>(null);
+export const ToastContext = React.createContext<ToastContextType | null>(null);
+
+// Global reference for the toast context value
+let globalToastContext: ToastContextType | null = null;
+
+// Function to set the toast context value
+export function __setToastContextValue(value: ToastContextType | null) {
+  globalToastContext = value;
+}
 
 // Make useToast safer
 export function useToast() {
@@ -230,6 +238,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     removeToast,
   };
 
+  // Update global context reference when context changes
+  React.useEffect(() => {
+    __setToastContextValue(contextValue);
+    return () => {
+      __setToastContextValue(null);
+    };
+  }, [contextValue]);
+
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
@@ -237,30 +253,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Create a standalone toast function for use outside of components
-// Create a global instance for use by the toast function
-let contextValue: ToastContextType | null = null;
-
-// Function to set the toast context value
-export function __setToastContextValue(value: ToastContextType | null) {
-  contextValue = value;
-}
-
 // The actual toast function exported for use throughout the app
 export const toast = (props: Omit<ToasterToast, "id">): string => {
   if (typeof window !== "undefined") {
-    // Check if context is available directly
-    try {
-      if (contextValue) {
-        return contextValue.addToast(props);
-      }
-      // Fallback for when context isn't available
-      console.log("Toast (context not available):", props);
-    } catch (err) {
-      console.error("Error showing toast:", err);
+    // First check if we have the global context available
+    if (globalToastContext) {
+      return globalToastContext.addToast(props);
     }
+    
+    // Fallback for when context isn't available
+    console.warn("Toast called before context was available:", props);
   }
   return "";
 };
-
-export type { ToasterToast };
