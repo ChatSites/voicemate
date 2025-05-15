@@ -24,6 +24,7 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
   try {
     // Basic validation
     if (!pulseId || pulseId.length < 3) {
+      console.log(`Service: PulseID too short: ${pulseId}`);
       return {
         available: false,
         suggestions: [],
@@ -34,12 +35,12 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
     // Normalize the pulseID to lowercase for consistent checking
     const normalizedPulseId = pulseId.toLowerCase();
     
-    console.log(`Checking availability for: ${normalizedPulseId}`);
+    console.log(`Service: Checking availability for: ${normalizedPulseId}`);
 
     // Check cache first to avoid unnecessary API calls
     const cached = pulseIdCache[normalizedPulseId];
     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      console.log(`Using service cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
+      console.log(`Service: Using cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
       return {
         available: cached.available,
         suggestions: cached.available ? [] : generateSuggestions(normalizedPulseId)
@@ -47,14 +48,15 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
     }
 
     // Check with Supabase - this will check its own cache first
-    console.log(`Calling Supabase to check ${normalizedPulseId}`);
+    console.log(`Service: Calling Supabase to check ${normalizedPulseId}`);
     const isTaken = await isPulseIdTaken(normalizedPulseId);
-    console.log(`Supabase result for ${normalizedPulseId}: ${isTaken ? 'taken' : 'available'}`);
+    console.log(`Service: Supabase result for ${normalizedPulseId}: ${isTaken ? 'taken' : 'available'}`);
     
-    // Update cache
+    // Update cache with consistent timestamp
+    const currentTime = Date.now();
     pulseIdCache[normalizedPulseId] = {
       available: !isTaken,
-      timestamp: Date.now()
+      timestamp: currentTime
     };
 
     // Return result
@@ -63,14 +65,14 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
       suggestions: isTaken ? generateSuggestions(normalizedPulseId) : []
     };
   } catch (error) {
-    console.error('Error checking PulseID availability:', error);
+    console.error('Service: Error checking PulseID availability:', error);
     
     // On error, assume ID is available to not block registration
     // but warn the user
     toast({
       title: "Warning",
       description: "Could not verify PulseID availability. Please try again later.",
-      variant: "default" // Changed from "warning" to "default" to match the allowed variants
+      variant: "default" // Using "default" to match the allowed variants
     });
     
     return {
@@ -84,9 +86,18 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
  * Generate alternative PulseID suggestions
  */
 const generateSuggestions = (pulseId: string): string[] => {
+  console.log(`Service: Generating suggestions for: ${pulseId}`);
   return [
     `${pulseId}${Math.floor(Math.random() * 1000)}`,
     `${pulseId}_${Math.floor(Math.random() * 100)}`,
     `${pulseId}.${Date.now().toString().slice(-4)}`
   ];
+};
+
+// Clear the entire cache when needed (e.g., on logout)
+export const clearPulseIdCache = () => {
+  console.log('Service: Clearing PulseID cache');
+  for (const key in pulseIdCache) {
+    delete pulseIdCache[key];
+  }
 };

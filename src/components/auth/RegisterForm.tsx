@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import EmailInput from './EmailInput';
 import PulseIdInput from './PulseIdInput';
@@ -8,6 +8,7 @@ import PasswordInput from './PasswordInput';
 import RegistrationSubmitButton from './RegistrationSubmitButton';
 import { useRegistrationForm } from '@/hooks/useRegistrationForm';
 import { useRegistrationHandler } from '@/hooks/useRegistrationHandler';
+import { checkPulseIdAvailability } from '@/services/pulseIdService';
 
 interface RegisterFormProps {
   prefilledPulseId?: string;
@@ -34,6 +35,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
     setPulseIdSuggestions,
     onSwitchToLogin
   );
+
+  // Check prefilled PulseID availability on load
+  useEffect(() => {
+    const checkPrefilledPulseId = async () => {
+      if (prefilledPulseId && prefilledPulseId.length >= 3) {
+        try {
+          console.log(`RegisterForm: Checking prefilled PulseID ${prefilledPulseId}`);
+          const result = await checkPulseIdAvailability(prefilledPulseId);
+          console.log(`RegisterForm: Prefilled PulseID ${prefilledPulseId} is ${result.available ? 'available' : 'taken'}`);
+          setPulseIdAvailable(result.available);
+          setPulseIdSuggestions(result.available ? [] : result.suggestions);
+        } catch (error) {
+          console.error('RegisterForm: Error checking prefilled PulseID:', error);
+        }
+      }
+    };
+
+    checkPrefilledPulseId();
+  }, [prefilledPulseId, setPulseIdAvailable, setPulseIdSuggestions]);
 
   return (
     <form onSubmit={handleRegister}>

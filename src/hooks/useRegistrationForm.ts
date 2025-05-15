@@ -32,6 +32,7 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
   // Update pulseId when prefilledPulseId changes
   useEffect(() => {
     if (prefilledPulseId) {
+      console.log(`useRegistrationForm: Prefilling PulseID with ${prefilledPulseId}`);
       setFormState(prev => ({ ...prev, pulseId: prefilledPulseId }));
     }
   }, [prefilledPulseId]);
@@ -41,14 +42,17 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
   };
 
   const isFormValid = () => {
-    return (
+    const validFields = 
       formState.fullName.length >= 3 && 
       formState.registerEmail && 
       formState.registerEmail.includes('@') && 
       formState.pulseId.length >= 3 && 
       formState.registerPassword.length >= 8 &&
-      isPasswordValid(formState.registerPassword)
-    );
+      isPasswordValid(formState.registerPassword);
+    
+    const validAvailability = formState.pulseIdAvailable === true;
+    
+    return validFields && validAvailability;
   };
 
   const isPasswordValid = (password: string): boolean => {
@@ -61,6 +65,7 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
   };
 
   const setPulseIdAvailable = (available: boolean | null) => {
+    console.log(`useRegistrationForm: Setting pulseIdAvailable to ${available}`);
     setFormState(prev => ({ ...prev, pulseIdAvailable: available }));
   };
 

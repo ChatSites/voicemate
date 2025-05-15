@@ -31,7 +31,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const pulseIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstRun = useRef(true);
 
-  // Check PulseID availability without causing infinite loops
+  // Check PulseID availability whenever it changes
   useEffect(() => {
     // Skip the first run to avoid immediate checks on component mount
     if (isFirstRun.current) {
@@ -50,19 +50,23 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     }
     
     setIsCheckingPulseId(true);
+    console.log(`Auth Component: Starting availability check for: ${pulseId}`);
     
-    // Use timeout to debounce and prevent excessive API calls
+    // Debounce to avoid excessive API calls
     pulseIdCheckTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log(`Auth Component: Performing check for: ${pulseId}`);
         // Use the shared service for consistent validation
         const result = await checkPulseIdAvailability(pulseId);
+        
+        console.log(`Auth Component: Result for ${pulseId}: ${result.available ? 'available' : 'unavailable'}`);
         
         setPulseIdAvailable(result.available);
         setPulseIdSuggestions(result.available ? [] : result.suggestions);
       } catch (error) {
-        console.error('Error checking PulseID:', error);
+        console.error('Auth Component: Error checking PulseID:', error);
         // On error, assume ID is available to avoid blocking registration
-        setPulseIdAvailable(true);
+        setPulseIdAvailable(null);
       } finally {
         setIsCheckingPulseId(false);
       }
@@ -76,11 +80,12 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   }, [pulseId, registrationInProgress, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove spaces and convert to lowercase
     const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();
     setPulseId(value);
     
-    // Only mark as touched if user has entered a valid length pulseId
-    if (value.length >= 3 && !pulseIdTouched) {
+    // Only mark as touched if user has entered a valid length pulseId or changed an existing value
+    if ((value.length >= 3 || (pulseId && value !== pulseId)) && !pulseIdTouched) {
       setPulseIdTouched(true);
     }
   };
@@ -105,6 +110,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           className="bg-black/30 border-gray-700 pr-10"
           disabled={registrationInProgress}
           required
+          data-testid="auth-pulse-id-input"
         />
         {isCheckingPulseId && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -112,7 +118,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           </div>
         )}
         {!isCheckingPulseId && pulseIdAvailable !== null && pulseId.length >= 3 && pulseIdTouched && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2" data-testid="auth-availability-indicator">
             {pulseIdAvailable ? (
               <CircleCheck className="h-4 w-4 text-green-500" />
             ) : (
@@ -129,7 +135,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         />
       )}
       
-      {pulseIdTouched && !pulseIdAvailable && !isCheckingPulseId && pulseId.length >= 3 && (
+      {pulseIdTouched && pulseIdAvailable === false && !isCheckingPulseId && pulseId.length >= 3 && (
         <FormFeedback
           type="error"
           message="This PulseID is already taken"
@@ -143,10 +149,11 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         />
       )}
       
-      {pulseIdTouched && pulseIdAvailable && !isCheckingPulseId && pulseId.length >= 3 && (
+      {pulseIdTouched && pulseIdAvailable === true && !isCheckingPulseId && pulseId.length >= 3 && (
         <FormFeedback
           type="success"
           message="This PulseID is available!"
+          data-testid="auth-available-message"
         />
       )}
     </div>

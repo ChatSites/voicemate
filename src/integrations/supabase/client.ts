@@ -73,11 +73,15 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     // Skip validation for very short pulse IDs to avoid unnecessary requests
     if (!pulseId || pulseId.length < 3) {
+      console.log('Supabase: PulseID too short, skipping check');
       return false;
     }
     
+    // Normalize pulseId to lowercase for consistent checks
+    const normalizedPulseId = pulseId.toLowerCase();
+    
     // Use a cache timestamp to limit API calls
-    const cacheKey = `pulseId_check_${pulseId.toLowerCase()}`; // Use lowercase for consistent caching
+    const cacheKey = `pulseId_check_${normalizedPulseId}`;
     const cachedResult = localStorage.getItem(cacheKey);
     
     if (cachedResult) {
@@ -85,28 +89,28 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       
       // Use cached result if less than 10 seconds old (reduced from 30 seconds for testing)
       if (Date.now() - timestamp < 10000) {
-        console.log(`Using cached result for ${pulseId}: ${result ? 'taken' : 'available'}`);
+        console.log(`Supabase: Using cached result for ${normalizedPulseId}: ${result ? 'taken' : 'available'}`);
         return result;
       }
     }
     
-    console.log(`Checking availability for PulseID: ${pulseId}`);
+    console.log(`Supabase: Checking availability for PulseID: ${normalizedPulseId}`);
     
     // Query to check if PulseID exists
     const { data, error } = await supabase
       .from('users')
       .select('id')
-      .ilike('pulse_id', pulseId)
+      .ilike('pulse_id', normalizedPulseId)
       .limit(1);
     
     if (error) {
-      console.error('Error checking PulseID:', error);
+      console.error('Supabase: Error checking PulseID:', error);
       throw error;
     }
     
     // If data exists and has length > 0, the PulseID is taken
     const result = Array.isArray(data) && data.length > 0;
-    console.log(`Database result for ${pulseId}: ${result ? 'taken' : 'available'}`);
+    console.log(`Supabase: Database result for ${normalizedPulseId}: ${result ? 'taken' : 'available'}`);
     
     // Cache the result for 10 seconds (reduced for testing)
     localStorage.setItem(cacheKey, JSON.stringify({
@@ -116,7 +120,7 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     
     return result;
   } catch (error) {
-    console.error('Error checking PulseID:', error);
+    console.error('Supabase: Error checking PulseID:', error);
     // On error, assume ID is not taken to avoid blocking registration
     return false;
   }
