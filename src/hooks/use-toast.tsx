@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -245,11 +244,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Export a standalone toast function
-export const toast = {
-  // We're implementing these as methods of an object to match the interface expected by useToast
-  toast: (props: Omit<ToasterToast, "id">) => {
-    // Try to get current context if available
+// Create both a function and an object version for backwards compatibility
+// Function version for direct calling
+export function toast(props: Omit<ToasterToast, "id">): string {
+  try {
+    const { toast } = useToast();
+    return toast(props);
+  } catch (err) {
+    console.warn("Toast function error:", err);
+    return "";
+  }
+}
+
+// Object version with methods
+export const toast2 = {
+  toast: (props: Omit<ToasterToast, "id">): string => {
     try {
       const { toast } = useToast();
       return toast(props);
@@ -259,8 +268,7 @@ export const toast = {
     }
   },
   
-  // Add other methods to match useToast interface
-  dismiss: (toastId?: string) => {
+  dismiss: (toastId?: string): void => {
     try {
       const { dismiss } = useToast();
       dismiss(toastId);
@@ -269,7 +277,7 @@ export const toast = {
     }
   },
   
-  update: (toast: ToasterToast) => {
+  update: (toast: ToasterToast): void => {
     try {
       const { update } = useToast();
       update(toast);
@@ -278,7 +286,7 @@ export const toast = {
     }
   },
   
-  remove: (toastId?: string) => {
+  remove: (toastId?: string): void => {
     try {
       const { remove } = useToast();
       remove(toastId);
@@ -289,4 +297,3 @@ export const toast = {
 };
 
 export type { ToasterToast };
-

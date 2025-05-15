@@ -48,7 +48,7 @@ export const useDashboardAuth = () => {
         if (typeof window !== 'undefined') {
           setTimeout(() => {
             try {
-              toast.toast({
+              toast({
                 title: "Authentication required",
                 description: "Please sign in to access the dashboard",
                 variant: "destructive"
