@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
@@ -15,6 +14,10 @@ export default function Navbar() {
   const location = useLocation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  // Logo URLs for both themes
+  const darkModeLogo = "https://i.ibb.co/k2KwyQh/voicemate-logo-horiz-dark.png";
+  const lightModeLogo = "https://i.ibb.co/bM62K2G/voicemate-logo-horiz-light.png";
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -44,19 +47,11 @@ export default function Navbar() {
       >
         <div className="container mx-auto flex justify-between items-center py-4">
           <a href="/" className="flex items-center space-x-2">
-            {isDark ? (
-              <img 
-                src="https://i.ibb.co/k2KwyQh/voicemate-logo-horiz-dark.png" 
-                alt="VoiceMate" 
-                className="h-8" 
-              />
-            ) : (
-              <img 
-                src="https://i.ibb.co/bM62K2G/voicemate-logo-horiz-light.png"
-                alt="VoiceMate" 
-                className="h-8" 
-              />
-            )}
+            <img 
+              src={isDark ? darkModeLogo : lightModeLogo}
+              alt="VoiceMate" 
+              className="h-8" 
+            />
             {profile?.pulse_id && (
               <span className={`text-sm ${isDark ? 'text-voicemate-purple' : 'text-voicemate-purple'}`}>@{profile.pulse_id}</span>
             )}
