@@ -244,12 +244,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Create both a function and an object version for backwards compatibility
 // Function version for direct calling
 export function toast(props: Omit<ToasterToast, "id">): string {
   try {
-    const { toast } = useToast();
-    return toast(props);
+    const context = React.useContext(ToastContext);
+    if (!context) {
+      console.warn("Toast context not available");
+      return "";
+    }
+    return context.addToast(props);
   } catch (err) {
     console.warn("Toast function error:", err);
     return "";
@@ -258,38 +261,45 @@ export function toast(props: Omit<ToasterToast, "id">): string {
 
 // Object version with methods
 export const toast2 = {
-  toast: (props: Omit<ToasterToast, "id">): string => {
+  toast: function(props: Omit<ToasterToast, "id">): string {
     try {
-      const { toast } = useToast();
-      return toast(props);
+      const context = React.useContext(ToastContext);
+      if (!context) {
+        console.warn("Toast context not available");
+        return "";
+      }
+      return context.addToast(props);
     } catch (err) {
       console.warn("Toast function error:", err);
       return "";
     }
   },
   
-  dismiss: (toastId?: string): void => {
+  dismiss: function(toastId?: string): void {
     try {
-      const { dismiss } = useToast();
-      dismiss(toastId);
+      const context = React.useContext(ToastContext);
+      if (!context) return;
+      context.dismissToast(toastId);
     } catch (err) {
       console.warn("Toast dismiss error:", err);
     }
   },
   
-  update: (toast: ToasterToast): void => {
+  update: function(toast: ToasterToast): void {
     try {
-      const { update } = useToast();
-      update(toast);
+      const context = React.useContext(ToastContext);
+      if (!context) return;
+      context.updateToast(toast);
     } catch (err) {
       console.warn("Toast update error:", err);
     }
   },
   
-  remove: (toastId?: string): void => {
+  remove: function(toastId?: string): void {
     try {
-      const { remove } = useToast();
-      remove(toastId);
+      const context = React.useContext(ToastContext);
+      if (!context) return;
+      context.removeToast(toastId);
     } catch (err) {
       console.warn("Toast remove error:", err);
     }
