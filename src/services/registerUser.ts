@@ -42,7 +42,7 @@ export const registerUser = async (
       options: {
         data: {
           full_name: fullName,
-          pulse_id: pulseId,
+          pulse_id: pulseId, // Make sure pulse_id is included here
         },
         // Always redirect to auth/callback with signup type
         emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
@@ -68,31 +68,10 @@ export const registerUser = async (
       return { success: false, error: new Error('No user returned') };
     }
 
-    // Step 3: Insert into users table - this is where we need to use the client's token
-    if (data.session) {
-      // Create a new client instance with the session to have proper authorization
-      const authedSupabase = supabase;
-      
-      const { error: insertError } = await authedSupabase
-        .from('users')
-        .insert([
-          {
-            id: user.id,
-            name: fullName,
-            pulse_id: pulseId,
-          }
-        ]);
-
-      if (insertError) {
-        console.error('Profile insert error:', insertError);
-        return {
-          success: true, // Still return success since the auth account was created
-          error: new Error(`Note: Profile setup is incomplete. Please complete your profile later.`),
-        };
-      }
-    } else {
-      console.log('No session available yet. Profile will be created after email verification.');
-    }
+    // Step 3: Insert into users table is now handled by the Supabase trigger
+    // We'll log confirmation for debugging purposes
+    console.log('User registered with PulseID:', pulseId);
+    console.log('Profile creation will be handled by database trigger');
 
     return { success: true };
   } catch (err: any) {
