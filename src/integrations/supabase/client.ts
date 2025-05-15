@@ -72,39 +72,43 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     // Skip validation for very short pulse IDs to avoid unnecessary requests
-    if (pulseId.length < 3) {
+    if (!pulseId || pulseId.length < 3) {
       return false;
     }
     
     // Use a cache timestamp to limit API calls
-    const cacheKey = `pulseId_check_${pulseId}`;
+    const cacheKey = `pulseId_check_${pulseId.toLowerCase()}`; // Use lowercase for consistent caching
     const cachedResult = localStorage.getItem(cacheKey);
     
     if (cachedResult) {
       const { result, timestamp } = JSON.parse(cachedResult);
       
-      // Use cached result if less than 30 seconds old
-      if (Date.now() - timestamp < 30000) {
+      // Use cached result if less than 10 seconds old (reduced from 30 seconds for testing)
+      if (Date.now() - timestamp < 10000) {
+        console.log(`Using cached result for ${pulseId}: ${result ? 'taken' : 'available'}`);
         return result;
       }
     }
     
-    // Fix: Add proper accept header and use 'ilike' instead of 'eq' for case-insensitive matching
+    console.log(`Checking availability for PulseID: ${pulseId}`);
+    
+    // Query to check if PulseID exists
     const { data, error } = await supabase
       .from('users')
       .select('id')
       .ilike('pulse_id', pulseId)
-      .maybeSingle();
+      .limit(1);
     
-    // Handle errors other than 406 (not found)
-    if (error && error.code !== '406') {
+    if (error) {
       console.error('Error checking PulseID:', error);
       throw error;
     }
     
-    const result = !!data;
+    // If data exists and has length > 0, the PulseID is taken
+    const result = Array.isArray(data) && data.length > 0;
+    console.log(`Database result for ${pulseId}: ${result ? 'taken' : 'available'}`);
     
-    // Cache the result for 30 seconds
+    // Cache the result for 10 seconds (reduced for testing)
     localStorage.setItem(cacheKey, JSON.stringify({
       result,
       timestamp: Date.now()

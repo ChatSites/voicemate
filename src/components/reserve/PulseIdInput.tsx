@@ -47,12 +47,16 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     }
     
     setIsChecking(true);
+    console.log(`Starting availability check for: ${pulseId}`);
     
     // Debounce to avoid too many API calls
     checkTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log(`Performing check for: ${pulseId}`);
         // Use the shared service instead of direct API call
         const result = await checkPulseIdAvailability(pulseId);
+        
+        console.log(`Result for ${pulseId}: ${result.available ? 'available' : 'unavailable'}`);
         
         setIsAvailable(result.available);
         setPulseIdAvailable(result.available);
@@ -91,6 +95,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           onChange={handleChange}
           onBlur={() => setTouched(true)}
           className={`${isDark ? 'bg-black/30 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'} pr-10`}
+          data-testid="pulse-id-input"
         />
         {isChecking && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -98,7 +103,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           </div>
         )}
         {!isChecking && isAvailable !== null && pulseId.length >= 3 && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2" data-testid="availability-indicator">
             {isAvailable ? (
               <CircleCheck className="h-4 w-4 text-green-500" />
             ) : (
@@ -132,6 +137,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         <FormFeedback
           type="success"
           message="This PulseID is available!"
+          data-testid="available-message"
         />
       )}
     </div>

@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 
 // Maintain a cache of already checked pulse IDs to reduce API calls
 const pulseIdCache: Record<string, {available: boolean, timestamp: number}> = {};
-const CACHE_DURATION = 60000; // 1 minute cache
+const CACHE_DURATION = 10000; // 10 seconds cache (reduced for testing)
 
 /**
  * Checks if a PulseID is available
@@ -31,20 +31,28 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
       };
     }
 
+    // Normalize the pulseID to lowercase for consistent checking
+    const normalizedPulseId = pulseId.toLowerCase();
+    
+    console.log(`Checking availability for: ${normalizedPulseId}`);
+
     // Check cache first to avoid unnecessary API calls
-    const cached = pulseIdCache[pulseId];
+    const cached = pulseIdCache[normalizedPulseId];
     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      console.log(`Using service cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
       return {
         available: cached.available,
-        suggestions: cached.available ? [] : generateSuggestions(pulseId)
+        suggestions: cached.available ? [] : generateSuggestions(normalizedPulseId)
       };
     }
 
-    // Check with Supabase
-    const isTaken = await isPulseIdTaken(pulseId);
+    // Check with Supabase - this will check its own cache first
+    console.log(`Calling Supabase to check ${normalizedPulseId}`);
+    const isTaken = await isPulseIdTaken(normalizedPulseId);
+    console.log(`Supabase result for ${normalizedPulseId}: ${isTaken ? 'taken' : 'available'}`);
     
     // Update cache
-    pulseIdCache[pulseId] = {
+    pulseIdCache[normalizedPulseId] = {
       available: !isTaken,
       timestamp: Date.now()
     };
@@ -52,7 +60,7 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
     // Return result
     return {
       available: !isTaken,
-      suggestions: isTaken ? generateSuggestions(pulseId) : []
+      suggestions: isTaken ? generateSuggestions(normalizedPulseId) : []
     };
   } catch (error) {
     console.error('Error checking PulseID availability:', error);
