@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
-import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
+import { CircleCheck, CircleX, Loader2, RefreshCw } from 'lucide-react';
 import PulseIdSuggestions from './PulseIdSuggestions';
 import FormFeedback from '@/components/ui/form-feedback';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { checkPulseIdAvailability, forceRefreshNextCheck } from '@/services/pulseIdService';
+import { Button } from '@/components/ui/button';
 
 type PulseIdInputProps = {
   pulseId: string;
@@ -23,6 +24,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [touched, setTouched] = useState(false);
   const [errorCount, setErrorCount] = useState(0);
+  const [showRefreshButton, setShowRefreshButton] = useState(false);
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstRun = useRef(true);
   const { theme } = useTheme();
@@ -88,11 +90,13 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         setIsAvailable(result.available);
         setPulseIdAvailable(result.available);
         setSuggestions(result.suggestions);
+        setShowRefreshButton(true); // Show refresh button after first check
       } catch (error) {
         console.error('Error checking PulseID availability:', error);
         setIsAvailable(null);
         setPulseIdAvailable(null);
         setErrorCount(prev => prev + 1);
+        setShowRefreshButton(true); // Show refresh button on error too
       } finally {
         setIsChecking(false);
       }
@@ -194,6 +198,21 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           message="This PulseID is available!"
           data-testid="available-message"
         />
+      )}
+
+      {showRefreshButton && pulseId.length >= 3 && (
+        <div className="flex justify-end mt-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refreshCheck}
+            className="text-xs flex items-center gap-1 text-voicemate-purple hover:text-voicemate-purple/80"
+            disabled={isChecking}
+          >
+            <RefreshCw className="h-3 w-3" />
+            Refresh check
+          </Button>
+        </div>
       )}
     </div>
   );

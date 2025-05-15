@@ -5,16 +5,19 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import PulseIdInput from '@/components/reserve/PulseIdInput';
 import BenefitsList from '@/components/reserve/BenefitsList';
 import PulseIdHeader from '@/components/reserve/PulseIdHeader';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
+import { forceRefreshNextCheck } from '@/services/pulseIdService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ReservePulseID = () => {
   const [pulseId, setPulseId] = useState('');
   const [pulseIdAvailable, setPulseIdAvailable] = useState<boolean | null>(null);
+  const [pulseIdChecks, setPulseIdChecks] = useState(0);
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -30,6 +33,15 @@ const ReservePulseID = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const refreshAllChecks = () => {
+    forceRefreshNextCheck();
+    setPulseIdChecks(prev => prev + 1);
+    toast({
+      title: "Refresh triggered",
+      description: "All caches have been cleared for fresh availability checks",
+    });
   };
 
   const benefits = [
@@ -64,6 +76,15 @@ const ReservePulseID = () => {
         >
           <Card className={`${isDark ? 'border-gray-800 bg-voicemate-card/60' : 'border-gray-200 bg-white'} backdrop-blur-md shadow-lg`}>
             <CardContent className="space-y-6 pt-6">
+              {pulseIdChecks > 2 && (
+                <Alert className="bg-amber-500/10 border-amber-500/20">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <AlertDescription className="text-xs">
+                    If availability checks are inconsistent, try refreshing or waiting a moment before proceeding.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-3">
                 <PulseIdHeader 
                   title="Reserve Your PulseID" 
@@ -91,6 +112,17 @@ const ReservePulseID = () => {
                 title="Why reserve a PulseID?"
                 benefits={benefits}
               />
+              
+              <div className="flex justify-center pt-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs flex items-center gap-1 text-gray-400 hover:text-gray-300"
+                  onClick={refreshAllChecks}
+                >
+                  <RefreshCw className="h-3 w-3" /> Force refresh all checks
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

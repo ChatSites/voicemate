@@ -8,8 +8,9 @@ import { toast } from "@/components/ui/use-toast";
  */
 
 // Maintain a cache of already checked pulse IDs to reduce API calls
+// Using a shorter cache duration for more accurate results
 const pulseIdCache: Record<string, {available: boolean, timestamp: number}> = {};
-const CACHE_DURATION = 5000; // 5 seconds cache (reduced for faster checks)
+const CACHE_DURATION = 2000; // 2 seconds cache (reduced for more accurate checks)
 
 // Flag for forcing a fresh check
 let forceRefresh = false;
@@ -72,6 +73,27 @@ export const checkPulseIdAvailability = async (
       timestamp: currentTime
     };
 
+    // If the ID is available, double-check with another request to be sure
+    if (!isTaken && !skipCache) {
+      console.log(`Service: Double verifying availability for: ${normalizedPulseId}`);
+      setTimeout(async () => {
+        try {
+          // This verification happens asynchronously and doesn't block the UI
+          const verifyResult = await isPulseIdTaken(normalizedPulseId);
+          if (verifyResult) {
+            console.log(`Service: Verification detected ${normalizedPulseId} is actually TAKEN`);
+            // Update cache with the correct result
+            pulseIdCache[normalizedPulseId] = {
+              available: false,
+              timestamp: Date.now()
+            };
+          }
+        } catch (err) {
+          // Ignore verification errors
+        }
+      }, 500);
+    }
+
     // Return result
     return {
       available: !isTaken,
@@ -120,4 +142,5 @@ export const clearPulseIdCache = () => {
 export const forceRefreshNextCheck = () => {
   console.log('Service: Forcing refresh for next check');
   forceRefresh = true;
+  localStorage.setItem('force_refresh_pulseId', 'true');
 };
