@@ -7,6 +7,7 @@ import FormFeedback from '@/components/ui/form-feedback';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { checkPulseIdAvailability, forceRefreshNextCheck } from '@/services/pulseIdService';
 import { Button } from '@/components/ui/button';
+import { toast } from "@/hooks/use-toast"; // Updated import path
 
 type PulseIdInputProps = {
   pulseId: string;
@@ -65,38 +66,35 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         const skipCache = errorCount > 0;
         const result = await checkPulseIdAvailability(pulseId, skipCache);
         
-        console.log(`Result for ${pulseId}: ${result.available ? 'available' : 'unavailable'}`);
-        
-        // If the result doesn't match what we'd expect, increment error count and retry with cache bypass
-        if (errorCount > 0 && result.available) {
+        if (result.available === null) {
+          // Error case - handled by toast in the service
           setErrorCount(prev => prev + 1);
-          // If we've tried multiple times and still getting wrong results, force a refresh
-          if (errorCount >= 2) {
-            console.log("Multiple errors detected, forcing refresh");
-            forceRefreshNextCheck();
-            // Wait a moment and retry one more time
-            setTimeout(async () => {
-              const finalResult = await checkPulseIdAvailability(pulseId, true);
-              setIsAvailable(finalResult.available);
-              setPulseIdAvailable(finalResult.available);
-              setSuggestions(finalResult.suggestions);
-            }, 100);
-          }
+          setIsAvailable(null);
+          setPulseIdAvailable(null);
+          setShowRefreshButton(true);
         } else {
-          // Reset error count if we get expected results
+          console.log(`Result for ${pulseId}: ${result.available ? 'available' : 'unavailable'}`);
+          
+          // Reset error count if success after errors
           if (errorCount > 0) setErrorCount(0);
+          
+          setIsAvailable(result.available);
+          setPulseIdAvailable(result.available);
+          setSuggestions(result.suggestions);
+          setShowRefreshButton(true); // Show refresh button after first check
         }
-        
-        setIsAvailable(result.available);
-        setPulseIdAvailable(result.available);
-        setSuggestions(result.suggestions);
-        setShowRefreshButton(true); // Show refresh button after first check
       } catch (error) {
         console.error('Error checking PulseID availability:', error);
         setIsAvailable(null);
         setPulseIdAvailable(null);
         setErrorCount(prev => prev + 1);
         setShowRefreshButton(true); // Show refresh button on error too
+        
+        toast({
+          title: "Connection Error",
+          description: "Could not check availability. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setIsChecking(false);
       }
@@ -123,14 +121,35 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       forceRefreshNextCheck();
       setErrorCount(0);
       setIsChecking(true);
+      
       // Immediate check with cache bypass
       checkPulseIdAvailability(pulseId, true).then(result => {
-        setIsAvailable(result.available);
-        setPulseIdAvailable(result.available);
-        setSuggestions(result.suggestions);
+        if (result.available === null) {
+          // Error case - handled by toast in the service
+          setIsAvailable(null);
+          setPulseIdAvailable(null);
+        } else {
+          setIsAvailable(result.available);
+          setPulseIdAvailable(result.available);
+          setSuggestions(result.suggestions);
+          
+          // Show toast to confirm successful check
+          toast({
+            title: "Check Complete",
+            description: result.available ? 
+              "This PulseID is available!" : 
+              "This PulseID is already taken.",
+            variant: result.available ? "default" : "destructive"
+          });
+        }
         setIsChecking(false);
       }).catch(() => {
         setIsChecking(false);
+        toast({
+          title: "Error",
+          description: "Failed to check availability. Please try again.",
+          variant: "destructive"
+        });
       });
     }
   };

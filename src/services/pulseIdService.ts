@@ -1,6 +1,6 @@
 
 import { isPulseIdTaken, clearAllPulseIdCaches } from '@/integrations/supabase/client';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast"; // Updated to use the new location
 
 /**
  * A unified service for handling PulseID availability checks
@@ -10,7 +10,7 @@ import { toast } from "@/components/ui/use-toast";
 // Maintain a cache of already checked pulse IDs to reduce API calls
 // Using a shorter cache duration for more accurate results
 const pulseIdCache: Record<string, {available: boolean, timestamp: number}> = {};
-const CACHE_DURATION = 2000; // 2 seconds cache (reduced for more accurate checks)
+const CACHE_DURATION = 1500; // 1.5 seconds cache (reduced for more accurate checks)
 
 // Flag for forcing a fresh check
 let forceRefresh = false;
@@ -59,6 +59,7 @@ export const checkPulseIdAvailability = async (
     if (forceRefresh) {
       forceRefresh = false;
       clearAllPulseIdCaches(); // Clear all Supabase caches too
+      console.log('Service: Force refresh activated, all caches cleared');
     }
 
     // Check with Supabase - this will check its own cache first
@@ -73,27 +74,6 @@ export const checkPulseIdAvailability = async (
       timestamp: currentTime
     };
 
-    // If the ID is available, double-check with another request to be sure
-    if (!isTaken && !skipCache) {
-      console.log(`Service: Double verifying availability for: ${normalizedPulseId}`);
-      setTimeout(async () => {
-        try {
-          // This verification happens asynchronously and doesn't block the UI
-          const verifyResult = await isPulseIdTaken(normalizedPulseId);
-          if (verifyResult) {
-            console.log(`Service: Verification detected ${normalizedPulseId} is actually TAKEN`);
-            // Update cache with the correct result
-            pulseIdCache[normalizedPulseId] = {
-              available: false,
-              timestamp: Date.now()
-            };
-          }
-        } catch (err) {
-          // Ignore verification errors
-        }
-      }, 500);
-    }
-
     // Return result
     return {
       available: !isTaken,
@@ -102,17 +82,17 @@ export const checkPulseIdAvailability = async (
   } catch (error) {
     console.error('Service: Error checking PulseID availability:', error);
     
-    // On error, assume ID is available to not block registration
-    // but warn the user
+    // On error, don't assume availability - warn the user
     toast({
-      title: "Warning",
-      description: "Could not verify PulseID availability. Please try again later.",
-      variant: "default" // Using "default" to match the allowed variants
+      title: "Availability Check Error",
+      description: "Could not verify PulseID availability. Please try again or click 'Force refresh'.",
+      variant: "destructive"
     });
     
     return {
-      available: true,
-      suggestions: []
+      available: null, // Return null instead of assuming true
+      suggestions: [],
+      errorMessage: "Availability check failed"
     };
   }
 };
@@ -122,10 +102,11 @@ export const checkPulseIdAvailability = async (
  */
 const generateSuggestions = (pulseId: string): string[] => {
   console.log(`Service: Generating suggestions for: ${pulseId}`);
+  const timestamp = Date.now().toString().slice(-4);
   return [
     `${pulseId}${Math.floor(Math.random() * 1000)}`,
     `${pulseId}_${Math.floor(Math.random() * 100)}`,
-    `${pulseId}.${Date.now().toString().slice(-4)}`
+    `${pulseId}${timestamp}`
   ];
 };
 
@@ -143,4 +124,13 @@ export const forceRefreshNextCheck = () => {
   console.log('Service: Forcing refresh for next check');
   forceRefresh = true;
   localStorage.setItem('force_refresh_pulseId', 'true');
+  
+  // Also clear all cached results
+  clearPulseIdCache();
+  
+  // Show toast to confirm refresh
+  toast({
+    title: "Cache Cleared",
+    description: "All cached PulseID data has been cleared. Next check will be fresh.",
+  });
 };
