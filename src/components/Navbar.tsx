@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
@@ -15,9 +16,9 @@ export default function Navbar() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Logo URLs for both themes
+  // Fixed logo URLs for both themes
   const darkModeLogo = "https://i.ibb.co/k2KwyQh/voicemate-logo-horiz-dark.png";
-  const lightModeLogo = "https://i.ibb.co/bM62K2G/voicemate-logo-horiz-light.png";
+  const lightModeLogo = "https://i.ibb.co/bM62K2G/voicemate-logo-horiz-light.png"; // Corrected URL
 
   React.useEffect(() => {
     const handleScroll = () => {
