@@ -71,14 +71,15 @@ const Contact = () => {
               
               <div>
                 <h3 className="font-medium mb-1">Email</h3>
-                <a href="mailto:rick@voicemate.id" className="text-voicemate-red hover:text-voicemate-purple transition-colors">
-                  rick@voicemate.id
+                <a href="mailto:support@chatsites.io" className="text-voicemate-red hover:text-voicemate-purple transition-colors">
+                  support@chatsites.io
                 </a>
               </div>
               
               <div>
-                <h3 className="font-medium mb-1">Location</h3>
-                <p className="text-gray-400">San Francisco, California</p>
+                <h3 className="font-medium mb-1">Locations</h3>
+                <p className="text-gray-400">Phoenix, AZ, USA</p>
+                <p className="text-gray-400">Montreal, Quebec, Canada</p>
               </div>
               
               <div>
