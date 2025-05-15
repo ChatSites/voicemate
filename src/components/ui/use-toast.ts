@@ -20,7 +20,7 @@ export const useToast = () => {
   }
 };
 
-// Export the toast function directly instead of as an object
+// Export the toast function directly
 export const toast = toastFunction;
 export { ToastProvider };
 export type { ToasterToast };
