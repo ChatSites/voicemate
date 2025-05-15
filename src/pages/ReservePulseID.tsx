@@ -13,7 +13,6 @@ import { useTheme } from '@/components/providers/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import { forceRefreshNextCheck } from '@/services/pulseIdService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Toaster } from '@/components/ui/toaster';
 
 const ReservePulseID = () => {
   const [pulseId, setPulseId] = useState('');
@@ -23,12 +22,20 @@ const ReservePulseID = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
-  // Show welcome toast on initial render
+  // Show welcome toast on initial render with a delay to ensure context is available
   useEffect(() => {
-    toast({
-      title: "Welcome to PulseID Reservation",
-      description: "Enter a PulseID to check its availability",
-    });
+    const timer = setTimeout(() => {
+      try {
+        toast({
+          title: "Welcome to PulseID Reservation",
+          description: "Enter a PulseID to check its availability",
+        });
+      } catch (err) {
+        console.error("Failed to show welcome toast:", err);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
   
   const proceedToSignup = () => {
@@ -36,21 +43,31 @@ const ReservePulseID = () => {
       // Navigate directly to the auth page with the register tab selected and the PulseID prefilled
       navigate(`/auth?tab=register&pulseId=${pulseId}`);
     } else {
-      toast({
-        title: "Check availability first",
-        description: "Please verify that your PulseID is available",
-        variant: "destructive",
-      });
+      try {
+        toast({
+          title: "Check availability first",
+          description: "Please verify that your PulseID is available",
+          variant: "destructive",
+        });
+      } catch (err) {
+        console.error("Failed to show error toast:", err);
+        // Fallback alert if toast fails
+        alert("Please verify that your PulseID is available before proceeding");
+      }
     }
   };
 
   const refreshAllChecks = () => {
     forceRefreshNextCheck();
     setPulseIdChecks(prev => prev + 1);
-    toast({
-      title: "Refresh triggered",
-      description: "All caches have been cleared for fresh availability checks",
-    });
+    try {
+      toast({
+        title: "Refresh triggered",
+        description: "All caches have been cleared for fresh availability checks",
+      });
+    } catch (err) {
+      console.error("Failed to show refresh toast:", err);
+    }
   };
 
   const benefits = [
@@ -63,9 +80,6 @@ const ReservePulseID = () => {
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${isDark ? 'bg-black' : 'bg-gray-50'}`}>
       <div className={`absolute inset-0 bg-mesh-gradient animate-gradient-y -z-10 ${isDark ? 'opacity-10' : 'opacity-5'}`}></div>
-      
-      {/* Make sure the Toaster is included */}
-      <Toaster />
       
       <div className="w-full max-w-md">
         <div className="absolute top-4 right-4">

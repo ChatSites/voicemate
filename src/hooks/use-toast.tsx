@@ -113,156 +113,119 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-// Define the interface for our context
-interface ToastContextType {
-  toasts: ToasterToast[];
-  addToast: (props: Omit<ToasterToast, "id">) => string;
-  updateToast: (toast: ToasterToast) => void;
-  dismissToast: (toastId?: string) => void;
-  removeToast: (toastId?: string) => void;
-}
+// Create and export a global toast function instance
+let addToastFn: ((props: Omit<ToasterToast, "id">) => string) | null = null;
 
-// Create context with default values
-export const ToastContext = React.createContext<ToastContextType | null>(null);
-
-// Global reference for the toast context value
-let globalToastContext: ToastContextType | null = null;
-
-// Function to set the toast context value
-export function __setToastContextValue(value: ToastContextType | null) {
-  globalToastContext = value;
-}
-
-// Make useToast safer
-export function useToast() {
-  const context = React.useContext(ToastContext);
-  
-  if (!context) {
-    console.warn("useToast used outside of ToastProvider");
-    
-    // Return a minimal implementation that won't crash
-    return {
-      toasts: [],
-      toast: () => "",
-      dismiss: () => {},
-      update: () => {},
-      remove: () => {},
-    };
+export const toast = (props: Omit<ToasterToast, "id">): string => {
+  if (typeof window !== "undefined") {
+    if (addToastFn) {
+      return addToastFn(props);
+    } else {
+      console.warn("Toast called before context was ready");
+      // Return an empty string to avoid errors
+      return "";
+    }
   }
-  
-  const { toasts, addToast, updateToast, dismissToast, removeToast } = context;
+  return "";
+};
+
+export function useToast() {
+  const [state, dispatch] = React.useReducer(reducer, {
+    toasts: [],
+  });
+
+  React.useEffect(() => {
+    state.toasts.forEach((t) => {
+      if (!t.open && !toastTimeouts.has(t.id)) {
+        const timeout = setTimeout(() => {
+          dispatch({ type: actionTypes.REMOVE_TOAST, toastId: t.id });
+          toastTimeouts.delete(t.id);
+        }, TOAST_REMOVE_DELAY);
+        
+        toastTimeouts.set(t.id, timeout);
+      }
+    });
+  }, [state.toasts]);
+
+  const addToast = React.useCallback(
+    (props: Omit<ToasterToast, "id">) => {
+      const id = genId();
+
+      const newToast: ToasterToast = {
+        ...props,
+        id,
+        open: true,
+      };
+      
+      dispatch({
+        type: actionTypes.ADD_TOAST,
+        toast: newToast,
+      });
+
+      return id;
+    },
+    [dispatch]
+  );
+
+  const updateToast = React.useCallback(
+    (props: Partial<ToasterToast>) => {
+      if (!props.id) {
+        return;
+      }
+
+      dispatch({
+        type: actionTypes.UPDATE_TOAST,
+        toast: props,
+      });
+    },
+    [dispatch]
+  );
+
+  const dismissToast = React.useCallback(
+    (toastId?: string) => {
+      dispatch({
+        type: actionTypes.DISMISS_TOAST,
+        toastId,
+      });
+    },
+    [dispatch]
+  );
+
+  const removeToast = React.useCallback(
+    (toastId?: string) => {
+      if (toastId) {
+        toastTimeouts.delete(toastId);
+      }
+
+      dispatch({
+        type: actionTypes.REMOVE_TOAST,
+        toastId,
+      });
+    },
+    [dispatch]
+  );
+
+  React.useEffect(() => {
+    // Set the global toast function when the component mounts
+    addToastFn = addToast;
+    return () => {
+      addToastFn = null;
+      for (const timeout of Array.from(toastTimeouts.values())) {
+        clearTimeout(timeout);
+      }
+      toastTimeouts.clear();
+    };
+  }, [addToast]);
 
   return {
-    toasts,
-    toast: (props: Omit<ToasterToast, "id">) => {
-      return addToast(props);
-    },
-    dismiss: (toastId?: string) => dismissToast(toastId),
-    update: (toast: ToasterToast) => updateToast(toast),
-    remove: (toastId?: string) => removeToast(toastId),
+    toasts: state.toasts,
+    toast: addToast,
+    dismiss: dismissToast,
+    update: updateToast,
+    remove: removeToast,
   };
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = React.useReducer(reducer, { toasts: [] });
-
-  const addToast = React.useCallback((props: Omit<ToasterToast, "id">) => {
-    const id = genId();
-    
-    const toast = {
-      ...props,
-      id,
-      open: true,
-    } as ToasterToast;
-    
-    dispatch({
-      type: actionTypes.ADD_TOAST,
-      toast,
-    });
-
-    return id;
-  }, []);
-
-  const updateToast = React.useCallback((toast: ToasterToast) => {
-    dispatch({
-      type: actionTypes.UPDATE_TOAST,
-      toast,
-    });
-  }, []);
-
-  const dismissToast = React.useCallback((toastId?: string) => {
-    dispatch({
-      type: actionTypes.DISMISS_TOAST,
-      toastId,
-    });
-    
-    // Remove toast after the animation completes
-    if (toastId) {
-      const timeout = toastTimeouts.get(toastId);
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-      
-      const dismissTimeout = setTimeout(() => {
-        dispatch({
-          type: actionTypes.REMOVE_TOAST,
-          toastId,
-        });
-        toastTimeouts.delete(toastId);
-      }, TOAST_REMOVE_DELAY);
-      
-      toastTimeouts.set(toastId, dismissTimeout);
-    }
-  }, []);
-
-  const removeToast = React.useCallback((toastId?: string) => {
-    dispatch({
-      type: actionTypes.REMOVE_TOAST,
-      toastId,
-    });
-  }, []);
-
-  React.useEffect(() => {
-    return () => {
-      toastTimeouts.forEach((timeout) => {
-        clearTimeout(timeout);
-      });
-    };
-  }, []);
-
-  const contextValue: ToastContextType = {
-    toasts: state.toasts,
-    addToast,
-    updateToast,
-    dismissToast,
-    removeToast,
-  };
-
-  // Update global context reference when context changes
-  React.useEffect(() => {
-    __setToastContextValue(contextValue);
-    return () => {
-      __setToastContextValue(null);
-    };
-  }, [contextValue]);
-
-  return (
-    <ToastContext.Provider value={contextValue}>
-      {children}
-    </ToastContext.Provider>
-  );
+  return children;
 }
-
-// The actual toast function exported for use throughout the app
-export const toast = (props: Omit<ToasterToast, "id">): string => {
-  if (typeof window !== "undefined") {
-    // First check if we have the global context available
-    if (globalToastContext) {
-      return globalToastContext.addToast(props);
-    }
-    
-    // Fallback for when context isn't available
-    console.warn("Toast called before context was available:", props);
-  }
-  return "";
-};

@@ -1,6 +1,5 @@
 
 import { useToast } from "@/hooks/use-toast"
-import { __setToastContextValue } from "@/hooks/use-toast"
 import {
   Toast,
   ToastClose,
@@ -9,11 +8,10 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
-import { useEffect } from "react"
 
 export function Toaster() {
   // Get toast context
-  const { toasts, toast: addToast, dismiss, update, remove } = useToast();
+  const { toasts } = useToast();
   
   return (
     <ToastProvider>
