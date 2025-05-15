@@ -44,13 +44,21 @@ export default function Navbar() {
       >
         <div className="container mx-auto flex justify-between items-center py-4">
           <a href="/" className="flex items-center space-x-2">
-            <img 
-              src="https://i.ibb.co/k2KwyQhN/voicemate-logo-horiz-dark.png" 
-              alt="VoiceMate" 
-              className="h-8" 
-            />
+            {isDark ? (
+              <img 
+                src="https://i.ibb.co/k2KwyQhN/voicemate-logo-horiz-dark.png" 
+                alt="VoiceMate" 
+                className="h-8" 
+              />
+            ) : (
+              <img 
+                src="https://i.ibb.co/H4sf1Vq/voicemate-logo-horiz-light.png"
+                alt="VoiceMate" 
+                className="h-8" 
+              />
+            )}
             {profile?.pulse_id && (
-              <span className="text-sm text-voicemate-purple">@{profile.pulse_id}</span>
+              <span className={`text-sm ${isDark ? 'text-voicemate-purple' : 'text-voicemate-purple'}`}>@{profile.pulse_id}</span>
             )}
           </a>
 

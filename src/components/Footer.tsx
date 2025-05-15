@@ -19,7 +19,11 @@ export default function Footer() {
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-voicemate-purple to-voicemate-red">VoiceMate</span>
+              {isDark ? (
+                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-voicemate-purple to-voicemate-red">VoiceMate</span>
+              ) : (
+                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-voicemate-purple to-voicemate-red">VoiceMate</span>
+              )}
             </div>
             <p className={isDark ? "text-gray-500 mt-2" : "text-gray-600 mt-2"}>Reclaim Your Voice. Own Your Identity.</p>
           </motion.div>
