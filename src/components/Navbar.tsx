@@ -16,9 +16,9 @@ export default function Navbar() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Fixed logo URLs for both themes
-  const darkModeLogo = "https://i.ibb.co/k2KwyQh/voicemate-logo-horiz-dark.png";
-  const lightModeLogo = "https://i.ibb.co/bM62K2G/voicemate-logo-horiz-light.png"; // Corrected URL
+  // Corrected logo URLs with the new links
+  const darkModeLogo = "https://i.ibb.co/k2KwyQhN/voicemate-logo-horiz-dark.png";
+  const lightModeLogo = "https://i.ibb.co/bM62K2G9/voicemate-logo-horiz-light.png";
 
   React.useEffect(() => {
     const handleScroll = () => {
