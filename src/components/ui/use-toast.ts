@@ -1,6 +1,6 @@
 
 // Re-export from the hooks directory with safeguards
-import { useToast as useToastHook, toast as toastFunction, toast2, ToastProvider } from "@/hooks/use-toast";
+import { useToast as useToastHook, toast, toast2, ToastProvider } from "@/hooks/use-toast";
 import type { ToasterToast } from "@/hooks/use-toast";
 
 // Safe wrapper for useToast that won't crash if used outside provider
@@ -20,9 +20,6 @@ export const useToast = () => {
   }
 };
 
-// Export the toast function/object for backwards compatibility
-export const toast = toast2;
-
-// Export the toast object for those who need it
-export { toastFunction, ToastProvider };
+// Export the toast function directly for consistent usage
+export { toast, ToastProvider };
 export type { ToasterToast };
