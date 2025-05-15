@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { User, Clock, Mail, Play, Archive } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface PulseItemProps {
   pulse: {
@@ -14,16 +15,33 @@ interface PulseItemProps {
     duration: string;
   };
   onPlay: (id: string) => void;
+  onToggleSelect: (id: string) => void;
+  isSelected: boolean;
 }
 
-const PulseItem: React.FC<PulseItemProps> = ({ pulse, onPlay }) => {
+const PulseItem: React.FC<PulseItemProps> = ({ pulse, onPlay, onToggleSelect, isSelected }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className={`flex items-center p-4 rounded-lg mb-3 ${pulse.unread ? 'bg-voicemate-purple/10 border border-voicemate-purple/20' : 'bg-gray-900/50 border border-gray-800'}`}>
+      <div 
+        className={`flex items-center p-4 rounded-lg mb-3 ${
+          isSelected 
+            ? 'bg-voicemate-purple/20 border border-voicemate-purple'
+            : pulse.unread 
+              ? 'bg-voicemate-purple/10 border border-voicemate-purple/20' 
+              : 'bg-gray-900/50 border border-gray-800'
+        }`}
+      >
+        <div className="flex-shrink-0 mr-4">
+          <Checkbox 
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(pulse.id)}
+            className="mt-1 data-[state=checked]:bg-voicemate-purple data-[state=checked]:border-voicemate-purple"
+          />
+        </div>
         <div className="flex-shrink-0 mr-4">
           <div className="w-10 h-10 rounded-full bg-voicemate-card flex items-center justify-center border border-gray-700">
             <User className="h-5 w-5 text-gray-400" />

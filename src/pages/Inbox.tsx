@@ -10,7 +10,16 @@ import { useInboxState } from '@/hooks/useInboxState';
 export default function InboxPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { selectedPulseId, isPlaying, handlePlayPulse } = useInboxState();
+  const { 
+    selectedPulseId, 
+    isPlaying, 
+    selectedPulses, 
+    isDeleting,
+    handlePlayPulse, 
+    handleToggleSelect, 
+    handleSelectAll, 
+    handleDeleteSelected 
+  } = useInboxState();
   
   useEffect(() => {
     if (!loading && !user) {
@@ -32,8 +41,17 @@ export default function InboxPage() {
     <div className="min-h-screen bg-black">
       <Navbar />
       <div className="container mx-auto px-4 pt-24 pb-12">
-        <InboxHeader />
-        <InboxContent onPlayPulse={handlePlayPulse} />
+        <InboxHeader 
+          selectedCount={selectedPulses.length} 
+          onDeleteSelected={handleDeleteSelected} 
+          isDeleting={isDeleting}
+        />
+        <InboxContent 
+          onPlayPulse={handlePlayPulse} 
+          onToggleSelect={handleToggleSelect}
+          onSelectAll={handleSelectAll}
+          selectedPulses={selectedPulses}
+        />
       </div>
     </div>
   );

@@ -2,9 +2,11 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Inbox } from 'lucide-react';
+import { Inbox, Trash2 } from 'lucide-react';
 import PulseItem from './PulseItem';
 import EmptyState from './EmptyState';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Mock data for received pulses
 const mockReceivedPulses = [
@@ -54,11 +56,24 @@ const mockArchivedPulses = [
 
 interface InboxContentProps {
   onPlayPulse: (id: string) => void;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: (ids: string[]) => void;
+  selectedPulses: string[];
 }
 
-const InboxContent: React.FC<InboxContentProps> = ({ onPlayPulse }) => {
+const InboxContent: React.FC<InboxContentProps> = ({ 
+  onPlayPulse, 
+  onToggleSelect,
+  onSelectAll, 
+  selectedPulses 
+}) => {
   const [activeTab, setActiveTab] = useState('inbox');
   
+  const currentPulses = activeTab === 'inbox' ? mockReceivedPulses : mockArchivedPulses;
+  const currentPulseIds = currentPulses.map(pulse => pulse.id);
+  const areAllSelected = currentPulses.length > 0 && 
+    currentPulses.every(pulse => selectedPulses.includes(pulse.id));
+    
   return (
     <Card className="bg-voicemate-card border-gray-800">
       <CardHeader>
@@ -70,13 +85,32 @@ const InboxContent: React.FC<InboxContentProps> = ({ onPlayPulse }) => {
             </CardTitle>
             <CardDescription>Listen and respond to your received pulses</CardDescription>
           </div>
+          {currentPulses.length > 0 && (
+            <div className="flex items-center">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="select-all"
+                  checked={areAllSelected}
+                  onCheckedChange={() => onSelectAll(currentPulseIds)}
+                  className="data-[state=checked]:bg-voicemate-purple data-[state=checked]:border-voicemate-purple"
+                />
+                <label htmlFor="select-all" className="text-sm text-gray-400 cursor-pointer">
+                  {areAllSelected ? 'Deselect All' : 'Select All'}
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
         <Tabs 
           defaultValue="inbox" 
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={(value) => {
+            setActiveTab(value);
+            // Clear selections when switching tabs
+            onSelectAll([]);
+          }}
           className="w-full"
         >
           <TabsList className="grid grid-cols-2 mb-6 bg-black/20 w-full md:w-[400px]">
@@ -91,7 +125,9 @@ const InboxContent: React.FC<InboxContentProps> = ({ onPlayPulse }) => {
                   <PulseItem 
                     key={pulse.id} 
                     pulse={pulse} 
-                    onPlay={onPlayPulse} 
+                    onPlay={onPlayPulse}
+                    onToggleSelect={onToggleSelect}
+                    isSelected={selectedPulses.includes(pulse.id)} 
                   />
                 ))}
               </div>
@@ -107,7 +143,9 @@ const InboxContent: React.FC<InboxContentProps> = ({ onPlayPulse }) => {
                   <PulseItem 
                     key={pulse.id} 
                     pulse={pulse} 
-                    onPlay={onPlayPulse} 
+                    onPlay={onPlayPulse}
+                    onToggleSelect={onToggleSelect}
+                    isSelected={selectedPulses.includes(pulse.id)}  
                   />
                 ))}
               </div>
