@@ -1,3 +1,4 @@
+
 import * as React from "react";
 
 import type {
@@ -146,6 +147,9 @@ function toast({ ...props }: Toast) {
       toast: { ...props, id },
     });
   const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
+
+  // Log toast for debugging
+  console.log(`Toast created: ${props.title || 'Untitled'}`);
 
   dispatch({
     type: actionTypes.ADD_TOAST,

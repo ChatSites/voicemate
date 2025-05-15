@@ -1,6 +1,6 @@
 
 import { isPulseIdTaken, clearAllPulseIdCaches } from '@/integrations/supabase/client';
-import { toast } from "@/hooks/use-toast"; // Updated to use the new location
+import { toast } from "@/hooks/use-toast";
 
 /**
  * A unified service for handling PulseID availability checks
@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast"; // Updated to use the new location
 // Maintain a cache of already checked pulse IDs to reduce API calls
 // Using a shorter cache duration for more accurate results
 const pulseIdCache: Record<string, {available: boolean, timestamp: number}> = {};
-const CACHE_DURATION = 1500; // 1.5 seconds cache (reduced for more accurate checks)
+const CACHE_DURATION = 1000; // 1 second cache (reduced for more accurate checks)
 
 // Flag for forcing a fresh check
 let forceRefresh = false;
@@ -49,6 +49,14 @@ export const checkPulseIdAvailability = async (
     const cached = pulseIdCache[normalizedPulseId];
     if (!skipCache && cached && (Date.now() - cached.timestamp) < CACHE_DURATION && !forceRefresh) {
       console.log(`Service: Using cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
+      
+      // Show a toast when using cached results
+      toast({
+        title: "Using cached result",
+        description: `PulseID '${normalizedPulseId}' is ${cached.available ? 'available' : 'already taken'} (cached)`,
+        variant: cached.available ? "default" : "destructive"
+      });
+      
       return {
         available: cached.available,
         suggestions: cached.available ? [] : generateSuggestions(normalizedPulseId)
@@ -60,10 +68,25 @@ export const checkPulseIdAvailability = async (
       forceRefresh = false;
       clearAllPulseIdCaches(); // Clear all Supabase caches too
       console.log('Service: Force refresh activated, all caches cleared');
+      
+      // Show a toast when force refreshing
+      toast({
+        title: "Force Refresh",
+        description: "Cleared caches for a fresh availability check",
+        variant: "default"
+      });
     }
 
     // Check with Supabase - this will check its own cache first
     console.log(`Service: Calling Supabase to check ${normalizedPulseId}`);
+    
+    // Show a toast when checking with Supabase
+    toast({
+        title: "Checking availability",
+        description: `Verifying if '${normalizedPulseId}' is available...`,
+        variant: "default"
+    });
+    
     const isTaken = await isPulseIdTaken(normalizedPulseId);
     console.log(`Service: Supabase result for ${normalizedPulseId}: ${isTaken ? 'taken' : 'available'}`);
     
@@ -73,6 +96,15 @@ export const checkPulseIdAvailability = async (
       available: !isTaken,
       timestamp: currentTime
     };
+    
+    // Always show a toast with the result
+    toast({
+      title: `PulseID ${!isTaken ? 'Available' : 'Unavailable'}`,
+      description: !isTaken 
+        ? `'${normalizedPulseId}' is available for you to claim!` 
+        : `'${normalizedPulseId}' is already taken. Try another one.`,
+      variant: !isTaken ? "default" : "destructive"
+    });
 
     // Return result
     return {
@@ -117,6 +149,11 @@ export const clearPulseIdCache = () => {
     delete pulseIdCache[key];
   }
   clearAllPulseIdCaches(); // Also clear Supabase caches
+  
+  toast({
+    title: "Cache Cleared",
+    description: "All PulseID availability caches have been cleared.",
+  });
 };
 
 // Force the next check to bypass all caches

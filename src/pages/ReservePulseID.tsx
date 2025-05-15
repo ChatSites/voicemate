@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import PulseIdInput from '@/components/reserve/PulseIdInput';
 import BenefitsList from '@/components/reserve/BenefitsList';
@@ -13,6 +13,7 @@ import { useTheme } from '@/components/providers/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import { forceRefreshNextCheck } from '@/services/pulseIdService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Toaster } from '@/components/ui/toaster';
 
 const ReservePulseID = () => {
   const [pulseId, setPulseId] = useState('');
@@ -21,6 +22,14 @@ const ReservePulseID = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  
+  // Show welcome toast on initial render
+  useEffect(() => {
+    toast({
+      title: "Welcome to PulseID Reservation",
+      description: "Enter a PulseID to check its availability",
+    });
+  }, []);
   
   const proceedToSignup = () => {
     if (pulseIdAvailable) {
@@ -54,6 +63,9 @@ const ReservePulseID = () => {
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${isDark ? 'bg-black' : 'bg-gray-50'}`}>
       <div className={`absolute inset-0 bg-mesh-gradient animate-gradient-y -z-10 ${isDark ? 'opacity-10' : 'opacity-5'}`}></div>
+      
+      {/* Make sure the Toaster is included */}
+      <Toaster />
       
       <div className="w-full max-w-md">
         <div className="absolute top-4 right-4">
