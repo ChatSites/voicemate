@@ -5,7 +5,7 @@ import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import PulseIdSuggestions from './PulseIdSuggestions';
 import FormFeedback from '@/components/ui/form-feedback';
 import { useTheme } from '@/components/providers/ThemeProvider';
-import { checkPulseIdAvailability } from '@/services/pulseIdService';
+import { checkPulseIdAvailability, forceRefreshNextCheck } from '@/services/pulseIdService';
 
 type PulseIdInputProps = {
   pulseId: string;
@@ -22,10 +22,16 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [touched, setTouched] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstRun = useRef(true);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  
+  // Initial force refresh to ensure we get fresh data
+  useEffect(() => {
+    forceRefreshNextCheck();
+  }, []);
   
   // Check PulseID availability whenever it changes
   useEffect(() => {
@@ -53,10 +59,31 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     checkTimeoutRef.current = setTimeout(async () => {
       try {
         console.log(`Performing check for: ${pulseId}`);
-        // Use the shared service instead of direct API call
-        const result = await checkPulseIdAvailability(pulseId);
+        // Use the shared service with cache skipping if we've had errors
+        const skipCache = errorCount > 0;
+        const result = await checkPulseIdAvailability(pulseId, skipCache);
         
         console.log(`Result for ${pulseId}: ${result.available ? 'available' : 'unavailable'}`);
+        
+        // If the result doesn't match what we'd expect, increment error count and retry with cache bypass
+        if (errorCount > 0 && result.available) {
+          setErrorCount(prev => prev + 1);
+          // If we've tried multiple times and still getting wrong results, force a refresh
+          if (errorCount >= 2) {
+            console.log("Multiple errors detected, forcing refresh");
+            forceRefreshNextCheck();
+            // Wait a moment and retry one more time
+            setTimeout(async () => {
+              const finalResult = await checkPulseIdAvailability(pulseId, true);
+              setIsAvailable(finalResult.available);
+              setPulseIdAvailable(finalResult.available);
+              setSuggestions(finalResult.suggestions);
+            }, 100);
+          }
+        } else {
+          // Reset error count if we get expected results
+          if (errorCount > 0) setErrorCount(0);
+        }
         
         setIsAvailable(result.available);
         setPulseIdAvailable(result.available);
@@ -65,6 +92,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         console.error('Error checking PulseID availability:', error);
         setIsAvailable(null);
         setPulseIdAvailable(null);
+        setErrorCount(prev => prev + 1);
       } finally {
         setIsChecking(false);
       }
@@ -75,7 +103,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         clearTimeout(checkTimeoutRef.current);
       }
     };
-  }, [pulseId, touched, setPulseIdAvailable]);
+  }, [pulseId, touched, setPulseIdAvailable, errorCount]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove spaces and convert to lowercase
@@ -86,6 +114,23 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     }
   };
   
+  const refreshCheck = () => {
+    if (pulseId && pulseId.length >= 3) {
+      forceRefreshNextCheck();
+      setErrorCount(0);
+      setIsChecking(true);
+      // Immediate check with cache bypass
+      checkPulseIdAvailability(pulseId, true).then(result => {
+        setIsAvailable(result.available);
+        setPulseIdAvailable(result.available);
+        setSuggestions(result.suggestions);
+        setIsChecking(false);
+      }).catch(() => {
+        setIsChecking(false);
+      });
+    }
+  };
+  
   return (
     <div className="space-y-2">
       <div className="relative">
@@ -93,7 +138,12 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           placeholder="Choose your PulseID"
           value={pulseId}
           onChange={handleChange}
-          onBlur={() => setTouched(true)}
+          onBlur={() => {
+            setTouched(true);
+            if (pulseId && pulseId.length >= 3) {
+              refreshCheck();
+            }
+          }}
           className={`${isDark ? 'bg-black/30 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'} pr-10`}
           data-testid="pulse-id-input"
         />
@@ -103,7 +153,12 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           </div>
         )}
         {!isChecking && isAvailable !== null && pulseId.length >= 3 && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2" data-testid="availability-indicator">
+          <div 
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" 
+            data-testid="availability-indicator"
+            onClick={refreshCheck}
+            title="Click to refresh check"
+          >
             {isAvailable ? (
               <CircleCheck className="h-4 w-4 text-green-500" />
             ) : (

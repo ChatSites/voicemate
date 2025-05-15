@@ -1,5 +1,5 @@
 
-import { isPulseIdTaken } from '@/integrations/supabase/client';
+import { isPulseIdTaken, clearAllPulseIdCaches } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 
 /**
@@ -9,14 +9,21 @@ import { toast } from "@/components/ui/use-toast";
 
 // Maintain a cache of already checked pulse IDs to reduce API calls
 const pulseIdCache: Record<string, {available: boolean, timestamp: number}> = {};
-const CACHE_DURATION = 10000; // 10 seconds cache (reduced for testing)
+const CACHE_DURATION = 5000; // 5 seconds cache (reduced for faster checks)
+
+// Flag for forcing a fresh check
+let forceRefresh = false;
 
 /**
  * Checks if a PulseID is available
  * @param pulseId The PulseID to check
+ * @param skipCache Whether to skip the cache and force a fresh check
  * @returns A promise that resolves to a result object
  */
-export const checkPulseIdAvailability = async (pulseId: string): Promise<{
+export const checkPulseIdAvailability = async (
+  pulseId: string, 
+  skipCache: boolean = false
+): Promise<{
   available: boolean,
   suggestions: string[],
   errorMessage?: string
@@ -37,14 +44,20 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
     
     console.log(`Service: Checking availability for: ${normalizedPulseId}`);
 
-    // Check cache first to avoid unnecessary API calls
+    // Check cache first to avoid unnecessary API calls, unless skipCache is true
     const cached = pulseIdCache[normalizedPulseId];
-    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    if (!skipCache && cached && (Date.now() - cached.timestamp) < CACHE_DURATION && !forceRefresh) {
       console.log(`Service: Using cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
       return {
         available: cached.available,
         suggestions: cached.available ? [] : generateSuggestions(normalizedPulseId)
       };
+    }
+    
+    // Reset force refresh flag
+    if (forceRefresh) {
+      forceRefresh = false;
+      clearAllPulseIdCaches(); // Clear all Supabase caches too
     }
 
     // Check with Supabase - this will check its own cache first
@@ -100,4 +113,11 @@ export const clearPulseIdCache = () => {
   for (const key in pulseIdCache) {
     delete pulseIdCache[key];
   }
+  clearAllPulseIdCaches(); // Also clear Supabase caches
+};
+
+// Force the next check to bypass all caches
+export const forceRefreshNextCheck = () => {
+  console.log('Service: Forcing refresh for next check');
+  forceRefresh = true;
 };

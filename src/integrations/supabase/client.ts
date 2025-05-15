@@ -87,8 +87,8 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     if (cachedResult) {
       const { result, timestamp } = JSON.parse(cachedResult);
       
-      // Use cached result if less than 10 seconds old (reduced from 30 seconds for testing)
-      if (Date.now() - timestamp < 10000) {
+      // Use cached result if less than 5 seconds old (reduced from 10 seconds for testing)
+      if (Date.now() - timestamp < 5000) {
         console.log(`Supabase: Using cached result for ${normalizedPulseId}: ${result ? 'taken' : 'available'}`);
         return result;
       }
@@ -96,7 +96,7 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     
     console.log(`Supabase: Checking availability for PulseID: ${normalizedPulseId}`);
     
-    // Query to check if PulseID exists
+    // Query to check if PulseID exists - using ilike for case-insensitive matching
     const { data, error } = await supabase
       .from('users')
       .select('id')
@@ -112,7 +112,35 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     const result = Array.isArray(data) && data.length > 0;
     console.log(`Supabase: Database result for ${normalizedPulseId}: ${result ? 'taken' : 'available'}`);
     
-    // Cache the result for 10 seconds (reduced for testing)
+    // Clear all PulseID caches periodically to ensure fresh data
+    if (!result) {
+      // Double-check with another query if result is "available"
+      console.log(`Supabase: Double-checking PulseID availability for: ${normalizedPulseId}`);
+      const { data: doubleCheckData, error: doubleCheckError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('pulse_id', normalizedPulseId)
+        .limit(1);
+      
+      if (doubleCheckError) {
+        console.error('Supabase: Error in double-check:', doubleCheckError);
+      } else {
+        const doubleCheckResult = Array.isArray(doubleCheckData) && doubleCheckData.length > 0;
+        if (doubleCheckResult) {
+          console.log(`Supabase: Double-check found ${normalizedPulseId} is actually TAKEN`);
+          
+          // Cache the result for 5 seconds
+          localStorage.setItem(cacheKey, JSON.stringify({
+            result: true, // Override with taken
+            timestamp: Date.now()
+          }));
+          
+          return true; // PulseID is taken
+        }
+      }
+    }
+    
+    // Cache the result for 5 seconds
     localStorage.setItem(cacheKey, JSON.stringify({
       result,
       timestamp: Date.now()
@@ -124,4 +152,13 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     // On error, assume ID is not taken to avoid blocking registration
     return false;
   }
+};
+
+// Clear all PulseID caches
+export const clearAllPulseIdCaches = () => {
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('pulseId_check_')) {
+      localStorage.removeItem(key);
+    }
+  });
 };

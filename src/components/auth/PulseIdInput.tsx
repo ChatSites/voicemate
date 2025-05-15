@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import FormFeedback from '@/components/ui/form-feedback';
 import PulseIdSuggestions from './PulseIdSuggestions';
-import { checkPulseIdAvailability } from '@/services/pulseIdService';
+import { checkPulseIdAvailability, forceRefreshNextCheck } from '@/services/pulseIdService';
 
 interface PulseIdInputProps {
   pulseId: string;
@@ -28,8 +28,14 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
 }) => {
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   const [pulseIdTouched, setPulseIdTouched] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
   const pulseIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstRun = useRef(true);
+
+  // Force refresh on component mount
+  useEffect(() => {
+    forceRefreshNextCheck();
+  }, []);
 
   // Check PulseID availability whenever it changes
   useEffect(() => {
@@ -56,10 +62,30 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     pulseIdCheckTimeoutRef.current = setTimeout(async () => {
       try {
         console.log(`Auth Component: Performing check for: ${pulseId}`);
-        // Use the shared service for consistent validation
-        const result = await checkPulseIdAvailability(pulseId);
+        // Use the shared service for consistent validation with cache skip if errors
+        const skipCache = errorCount > 0;
+        const result = await checkPulseIdAvailability(pulseId, skipCache);
         
         console.log(`Auth Component: Result for ${pulseId}: ${result.available ? 'available' : 'unavailable'}`);
+        
+        // If we've had errors and the result is not what we expect, increment error count
+        if (errorCount > 0 && result.available) {
+          setErrorCount(prev => prev + 1);
+          // If multiple errors, force refresh and try again
+          if (errorCount >= 2) {
+            console.log("Auth Component: Multiple errors detected, forcing refresh");
+            forceRefreshNextCheck();
+            // Wait a moment and retry
+            setTimeout(async () => {
+              const finalResult = await checkPulseIdAvailability(pulseId, true);
+              setPulseIdAvailable(finalResult.available);
+              setPulseIdSuggestions(finalResult.available ? [] : finalResult.suggestions);
+            }, 100);
+          }
+        } else {
+          // Reset error count on success
+          if (errorCount > 0) setErrorCount(0);
+        }
         
         setPulseIdAvailable(result.available);
         setPulseIdSuggestions(result.available ? [] : result.suggestions);
@@ -67,6 +93,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         console.error('Auth Component: Error checking PulseID:', error);
         // On error, assume ID is available to avoid blocking registration
         setPulseIdAvailable(null);
+        setErrorCount(prev => prev + 1);
       } finally {
         setIsCheckingPulseId(false);
       }
@@ -77,7 +104,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         clearTimeout(pulseIdCheckTimeoutRef.current);
       }
     };
-  }, [pulseId, registrationInProgress, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions]);
+  }, [pulseId, registrationInProgress, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions, errorCount]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove spaces and convert to lowercase
@@ -96,6 +123,22 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     setPulseIdSuggestions([]);
   };
   
+  const refreshCheck = () => {
+    if (pulseId && pulseId.length >= 3 && !registrationInProgress) {
+      forceRefreshNextCheck();
+      setErrorCount(0);
+      setIsCheckingPulseId(true);
+      // Force a fresh check
+      checkPulseIdAvailability(pulseId, true).then(result => {
+        setPulseIdAvailable(result.available);
+        setPulseIdSuggestions(result.available ? [] : result.suggestions);
+        setIsCheckingPulseId(false);
+      }).catch(() => {
+        setIsCheckingPulseId(false);
+      });
+    }
+  };
+  
   return (
     <div className="space-y-2">
       <Label htmlFor="pulseId">PulseID</Label>
@@ -105,7 +148,14 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           type="text"
           value={pulseId}
           onChange={handlePulseIdChange}
-          onBlur={() => pulseId.length >= 1 && setPulseIdTouched(true)}
+          onBlur={() => {
+            if (pulseId.length >= 1) {
+              setPulseIdTouched(true);
+              if (pulseId.length >= 3) {
+                refreshCheck();
+              }
+            }
+          }}
           placeholder="Enter your unique PulseID"
           className="bg-black/30 border-gray-700 pr-10"
           disabled={registrationInProgress}
@@ -118,7 +168,12 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           </div>
         )}
         {!isCheckingPulseId && pulseIdAvailable !== null && pulseId.length >= 3 && pulseIdTouched && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2" data-testid="auth-availability-indicator">
+          <div 
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" 
+            data-testid="auth-availability-indicator"
+            onClick={refreshCheck}
+            title="Click to refresh check"
+          >
             {pulseIdAvailable ? (
               <CircleCheck className="h-4 w-4 text-green-500" />
             ) : (
