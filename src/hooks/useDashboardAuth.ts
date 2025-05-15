@@ -44,17 +44,37 @@ export const useDashboardAuth = () => {
       console.log("No authenticated user found, redirecting to auth page");
       
       try {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to access the dashboard",
-          variant: "destructive"
-        });
+        // Show toast notification only if we're in the browser environment
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            try {
+              toast({
+                title: "Authentication required",
+                description: "Please sign in to access the dashboard",
+                variant: "destructive"
+              });
+            } catch (err) {
+              console.error("Failed to show toast notification:", err);
+            }
+          }, 0);
+        }
       } catch (err) {
-        console.error("Failed to show toast notification:", err);
+        console.error("Failed in toast attempt:", err);
       }
       
       // Ensure the redirect happens even if toast fails
-      setTimeout(() => navigate('/auth'), 100);
+      // Use setTimeout to avoid potential race conditions
+      setTimeout(() => {
+        try {
+          navigate('/auth');
+        } catch (navErr) {
+          console.error("Navigation error:", navErr);
+          // Fallback if navigation fails
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth';
+          }
+        }
+      }, 200);
     } else if (user) {
       console.log("Authenticated user found:", user.email);
       setState(prev => ({

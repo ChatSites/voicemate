@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 3000; // Reduced from 5000ms to 3000ms to make toasts disappear faster
+const TOAST_REMOVE_DELAY = 2000; // Reduced delay to make toasts disappear faster
 
 type ToasterToast = Omit<ToastProps, "children"> & {
   id: string;
@@ -113,52 +113,25 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-const ToastContext = React.createContext<{
-  toasts: ToasterToast[];
-  addToast: (props: Omit<ToasterToast, "id">) => string;
-  updateToast: (toast: ToasterToast) => void;
-  dismissToast: (toastId?: string) => void;
-  removeToast: (toastId?: string) => void;
-}>({
+// Create context with default values
+const defaultValue = {
   toasts: [],
   addToast: () => "",
   updateToast: () => {},
   dismissToast: () => {},
   removeToast: () => {},
-});
+};
 
+const ToastContext = React.createContext(defaultValue);
+
+// Make useToast safer
 export function useToast() {
-  try {
-    const context = React.useContext(ToastContext);
-    
-    if (!context) {
-      console.warn("useToast used outside of ToastProvider - toast functionality will be limited");
-      
-      // Return a minimal implementation that won't crash
-      return {
-        toasts: [],
-        toast: () => "",
-        dismiss: () => {},
-        update: () => {},
-        remove: () => {},
-      };
-    }
-    
-    const { toasts, addToast, updateToast, dismissToast, removeToast } = context;
+  const context = React.useContext(ToastContext);
   
-    return {
-      toasts,
-      toast: (props: Omit<ToasterToast, "id">) => {
-        return addToast(props);
-      },
-      dismiss: (toastId?: string) => dismissToast(toastId),
-      update: (toast: ToasterToast) => updateToast(toast),
-      remove: (toastId?: string) => removeToast(toastId),
-    };
-  } catch (err) {
-    console.error("Error in useToast hook:", err);
+  if (!context) {
+    console.warn("useToast used outside of ToastProvider");
     
-    // Return a fallback implementation that won't crash
+    // Return a minimal implementation that won't crash
     return {
       toasts: [],
       toast: () => "",
@@ -167,6 +140,18 @@ export function useToast() {
       remove: () => {},
     };
   }
+  
+  const { toasts, addToast, updateToast, dismissToast, removeToast } = context;
+
+  return {
+    toasts,
+    toast: (props: Omit<ToasterToast, "id">) => {
+      return addToast(props);
+    },
+    dismiss: (toastId?: string) => dismissToast(toastId),
+    update: (toast: ToasterToast) => updateToast(toast),
+    remove: (toastId?: string) => removeToast(toastId),
+  };
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -251,29 +236,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// To simplify usage - with error handling
+// Make toast function a standalone function that can be used safely
 export const toast = (props: Omit<ToasterToast, "id">) => {
+  // Get current context if available
+  let id = "";
   try {
-    // Get toast context directly
-    let toastId = "";
-    
-    // Use a try/catch to safely check for context
-    try {
-      const context = React.useContext(ToastContext);
-      if (context) {
-        toastId = context.addToast(props);
-      } else {
-        console.warn("Toast used outside of ToastProvider - no toast will be shown");
-      }
-    } catch (contextError) {
-      console.warn("Error accessing toast context:", contextError);
+    // Try to get context
+    const contextValue = React.useContext(ToastContext);
+    if (contextValue && contextValue.addToast) {
+      return contextValue.addToast(props);
     }
-    
-    return toastId;
-  } catch (error) {
-    console.error("Error dispatching toast:", error);
-    return "";
+  } catch (err) {
+    console.warn("Toast function error:", err);
   }
+  
+  // If we reach here, addToast was not available or errored
+  console.warn("Toast context not available for direct toast function");
+  return id;
 };
 
 export type { ToasterToast };

@@ -2,16 +2,25 @@
 "use client";
 
 import { useTheme } from "@/components/providers/ThemeProvider";
-import { Toaster as Sonner, toast } from "sonner";
+import { Toaster as Sonner } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  // Get theme safely with fallback
+  let themeValue = "system";
+  try {
+    const themeContext = useTheme();
+    if (themeContext && themeContext.theme) {
+      themeValue = themeContext.theme;
+    }
+  } catch (err) {
+    console.warn("Error accessing theme:", err);
+  }
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={themeValue as ToasterProps["theme"]}
       className="toaster group"
       toastOptions={{
         classNames: {
@@ -26,7 +35,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster, toast }
+export { Toaster };
+export { toast } from "sonner";
