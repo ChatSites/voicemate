@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
-import { isPulseIdTaken } from '@/integrations/supabase/client';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import PulseIdSuggestions from './PulseIdSuggestions';
 import FormFeedback from '@/components/ui/form-feedback';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { checkPulseIdAvailability } from '@/services/pulseIdService';
 
 type PulseIdInputProps = {
   pulseId: string;
@@ -23,7 +23,6 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [touched, setTouched] = useState(false);
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastCheckedPulseIdRef = useRef<string>('');
   const isFirstRun = useRef(true);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -42,11 +41,6 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       return;
     }
     
-    // Skip if we already checked this exact pulse ID recently
-    if (lastCheckedPulseIdRef.current === pulseId) {
-      return;
-    }
-    
     // Clear any existing timeout
     if (checkTimeoutRef.current) {
       clearTimeout(checkTimeoutRef.current);
@@ -57,22 +51,12 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     // Debounce to avoid too many API calls
     checkTimeoutRef.current = setTimeout(async () => {
       try {
-        lastCheckedPulseIdRef.current = pulseId;
-        const isTaken = await isPulseIdTaken(pulseId);
-        setIsAvailable(!isTaken);
-        setPulseIdAvailable(!isTaken);
+        // Use the shared service instead of direct API call
+        const result = await checkPulseIdAvailability(pulseId);
         
-        if (isTaken) {
-          // Generate random variations as suggestions
-          const randomSuggestions = [
-            `${pulseId}_${Math.floor(Math.random() * 1000)}`,
-            `${pulseId}${Date.now().toString().slice(-4)}`,
-            `${pulseId}123`,
-          ];
-          setSuggestions(randomSuggestions);
-        } else {
-          setSuggestions([]);
-        }
+        setIsAvailable(result.available);
+        setPulseIdAvailable(result.available);
+        setSuggestions(result.suggestions);
       } catch (error) {
         console.error('Error checking PulseID availability:', error);
         setIsAvailable(null);
@@ -87,7 +71,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         clearTimeout(checkTimeoutRef.current);
       }
     };
-  }, [pulseId, touched]);
+  }, [pulseId, touched, setPulseIdAvailable]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove spaces and convert to lowercase

@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import FormFeedback from '@/components/ui/form-feedback';
-import { isPulseIdTaken } from '@/integrations/supabase/client';
 import PulseIdSuggestions from './PulseIdSuggestions';
+import { checkPulseIdAvailability } from '@/services/pulseIdService';
 
 interface PulseIdInputProps {
   pulseId: string;
@@ -29,7 +29,6 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   const [isCheckingPulseId, setIsCheckingPulseId] = useState(false);
   const [pulseIdTouched, setPulseIdTouched] = useState(false);
   const pulseIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastCheckedPulseIdRef = useRef<string>('');
   const isFirstRun = useRef(true);
 
   // Check PulseID availability without causing infinite loops
@@ -45,11 +44,6 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
       return;
     }
     
-    // Skip if we already checked this exact pulse ID recently
-    if (lastCheckedPulseIdRef.current === pulseId) {
-      return;
-    }
-    
     // Clear any existing timeout to prevent multiple checks
     if (pulseIdCheckTimeoutRef.current) {
       clearTimeout(pulseIdCheckTimeoutRef.current);
@@ -60,26 +54,14 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
     // Use timeout to debounce and prevent excessive API calls
     pulseIdCheckTimeoutRef.current = setTimeout(async () => {
       try {
-        lastCheckedPulseIdRef.current = pulseId;
-        const isTaken = await isPulseIdTaken(pulseId);
+        // Use the shared service for consistent validation
+        const result = await checkPulseIdAvailability(pulseId);
         
-        if (isTaken) {
-          // If taken, generate some alternative suggestions
-          const suggestions = [
-            `${pulseId}${Math.floor(Math.random() * 1000)}`,
-            `${pulseId}_${Math.floor(Math.random() * 100)}`,
-            `${pulseId}.${new Date().getFullYear() % 100}`
-          ];
-          
-          setPulseIdSuggestions(suggestions);
-          setPulseIdAvailable(false);
-        } else {
-          setPulseIdAvailable(true);
-          setPulseIdSuggestions([]);
-        }
+        setPulseIdAvailable(result.available);
+        setPulseIdSuggestions(result.available ? [] : result.suggestions);
       } catch (error) {
         console.error('Error checking PulseID:', error);
-        // On error, assume ID is not taken to avoid blocking registration
+        // On error, assume ID is available to avoid blocking registration
         setPulseIdAvailable(true);
       } finally {
         setIsCheckingPulseId(false);
@@ -91,7 +73,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
         clearTimeout(pulseIdCheckTimeoutRef.current);
       }
     };
-  }, [pulseId, registrationInProgress, pulseIdTouched]);
+  }, [pulseId, registrationInProgress, pulseIdTouched, setPulseIdAvailable, setPulseIdSuggestions]);
   
   const handlePulseIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim().replace(/\s+/g, '').toLowerCase();
@@ -105,7 +87,6 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
   
   const selectSuggestion = (suggestion: string) => {
     setPulseId(suggestion);
-    lastCheckedPulseIdRef.current = suggestion; // Update the last checked ref
     setPulseIdAvailable(true);
     setPulseIdSuggestions([]);
   };
