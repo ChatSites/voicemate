@@ -11,6 +11,7 @@ interface UseSendPulseProps {
 
 export function useSendPulse({ userId }: UseSendPulseProps) {
   const [isSending, setIsSending] = useState(false);
+  const [pulseData, setPulseData] = useState<any>(null);
   const navigate = useNavigate();
 
   const sendPulse = async (
@@ -26,7 +27,7 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
         description: "Please record a voice message before sending.",
         variant: "destructive"
       });
-      return;
+      return null;
     }
     
     if (!pulseTitle.trim()) {
@@ -35,7 +36,7 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
         description: "Please add a title for your pulse.",
         variant: "destructive"
       });
-      return;
+      return null;
     }
 
     if (!userId) {
@@ -44,11 +45,12 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
         description: "User ID not found. Please sign in again.",
         variant: "destructive"
       });
-      return;
+      return null;
     }
     
     // Show sending state
     setIsSending(true);
+    setPulseData(null);
     
     try {
       console.log("Sending pulse...");
@@ -113,12 +115,16 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
       
       console.log("Pulse data saved successfully:", pulseData);
       
+      // Store the pulse data in state
+      setPulseData(pulseData[0]);
+      
+      // Basic toast notification with success message
       toast({
         title: "Pulse Sent!",
         description: "Your voice message has been sent successfully.",
       });
       
-      navigate('/dashboard');
+      return pulseData[0];
     } catch (error) {
       console.error("Error sending pulse:", error);
       toast({
@@ -126,10 +132,11 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
+      return null;
     } finally {
       setIsSending(false);
     }
   };
 
-  return { isSending, sendPulse };
+  return { isSending, pulseData, setPulseData, sendPulse };
 }
