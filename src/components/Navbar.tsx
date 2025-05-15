@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = React.useState(false);
@@ -12,6 +13,8 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
   const { profile } = useUserProfile();
   const location = useLocation();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -33,8 +36,10 @@ export default function Navbar() {
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled 
-            ? "bg-black/80 dark:bg-black/80 backdrop-blur-md border-b border-border/50" 
-            : "bg-transparent dark:bg-transparent"
+            ? isDark 
+              ? "bg-black/80 backdrop-blur-md border-b border-border/50" 
+              : "bg-white/80 backdrop-blur-md border-b border-gray-200/50"
+            : "bg-transparent"
         }`}
       >
         <div className="container mx-auto flex justify-between items-center py-4">
@@ -45,25 +50,25 @@ export default function Navbar() {
               className="h-8" 
             />
             {profile?.pulse_id && (
-              <span className="text-sm text-voicemate-purple dark:text-voicemate-purple">@{profile.pulse_id}</span>
+              <span className="text-sm text-voicemate-purple">@{profile.pulse_id}</span>
             )}
           </a>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#how-it-works" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
+            <a href="#how-it-works" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
               How It Works
             </a>
-            <a href="#use-cases" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
+            <a href="#use-cases" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
               Use Cases
             </a>
 
             {user ? (
               <>
-                <a href="/dashboard" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">Dashboard</a>
-                <a href="/create" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">Send Pulse</a>
-                <a href="/inbox" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">Inbox</a>
+                <a href="/dashboard" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Dashboard</a>
+                <a href="/create" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Send Pulse</a>
+                <a href="/inbox" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Inbox</a>
                 {profile?.name && (
-                  <span className="text-sm text-gray-400 dark:text-gray-400 italic">{profile.name}</span>
+                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} italic`}>{profile.name}</span>
                 )}
                 <ThemeToggle />
                 <Button 
@@ -77,7 +82,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <a href="/reserve" className="text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
+                <a href="/reserve" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                   Reserve PulseID
                 </a>
                 <ThemeToggle />
@@ -98,7 +103,7 @@ export default function Navbar() {
             <Button 
               variant="outline" 
               size="icon" 
-              className="border-gray-700 dark:border-gray-700"
+              className={isDark ? "border-gray-700" : "border-gray-300"}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -112,20 +117,20 @@ export default function Navbar() {
       </header>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-black dark:bg-black border-t border-gray-800 dark:border-gray-800 px-4 py-6 space-y-4 transition-all duration-300 ease-in-out">
+        <div className={`md:hidden ${isDark ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} border-t px-4 py-6 space-y-4 transition-all duration-300 ease-in-out`}>
           {user ? (
             <>
-              <div className="text-white dark:text-white text-sm">
+              <div className={isDark ? "text-white text-sm" : "text-gray-900 text-sm"}>
                 <span className="block font-semibold">@{profile?.pulse_id || 'loading'}</span>
                 <span className="block text-muted-foreground">{profile?.name}</span>
               </div>
-              <a href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
+              <a href="/dashboard" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Dashboard
               </a>
-              <a href="/create" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
+              <a href="/create" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Send Pulse
               </a>
-              <a href="/inbox" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
+              <a href="/inbox" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Inbox
               </a>
               <Button 
@@ -142,7 +147,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <a href="/reserve" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-gray-200 dark:text-gray-200 hover:text-white dark:hover:text-white transition-colors">
+              <a href="/reserve" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Reserve PulseID
               </a>
               <Button 

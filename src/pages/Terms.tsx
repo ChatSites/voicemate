@@ -2,21 +2,25 @@
 import React, { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 const Terms = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  
   useEffect(() => {
     document.title = 'Terms of Service | VoiceMate ID';
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white">
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
       <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl">
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold mb-4">Terms of Service</h1>
-            <p className="text-gray-400">Last Updated: May 10, 2025</p>
+            <p className={isDark ? "text-gray-400" : "text-gray-600"}>Last Updated: May 10, 2025</p>
           </div>
           
           <section className="space-y-4">

@@ -10,7 +10,7 @@ import Technology from '@/components/Technology';
 import HowItWorks from '@/components/HowItWorks';
 import CallToAction from '@/components/CallToAction';
 import Footer from '@/components/Footer';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 const Index = () => {
   const { theme } = useTheme();

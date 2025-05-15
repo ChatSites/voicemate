@@ -165,9 +165,16 @@
 
 .gradient-border {
   --borderWidth: 3px;
-  background: #181a1f;
   position: relative;
   border-radius: 16px;
+}
+
+.dark .gradient-border {
+  background: #181a1f;
+}
+
+.light .gradient-border {
+  background: #f8f8f8;
 }
 
 .gradient-border:after {
@@ -204,52 +211,62 @@
 
 /* Light mode specific overrides */
 .light .bg-black {
-  @apply bg-white;
+  background-color: white;
 }
 
 .light .text-white {
-  @apply text-gray-900;
+  color: #111827; /* text-gray-900 */
 }
 
 /* Fix for text gradient in light mode */
 .light .text-gradient {
-  @apply bg-gradient-to-r from-gray-900 to-voicemate-purple;
-}
-
-/* Fix for light mode specific colors */
-.light {
-  background-color: white;
-  color: #000;
+  background-image: linear-gradient(to right, #111827, #9b5de5);
 }
 
 /* Light mode card styles */
 .light .bg-voicemate-card {
-  @apply bg-white;
+  background-color: white;
 }
 
 .light .border-gray-800 {
-  @apply border-gray-200;
+  border-color: #e5e7eb; /* border-gray-200 */
 }
 
 /* Light mode form element styles */
 .light .bg-black\/30 {
-  @apply bg-gray-50;
+  background-color: #f9fafb; /* bg-gray-50 */
 }
 
 .light .border-gray-700 {
-  @apply border-gray-300;
+  border-color: #d1d5db; /* border-gray-300 */
 }
 
 /* Light mode text colors */
 .light .text-gray-400 {
-  @apply text-gray-600;
+  color: #4b5563; /* text-gray-600 */
 }
 
 .light .text-gray-500 {
   color: #6b7280; /* Direct color value instead of using @apply */
 }
 
-/* Fix for gradient border in light mode */
-.light .gradient-border {
-  background: #f8f8f8;
+/* Light mode muted text */
+.light .text-muted-foreground {
+  color: #6b7280; /* text-gray-500 */
+}
+
+/* Light mode backgrounds */
+.light .bg-voicemate-card\/20 {
+  background-color: rgba(249, 250, 251, 0.8); /* light gray with opacity */
+}
+
+/* Link colors in light mode */
+.light .hover\:text-white:hover {
+  color: #111827; /* text-gray-900 on hover */
+}
+
+/* Button styles in light mode */
+.light .bg-voicemate-purple {
+  background-color: #9b5de5;
+  color: white;
 }

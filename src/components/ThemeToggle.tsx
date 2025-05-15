@@ -15,6 +15,7 @@ export default function ThemeToggle() {
         checked={isDark}
         onCheckedChange={toggleTheme}
         aria-label="Toggle theme"
+        className={isDark ? "bg-gray-700" : ""}
       />
       <Moon className={`h-4 w-4 ${isDark ? 'text-blue-400' : 'text-gray-400'}`} />
     </div>
