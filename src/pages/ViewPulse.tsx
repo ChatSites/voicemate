@@ -9,21 +9,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Input } from '@/components/ui/input';
+import { Json } from '@/integrations/supabase/types';
+
+// Define the CTA interface for proper typing
+interface CTA {
+  label: string;
+  action: string;
+  url?: string;
+  emoji?: string;
+}
 
 // Define the Pulse interface to match our database structure
 interface Pulse {
   id: string;
-  audio_url: string;
-  transcript: string;
-  intent: string;
-  ctas: Array<{
-    label: string;
-    action: string;
-    url?: string;
-    emoji?: string;
-  }>;
-  pulse_id: string;
+  audio_url: string | null;
+  transcript: string | null;
+  intent: string | null;
+  ctas: CTA[];
+  pulse_id: string | null;
   created_at: string;
+  status: string;
 }
 
 export default function ViewPulse() {
@@ -49,11 +54,27 @@ export default function ViewPulse() {
         if (error) throw error;
         
         if (data) {
-          setPulse(data as Pulse);
+          // Convert database ctas data to proper format
+          const formattedData: Pulse = {
+            ...data,
+            ctas: Array.isArray(data.ctas) 
+              ? data.ctas.map((cta: any) => ({
+                  label: cta.label || '',
+                  action: cta.action || '',
+                  url: cta.url,
+                  emoji: cta.emoji
+                }))
+              : []
+          };
+          
+          setPulse(formattedData);
+          
           // Create audio element
-          const audio = new Audio(data.audio_url);
-          audio.addEventListener('ended', () => setIsPlaying(false));
-          setAudioElement(audio);
+          if (formattedData.audio_url) {
+            const audio = new Audio(formattedData.audio_url);
+            audio.addEventListener('ended', () => setIsPlaying(false));
+            setAudioElement(audio);
+          }
         } else {
           toast({
             title: "Pulse Not Found",
@@ -107,7 +128,7 @@ export default function ViewPulse() {
   };
   
   // Handle CTA action
-  const handleCTAClick = (cta: { label: string, action: string, url?: string }) => {
+  const handleCTAClick = (cta: CTA) => {
     if (cta.url) {
       window.open(cta.url, '_blank');
     } else {
@@ -226,39 +247,41 @@ export default function ViewPulse() {
                 </Button>
               </Link>
             </div>
-            <CardTitle className="text-2xl">{pulse.intent}</CardTitle>
+            <CardTitle className="text-2xl">{pulse?.intent || 'Pulse Message'}</CardTitle>
             <div className="text-sm text-gray-400">
-              From: {pulse.pulse_id || 'Anonymous'} • {new Date(pulse.created_at).toLocaleDateString()}
+              From: {pulse?.pulse_id || 'Anonymous'} • {pulse?.created_at ? new Date(pulse.created_at).toLocaleDateString() : ''}
             </div>
           </CardHeader>
           
           <CardContent className="space-y-6">
             {/* Audio Player */}
-            <div className="rounded-lg bg-gray-900 p-4 flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={togglePlayback}
-                className="h-12 w-12 rounded-full border-voicemate-purple hover:bg-voicemate-purple/20"
-              >
-                {isPlaying ? (
-                  <PauseCircle className="h-8 w-8 text-voicemate-purple" />
-                ) : (
-                  <PlayCircle className="h-8 w-8 text-voicemate-purple" />
-                )}
-              </Button>
-              <div className="flex-1">
-                <div className="text-sm text-gray-400">
-                  {isPlaying ? 'Playing voice message...' : 'Voice message'}
-                </div>
-                <div className="h-1 bg-gray-700 rounded-full mt-2">
-                  <div className={`h-full bg-voicemate-purple rounded-full ${isPlaying ? 'animate-pulse' : ''}`} style={{ width: isPlaying ? '30%' : '0%' }}></div>
+            {pulse?.audio_url && (
+              <div className="rounded-lg bg-gray-900 p-4 flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={togglePlayback}
+                  className="h-12 w-12 rounded-full border-voicemate-purple hover:bg-voicemate-purple/20"
+                >
+                  {isPlaying ? (
+                    <PauseCircle className="h-8 w-8 text-voicemate-purple" />
+                  ) : (
+                    <PlayCircle className="h-8 w-8 text-voicemate-purple" />
+                  )}
+                </Button>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-400">
+                    {isPlaying ? 'Playing voice message...' : 'Voice message'}
+                  </div>
+                  <div className="h-1 bg-gray-700 rounded-full mt-2">
+                    <div className={`h-full bg-voicemate-purple rounded-full ${isPlaying ? 'animate-pulse' : ''}`} style={{ width: isPlaying ? '30%' : '0%' }}></div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             
             {/* Transcript */}
-            {pulse.transcript && (
+            {pulse?.transcript && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-gray-400">Transcript:</h3>
                 <div className="bg-gray-900/50 p-4 rounded-md text-gray-200">
@@ -289,7 +312,7 @@ export default function ViewPulse() {
             )}
             
             {/* CTA Buttons */}
-            {pulse.ctas && pulse.ctas.length > 0 && (
+            {pulse?.ctas && pulse.ctas.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-gray-400">Actions:</h3>
                 <div className="flex flex-wrap gap-3">
