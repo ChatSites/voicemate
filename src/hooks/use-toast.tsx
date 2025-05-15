@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -244,64 +245,53 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Function version for direct calling
-export function toast(props: Omit<ToasterToast, "id">): string {
+// Create a single toast function that can be called directly
+// This fixes the "has no call signatures" error
+export const toast = (props: Omit<ToasterToast, "id">): string => {
   try {
-    const context = React.useContext(ToastContext);
-    if (!context) {
-      console.warn("Toast context not available");
-      return "";
+    // Get the current React context
+    const currentToast = React.useContext(ToastContext);
+    
+    // If context exists, use it to add a toast
+    if (currentToast && currentToast.addToast) {
+      return currentToast.addToast(props);
     }
-    return context.addToast(props);
+    
+    console.warn("Toast context not available, toast not shown");
+    return "";
   } catch (err) {
-    console.warn("Toast function error:", err);
+    console.error("Error showing toast:", err);
     return "";
   }
-}
+};
 
-// Object version with methods
+// Export the toast2 object (for backward compatibility)
 export const toast2 = {
-  toast: function(props: Omit<ToasterToast, "id">): string {
+  toast: (props: Omit<ToasterToast, "id">): string => {
+    return toast(props);
+  },
+  dismiss: (toastId?: string): void => {
     try {
       const context = React.useContext(ToastContext);
-      if (!context) {
-        console.warn("Toast context not available");
-        return "";
-      }
-      return context.addToast(props);
+      context?.dismissToast(toastId);
     } catch (err) {
-      console.warn("Toast function error:", err);
-      return "";
+      console.error("Error dismissing toast:", err);
     }
   },
-  
-  dismiss: function(toastId?: string): void {
+  update: (toast: ToasterToast): void => {
     try {
       const context = React.useContext(ToastContext);
-      if (!context) return;
-      context.dismissToast(toastId);
+      context?.updateToast(toast);
     } catch (err) {
-      console.warn("Toast dismiss error:", err);
+      console.error("Error updating toast:", err);
     }
   },
-  
-  update: function(toast: ToasterToast): void {
+  remove: (toastId?: string): void => {
     try {
       const context = React.useContext(ToastContext);
-      if (!context) return;
-      context.updateToast(toast);
+      context?.removeToast(toastId);
     } catch (err) {
-      console.warn("Toast update error:", err);
-    }
-  },
-  
-  remove: function(toastId?: string): void {
-    try {
-      const context = React.useContext(ToastContext);
-      if (!context) return;
-      context.removeToast(toastId);
-    } catch (err) {
-      console.warn("Toast remove error:", err);
+      console.error("Error removing toast:", err);
     }
   }
 };

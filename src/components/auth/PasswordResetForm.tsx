@@ -36,11 +36,14 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({ onGoBack }) => {
       if (error) throw error;
       
       setEmailSent(true);
+      
+      // Use toast() directly as a function
       toast({
         title: "Password reset email sent",
         description: "Check your inbox for the password reset link",
       });
     } catch (error: any) {
+      // Use toast() directly as a function
       toast({
         title: "Failed to send reset email",
         description: error?.message || "Please check your email and try again",
