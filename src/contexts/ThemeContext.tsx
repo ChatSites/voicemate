@@ -18,7 +18,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       return savedTheme || (prefersDark ? "dark" : "light");
     }
-    return "light"; // Default fallback for SSR
+    return "dark"; // Default fallback for SSR
   });
 
   useEffect(() => {

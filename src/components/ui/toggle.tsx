@@ -2,7 +2,6 @@
 import * as React from "react"
 import * as TogglePrimitive from "@radix-ui/react-toggle"
 import { cva, type VariantProps } from "class-variance-authority"
-import { useTheme } from "@/contexts/ThemeContext"
 import { cn } from "@/lib/utils"
 
 const toggleVariants = cva(
@@ -40,20 +39,6 @@ const Toggle = React.forwardRef<
 ))
 
 Toggle.displayName = TogglePrimitive.Root.displayName
-
-// Export the theme toggle button component
-export const ThemeToggleButton = () => {
-  const { theme, toggleTheme } = useTheme();
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-    >
-      Switch to {theme === "dark" ? "Light" : "Dark"} Mode
-    </button>
-  );
-};
 
 // Export the toggle component and variants
 export { Toggle, toggleVariants };

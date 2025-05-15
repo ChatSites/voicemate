@@ -16,5 +16,5 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Re-export useTheme separately to avoid circular imports
+// Re-export useTheme from our context
 export { useTheme } from "@/contexts/ThemeContext";
