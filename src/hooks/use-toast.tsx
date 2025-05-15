@@ -128,17 +128,45 @@ const ToastContext = React.createContext<{
 });
 
 export function useToast() {
-  const { toasts, addToast, updateToast, dismissToast, removeToast } = React.useContext(ToastContext);
-
-  return {
-    toasts,
-    toast: (props: Omit<ToasterToast, "id">) => {
-      return addToast(props);
-    },
-    dismiss: (toastId?: string) => dismissToast(toastId),
-    update: (toast: ToasterToast) => updateToast(toast),
-    remove: (toastId?: string) => removeToast(toastId),
-  };
+  try {
+    const context = React.useContext(ToastContext);
+    
+    if (!context) {
+      console.warn("useToast used outside of ToastProvider - toast functionality will be limited");
+      
+      // Return a minimal implementation that won't crash
+      return {
+        toasts: [],
+        toast: () => "",
+        dismiss: () => {},
+        update: () => {},
+        remove: () => {},
+      };
+    }
+    
+    const { toasts, addToast, updateToast, dismissToast, removeToast } = context;
+  
+    return {
+      toasts,
+      toast: (props: Omit<ToasterToast, "id">) => {
+        return addToast(props);
+      },
+      dismiss: (toastId?: string) => dismissToast(toastId),
+      update: (toast: ToasterToast) => updateToast(toast),
+      remove: (toastId?: string) => removeToast(toastId),
+    };
+  } catch (err) {
+    console.error("Error in useToast hook:", err);
+    
+    // Return a fallback implementation that won't crash
+    return {
+      toasts: [],
+      toast: () => "",
+      dismiss: () => {},
+      update: () => {},
+      remove: () => {},
+    };
+  }
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -226,13 +254,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 // To simplify usage - with error handling
 export const toast = (props: Omit<ToasterToast, "id">) => {
   try {
-    // Static function - get toast context directly
-    const context = React.useContext(ToastContext);
-    if (!context) {
-      console.warn("Toast used outside of ToastProvider - no toast will be shown");
-      return "";
+    // Get toast context directly
+    let toastId = "";
+    
+    // Use a try/catch to safely check for context
+    try {
+      const context = React.useContext(ToastContext);
+      if (context) {
+        toastId = context.addToast(props);
+      } else {
+        console.warn("Toast used outside of ToastProvider - no toast will be shown");
+      }
+    } catch (contextError) {
+      console.warn("Error accessing toast context:", contextError);
     }
-    return context.addToast(props);
+    
+    return toastId;
   } catch (error) {
     console.error("Error dispatching toast:", error);
     return "";
