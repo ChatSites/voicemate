@@ -78,7 +78,7 @@ const PulseSuccess: React.FC<PulseSuccessProps> = ({
             <Input 
               value={pulseUrl} 
               readOnly 
-              className="bg-gray-900 border-gray-700 focus-visible:ring-voicemate-purple"
+              className="bg-gray-900 border-gray-700 focus-visible:ring-voicemate-purple text-white"
             />
             <Button 
               variant="outline"
