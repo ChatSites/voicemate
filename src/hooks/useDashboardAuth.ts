@@ -42,11 +42,17 @@ export const useDashboardAuth = () => {
   useEffect(() => {
     if (!authLoading && !user) {
       console.log("No authenticated user found, redirecting to auth page");
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to access the dashboard",
-        variant: "destructive"
-      });
+      
+      try {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to access the dashboard",
+          variant: "destructive"
+        });
+      } catch (err) {
+        console.error("Failed to show toast notification:", err);
+      }
+      
       navigate('/auth');
     } else if (user) {
       console.log("Authenticated user found:", user.email);

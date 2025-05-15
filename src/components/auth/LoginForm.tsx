@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -50,10 +51,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
       if (error) throw error;
       
       if (data.user) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to VoiceMate",
-        });
+        try {
+          toast({
+            title: "Login successful",
+            description: "Welcome back to VoiceMate",
+          });
+        } catch (toastError) {
+          console.error("Failed to show toast notification:", toastError);
+        }
         
         // Refresh the session state in the context
         await refreshSession();
@@ -66,11 +71,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
     } catch (error: any) {
       console.error("Login error:", error);
       setError(error?.message || "Authentication failed");
-      toast({
-        title: "Login failed",
-        description: error?.message || "Please check your credentials and try again",
-        variant: "destructive",
-      });
+      
+      try {
+        toast({
+          title: "Login failed",
+          description: error?.message || "Please check your credentials and try again",
+          variant: "destructive",
+        });
+      } catch (toastError) {
+        console.error("Failed to show error toast:", toastError);
+      }
     } finally {
       setLoading(false);
     }
