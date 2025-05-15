@@ -13,11 +13,13 @@ interface ThemeProviderProps {
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void; // Added this property to the interface
 }
 
 const initialState: ThemeContextType = {
   theme: 'dark',
   setTheme: () => null,
+  toggleTheme: () => null, // Added the initial value for toggleTheme
 };
 
 const ThemeContext = createContext<ThemeContextType>(initialState);
@@ -60,12 +62,20 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     }
   }, [theme, defaultTheme]);
 
+  // Implement the toggleTheme function
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
   const value = {
     theme,
     setTheme: (newTheme: Theme) => {
       setTheme(newTheme);
       localStorage.setItem('theme', newTheme);
-    }
+    },
+    toggleTheme // Add the toggleTheme function to the context value
   };
 
   return (

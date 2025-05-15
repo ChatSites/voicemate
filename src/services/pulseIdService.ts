@@ -62,7 +62,7 @@ export const checkPulseIdAvailability = async (pulseId: string): Promise<{
     toast({
       title: "Warning",
       description: "Could not verify PulseID availability. Please try again later.",
-      variant: "warning"
+      variant: "default" // Changed from "warning" to "default" to match the allowed variants
     });
     
     return {
