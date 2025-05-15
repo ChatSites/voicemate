@@ -1,18 +1,17 @@
 
 "use client";
 
-import { Toast, ToastActionElement, ToastProps } from "@/components/ui/toast";
+import * as React from "react";
 import {
-  useState,
-  createContext,
-  useContext,
-  useCallback,
-} from "react";
+  Toast,
+  ToastActionElement,
+  ToastProps,
+} from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 5000;
 
-export type ToasterToast = Omit<ToastProps, "children"> & {
+type ToasterToast = Omit<ToastProps, "children"> & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -114,9 +113,9 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-const ToastContext = createContext<{
+const ToastContext = React.createContext<{
   toasts: ToasterToast[];
-  addToast: (toast: Omit<ToasterToast, "id">) => string;
+  addToast: (props: Omit<ToasterToast, "id">) => string;
   updateToast: (toast: ToasterToast) => void;
   dismissToast: (toastId?: string) => void;
   removeToast: (toastId?: string) => void;
@@ -129,7 +128,7 @@ const ToastContext = createContext<{
 });
 
 export function useToast() {
-  const { toasts, addToast, updateToast, dismissToast, removeToast } = useContext(ToastContext);
+  const { toasts, addToast, updateToast, dismissToast, removeToast } = React.useContext(ToastContext);
 
   return {
     toasts,
@@ -137,74 +136,76 @@ export function useToast() {
       return addToast(props);
     },
     dismiss: (toastId?: string) => dismissToast(toastId),
-    update: (props: ToasterToast) => updateToast(props),
+    update: (toast: ToasterToast) => updateToast(toast),
     remove: (toastId?: string) => removeToast(toastId),
   };
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<State>({ toasts: [] });
+  const [state, dispatch] = React.useReducer(reducer, { toasts: [] });
 
-  const addToast = useCallback((toast: Omit<ToasterToast, "id">) => {
+  const addToast = React.useCallback((props: Omit<ToasterToast, "id">) => {
     const id = genId();
-
-    setState((prev) => ({
-      ...prev,
-      toasts: [{ ...toast, id, open: true }, ...prev.toasts].slice(0, TOAST_LIMIT),
-    }));
+    
+    const toast = {
+      ...props,
+      id,
+      open: true,
+    } as ToasterToast;
+    
+    dispatch({
+      type: actionTypes.ADD_TOAST,
+      toast,
+    });
 
     return id;
   }, []);
 
-  const updateToast = useCallback((toast: ToasterToast) => {
-    setState((prev) => ({
-      ...prev,
-      toasts: prev.toasts.map((t) => (t.id === toast.id ? { ...t, ...toast } : t)),
-    }));
+  const updateToast = React.useCallback((toast: ToasterToast) => {
+    dispatch({
+      type: actionTypes.UPDATE_TOAST,
+      toast,
+    });
   }, []);
 
-  const dismissToast = useCallback((toastId?: string) => {
-    setState((prev) => ({
-      ...prev,
-      toasts: prev.toasts.map((t) => {
-        if (toastId ? t.id === toastId : true) {
-          const timeout = toastTimeouts.get(t.id);
-          if (timeout) {
-            clearTimeout(timeout);
-          }
-
-          const dismissTimeout = setTimeout(() => {
-            setState((prev) => ({
-              ...prev,
-              toasts: prev.toasts.filter((toast) => toast.id !== t.id),
-            }));
-            toastTimeouts.delete(t.id);
-          }, TOAST_REMOVE_DELAY);
-
-          toastTimeouts.set(t.id, dismissTimeout);
-
-          return {
-            ...t,
-            open: false,
-          };
-        }
-        return t;
-      }),
-    }));
-  }, []);
-
-  const removeToast = useCallback((toastId?: string) => {
+  const dismissToast = React.useCallback((toastId?: string) => {
+    dispatch({
+      type: actionTypes.DISMISS_TOAST,
+      toastId,
+    });
+    
+    // Remove toast after the animation completes
     if (toastId) {
-      setState((prev) => ({
-        ...prev,
-        toasts: prev.toasts.filter((t) => t.id !== toastId),
-      }));
-    } else {
-      setState((prev) => ({
-        ...prev,
-        toasts: [],
-      }));
+      const timeout = toastTimeouts.get(toastId);
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      
+      const dismissTimeout = setTimeout(() => {
+        dispatch({
+          type: actionTypes.REMOVE_TOAST,
+          toastId,
+        });
+        toastTimeouts.delete(toastId);
+      }, TOAST_REMOVE_DELAY);
+      
+      toastTimeouts.set(toastId, dismissTimeout);
     }
+  }, []);
+
+  const removeToast = React.useCallback((toastId?: string) => {
+    dispatch({
+      type: actionTypes.REMOVE_TOAST,
+      toastId,
+    });
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      toastTimeouts.forEach((timeout) => {
+        clearTimeout(timeout);
+      });
+    };
   }, []);
 
   return (
@@ -222,7 +223,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// To simplify usage
 export const toast = (props: Omit<ToasterToast, "id">) => {
-  const { toast } = useToast();
-  return toast(props);
+  const { toast: actualToast } = useToast();
+  try {
+    return actualToast(props);
+  } catch (error) {
+    console.error("Error dispatching toast:", error);
+    return "";
+  }
 };
+
+export type { ToasterToast };
