@@ -8,26 +8,32 @@ import InboxContent from '@/components/inbox/InboxContent';
 import { useInboxState } from '@/hooks/useInboxState';
 
 export default function InboxPage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { 
     selectedPulseId, 
     isPlaying, 
     selectedPulses, 
     isDeleting,
+    pulses,
+    loading,
+    activeTab,
+    setActiveTab,
     handlePlayPulse, 
     handleToggleSelect, 
     handleSelectAll, 
-    handleDeleteSelected 
+    handleDeleteSelected,
+    handleArchiveSelected,
+    handleUnarchiveSelected
   } = useInboxState();
   
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [loading, user, navigate]);
+  }, [authLoading, user, navigate]);
   
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <div className="text-center">
@@ -44,9 +50,16 @@ export default function InboxPage() {
         <InboxHeader 
           selectedCount={selectedPulses.length} 
           onDeleteSelected={handleDeleteSelected} 
+          onArchiveSelected={handleArchiveSelected}
+          onUnarchiveSelected={handleUnarchiveSelected}
           isDeleting={isDeleting}
+          activeTab={activeTab}
         />
         <InboxContent 
+          pulses={pulses}
+          loading={loading}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
           onPlayPulse={handlePlayPulse} 
           onToggleSelect={handleToggleSelect}
           onSelectAll={handleSelectAll}

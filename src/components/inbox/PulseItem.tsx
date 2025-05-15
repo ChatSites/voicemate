@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { User, Clock, Mail, Play, Archive } from 'lucide-react';
+import { User, Clock, Mail, Play, Pause, Archive } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface PulseItemProps {
@@ -13,6 +13,7 @@ interface PulseItemProps {
     timestamp: string;
     unread?: boolean;
     duration: string;
+    audio_url?: string;
   };
   onPlay: (id: string) => void;
   onToggleSelect: (id: string) => void;
@@ -20,6 +21,46 @@ interface PulseItemProps {
 }
 
 const PulseItem: React.FC<PulseItemProps> = ({ pulse, onPlay, onToggleSelect, isSelected }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  
+  const handlePlayToggle = () => {
+    if (!pulse.audio_url) return;
+    
+    if (isPlaying && audioElement) {
+      audioElement.pause();
+      setIsPlaying(false);
+      return;
+    }
+    
+    if (!audioElement) {
+      const audio = new Audio(pulse.audio_url);
+      audio.addEventListener('ended', () => setIsPlaying(false));
+      setAudioElement(audio);
+      
+      audio.play().catch(err => {
+        console.error('Error playing audio:', err);
+      });
+    } else {
+      audioElement.play().catch(err => {
+        console.error('Error playing audio:', err);
+      });
+    }
+    
+    setIsPlaying(true);
+    onPlay(pulse.id);
+  };
+  
+  // Cleanup effect
+  React.useEffect(() => {
+    return () => {
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.remove();
+      }
+    };
+  }, [audioElement]);
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -51,7 +92,7 @@ const PulseItem: React.FC<PulseItemProps> = ({ pulse, onPlay, onToggleSelect, is
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-sm font-medium">{pulse.title}</h4>
-              <p className="text-xs text-gray-400">{pulse.sender}</p>
+              <p className="text-xs text-gray-400">From: {pulse.sender}</p>
             </div>
             <div className="flex items-center text-xs text-gray-500">
               <Clock className="h-3 w-3 mr-1" />
@@ -68,16 +109,14 @@ const PulseItem: React.FC<PulseItemProps> = ({ pulse, onPlay, onToggleSelect, is
               size="sm" 
               variant="outline" 
               className="h-7 border-gray-700 hover:bg-voicemate-purple hover:text-white hover:border-transparent"
-              onClick={() => onPlay(pulse.id)}
+              onClick={handlePlayToggle}
+              disabled={!pulse.audio_url}
             >
-              <Play className="h-3 w-3 mr-1" /> Play
-            </Button>
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              className="h-7 text-gray-400 hover:text-white ml-1"
-            >
-              <Archive className="h-3 w-3" />
+              {isPlaying ? (
+                <><Pause className="h-3 w-3 mr-1" /> Pause</>
+              ) : (
+                <><Play className="h-3 w-3 mr-1" /> Play</>
+              )}
             </Button>
           </div>
         </div>

@@ -59,6 +59,7 @@ export type Database = {
           id: string
           intent: string | null
           pulse_id: string | null
+          status: string
           transcript: string | null
         }
         Insert: {
@@ -68,6 +69,7 @@ export type Database = {
           id?: string
           intent?: string | null
           pulse_id?: string | null
+          status?: string
           transcript?: string | null
         }
         Update: {
@@ -77,6 +79,7 @@ export type Database = {
           id?: string
           intent?: string | null
           pulse_id?: string | null
+          status?: string
           transcript?: string | null
         }
         Relationships: []

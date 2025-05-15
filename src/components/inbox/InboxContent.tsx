@@ -1,60 +1,18 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Inbox, Trash2 } from 'lucide-react';
+import { Inbox, Archive } from 'lucide-react';
 import PulseItem from './PulseItem';
 import EmptyState from './EmptyState';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-
-// Mock data for received pulses
-const mockReceivedPulses = [
-  {
-    id: '1',
-    sender: 'John Doe',
-    title: 'Project Update',
-    timestamp: '2h ago',
-    unread: true,
-    duration: '1:24'
-  },
-  {
-    id: '2',
-    sender: 'Sarah Johnson',
-    title: 'Meeting Followup',
-    timestamp: '1d ago',
-    unread: false,
-    duration: '2:45'
-  },
-  {
-    id: '3',
-    sender: 'Michael Brown',
-    title: 'Quick Question',
-    timestamp: '2d ago',
-    unread: false,
-    duration: '0:58'
-  }
-];
-
-// Mock data for archived pulses
-const mockArchivedPulses = [
-  {
-    id: '4',
-    sender: 'Alice Smith',
-    title: 'Old Project Discussion',
-    timestamp: '2w ago',
-    duration: '3:12'
-  },
-  {
-    id: '5',
-    sender: 'Robert Lee',
-    title: 'Previous Feedback',
-    timestamp: '1m ago',
-    duration: '1:47'
-  }
-];
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface InboxContentProps {
+  pulses: any[];
+  loading: boolean;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
   onPlayPulse: (id: string) => void;
   onToggleSelect: (id: string) => void;
   onSelectAll: (ids: string[]) => void;
@@ -62,17 +20,18 @@ interface InboxContentProps {
 }
 
 const InboxContent: React.FC<InboxContentProps> = ({ 
+  pulses, 
+  loading,
+  activeTab,
+  setActiveTab,
   onPlayPulse, 
   onToggleSelect,
   onSelectAll, 
   selectedPulses 
 }) => {
-  const [activeTab, setActiveTab] = useState('inbox');
-  
-  const currentPulses = activeTab === 'inbox' ? mockReceivedPulses : mockArchivedPulses;
-  const currentPulseIds = currentPulses.map(pulse => pulse.id);
-  const areAllSelected = currentPulses.length > 0 && 
-    currentPulses.every(pulse => selectedPulses.includes(pulse.id));
+  const currentPulseIds = pulses.map(pulse => pulse.id);
+  const areAllSelected = pulses.length > 0 && 
+    pulses.every(pulse => selectedPulses.includes(pulse.id));
     
   return (
     <Card className="bg-voicemate-card border-gray-800">
@@ -80,12 +39,18 @@ const InboxContent: React.FC<InboxContentProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center">
-              <Inbox className="mr-2 h-5 w-5 text-voicemate-purple" />
-              <span>Voice Messages</span>
+              {activeTab === 'inbox' ? (
+                <Inbox className="mr-2 h-5 w-5 text-voicemate-purple" />
+              ) : (
+                <Archive className="mr-2 h-5 w-5 text-voicemate-purple" />
+              )}
+              <span>{activeTab === 'inbox' ? 'Voice Messages' : 'Archived Messages'}</span>
             </CardTitle>
-            <CardDescription>Listen and respond to your received pulses</CardDescription>
+            <CardDescription>
+              {activeTab === 'inbox' ? 'Listen and respond to your received pulses' : 'Review your archived voice messages'}
+            </CardDescription>
           </div>
-          {currentPulses.length > 0 && (
+          {pulses.length > 0 && !loading && (
             <div className="flex items-center">
               <div className="flex items-center space-x-2">
                 <Checkbox 
@@ -104,7 +69,6 @@ const InboxContent: React.FC<InboxContentProps> = ({
       </CardHeader>
       <CardContent>
         <Tabs 
-          defaultValue="inbox" 
           value={activeTab}
           onValueChange={(value) => {
             setActiveTab(value);
@@ -118,41 +82,74 @@ const InboxContent: React.FC<InboxContentProps> = ({
             <TabsTrigger value="archived">Archived</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="inbox">
-            {mockReceivedPulses.length > 0 ? (
-              <div>
-                {mockReceivedPulses.map((pulse) => (
-                  <PulseItem 
-                    key={pulse.id} 
-                    pulse={pulse} 
-                    onPlay={onPlayPulse}
-                    onToggleSelect={onToggleSelect}
-                    isSelected={selectedPulses.includes(pulse.id)} 
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState type="inbox" />
-            )}
-          </TabsContent>
-          
-          <TabsContent value="archived">
-            {mockArchivedPulses.length > 0 ? (
-              <div>
-                {mockArchivedPulses.map((pulse) => (
-                  <PulseItem 
-                    key={pulse.id} 
-                    pulse={pulse} 
-                    onPlay={onPlayPulse}
-                    onToggleSelect={onToggleSelect}
-                    isSelected={selectedPulses.includes(pulse.id)}  
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState type="archived" />
-            )}
-          </TabsContent>
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-4 rounded-lg border border-gray-800 bg-gray-900/50">
+                  <div className="flex items-center space-x-4">
+                    <Skeleton className="h-10 w-10 rounded-full bg-gray-800" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-3/4 bg-gray-800" />
+                      <Skeleton className="h-3 w-1/2 bg-gray-800" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <TabsContent value="inbox">
+                {pulses.length > 0 ? (
+                  <div>
+                    {pulses.map((pulse) => (
+                      <PulseItem 
+                        key={pulse.id} 
+                        pulse={{
+                          id: pulse.id,
+                          sender: pulse.pulse_id || 'Anonymous',
+                          title: pulse.intent || 'No Title',
+                          timestamp: new Date(pulse.created_at).toLocaleDateString(),
+                          unread: false, // We could add this field later
+                          duration: '1:30', // This would need to be calculated from the audio
+                          audio_url: pulse.audio_url
+                        }} 
+                        onPlay={onPlayPulse}
+                        onToggleSelect={onToggleSelect}
+                        isSelected={selectedPulses.includes(pulse.id)} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState type="inbox" />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="archived">
+                {pulses.length > 0 ? (
+                  <div>
+                    {pulses.map((pulse) => (
+                      <PulseItem 
+                        key={pulse.id} 
+                        pulse={{
+                          id: pulse.id,
+                          sender: pulse.pulse_id || 'Anonymous',
+                          title: pulse.intent || 'No Title',
+                          timestamp: new Date(pulse.created_at).toLocaleDateString(),
+                          duration: '1:30', // This would need to be calculated from the audio
+                          audio_url: pulse.audio_url
+                        }} 
+                        onPlay={onPlayPulse}
+                        onToggleSelect={onToggleSelect}
+                        isSelected={selectedPulses.includes(pulse.id)} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState type="archived" />
+                )}
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </CardContent>
     </Card>
