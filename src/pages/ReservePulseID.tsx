@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import PulseIdInput from '@/components/reserve/PulseIdInput';
 import BenefitsList from '@/components/reserve/BenefitsList';
