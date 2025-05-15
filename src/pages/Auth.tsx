@@ -18,30 +18,38 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('register');
   const [prefilledPulseId, setPrefilledPulseId] = useState('');
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    const pulseId = params.get('pulseId');
+    try {
+      const params = new URLSearchParams(location.search);
+      const tab = params.get('tab');
+      const pulseId = params.get('pulseId');
 
-    if (tab === 'login') setActiveTab('login');
-    if (pulseId) setPrefilledPulseId(pulseId);
+      if (tab === 'login') setActiveTab('login');
+      if (pulseId) setPrefilledPulseId(pulseId);
 
-    // Initial auth check
-    const checkSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          navigate('/');
+      // Initial auth check
+      const checkSession = async () => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            navigate('/');
+          }
+        } catch (err) {
+          console.error('Error checking session:', err);
+          setError('Failed to verify authentication. Please try again.');
+        } finally {
+          setInitialCheckDone(true);
         }
-      } catch (err) {
-        console.error('Error checking session:', err);
-      } finally {
-        setInitialCheckDone(true);
-      }
-    };
+      };
 
-    checkSession();
+      checkSession();
+    } catch (err) {
+      console.error('Error in Auth component setup:', err);
+      setError('An unexpected error occurred. Please refresh the page.');
+      setInitialCheckDone(true);
+    }
   }, [navigate, location.search]);
 
   // Effect to redirect if user is authenticated
@@ -69,6 +77,30 @@ const Auth = () => {
           <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-voicemate-purple" />
           <p className="text-gray-300">Checking authentication state...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black p-4">
+        <div className="absolute inset-0 bg-mesh-gradient animate-gradient-y -z-10 opacity-10"></div>
+        <Card className="border border-gray-800 bg-voicemate-card/60 backdrop-blur-md max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-xl text-center">Authentication Error</CardTitle>
+            <CardDescription className="text-center text-red-400">
+              {error}
+            </CardDescription>
+          </CardHeader>
+          <div className="p-6 text-center">
+            <Button 
+              onClick={() => window.location.reload()}
+              className="bg-voicemate-purple hover:bg-voicemate-purple/90"
+            >
+              Refresh Page
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }

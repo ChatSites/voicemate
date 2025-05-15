@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 5000;
+const TOAST_REMOVE_DELAY = 3000; // Reduced from 5000ms to 3000ms to make toasts disappear faster
 
 type ToasterToast = Omit<ToastProps, "children"> & {
   id: string;
@@ -223,11 +223,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// To simplify usage
+// To simplify usage - with error handling
 export const toast = (props: Omit<ToasterToast, "id">) => {
-  const { toast: actualToast } = useToast();
   try {
-    return actualToast(props);
+    // Static function - get toast context directly
+    const context = React.useContext(ToastContext);
+    if (!context) {
+      console.warn("Toast used outside of ToastProvider - no toast will be shown");
+      return "";
+    }
+    return context.addToast(props);
   } catch (error) {
     console.error("Error dispatching toast:", error);
     return "";

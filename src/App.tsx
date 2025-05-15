@@ -19,6 +19,7 @@ import SendPulse from '@/pages/SendPulse';
 import ViewPulse from '@/pages/ViewPulse';
 import AuthCallback from '@/pages/auth/callback';
 import AuthConfirmation from '@/pages/AuthConfirmation';
+import UpdatePassword from '@/pages/UpdatePassword';
 
 // Create a client for React Query
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/inbox" element={<Inbox />} />
                 <Route path="/send-pulse" element={<SendPulse />} />
                 <Route path="/pulse/:id" element={<ViewPulse />} />
+                <Route path="/update-password" element={<UpdatePassword />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
