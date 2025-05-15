@@ -25,7 +25,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     if (typeof window !== 'undefined') {
       // Apply theme class to html element
       const root = document.documentElement;
+      
+      // Remove both theme classes first
       root.classList.remove("dark", "light");
+      // Add the current theme class
       root.classList.add(theme);
       
       // Store theme preference

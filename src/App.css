@@ -45,3 +45,9 @@
 .light .read-the-docs {
   color: #555;
 }
+
+/* Add explicit light mode styles */
+.light {
+  background-color: white;
+  color: #000;
+}

@@ -44,7 +44,7 @@ export default function InboxPage() {
   }
   
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 pt-24 pb-12">
         <InboxHeader 
