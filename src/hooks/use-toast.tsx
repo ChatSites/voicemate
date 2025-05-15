@@ -113,8 +113,17 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
+// Define the interface for our context
+interface ToastContextType {
+  toasts: ToasterToast[];
+  addToast: (props: Omit<ToasterToast, "id">) => string;
+  updateToast: (toast: ToasterToast) => void;
+  dismissToast: (toastId?: string) => void;
+  removeToast: (toastId?: string) => void;
+}
+
 // Create context with default values
-const defaultValue = {
+const defaultValue: ToastContextType = {
   toasts: [],
   addToast: () => "",
   updateToast: () => {},
@@ -122,7 +131,7 @@ const defaultValue = {
   removeToast: () => {},
 };
 
-const ToastContext = React.createContext(defaultValue);
+const ToastContext = React.createContext<ToastContextType>(defaultValue);
 
 // Make useToast safer
 export function useToast() {
@@ -221,38 +230,63 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const contextValue: ToastContextType = {
+    toasts: state.toasts,
+    addToast,
+    updateToast,
+    dismissToast,
+    removeToast,
+  };
+
   return (
-    <ToastContext.Provider
-      value={{
-        toasts: state.toasts,
-        addToast,
-        updateToast,
-        dismissToast,
-        removeToast,
-      }}
-    >
+    <ToastContext.Provider value={contextValue}>
       {children}
     </ToastContext.Provider>
   );
 }
 
-// Make toast function a standalone function that can be used safely
-export const toast = (props: Omit<ToasterToast, "id">) => {
-  // Get current context if available
-  let id = "";
-  try {
-    // Try to get context
-    const contextValue = React.useContext(ToastContext);
-    if (contextValue && contextValue.addToast) {
-      return contextValue.addToast(props);
+// Export a standalone toast function
+export const toast = {
+  // We're implementing these as methods of an object to match the interface expected by useToast
+  toast: (props: Omit<ToasterToast, "id">) => {
+    // Try to get current context if available
+    try {
+      const { toast } = useToast();
+      return toast(props);
+    } catch (err) {
+      console.warn("Toast function error:", err);
+      return "";
     }
-  } catch (err) {
-    console.warn("Toast function error:", err);
-  }
+  },
   
-  // If we reach here, addToast was not available or errored
-  console.warn("Toast context not available for direct toast function");
-  return id;
+  // Add other methods to match useToast interface
+  dismiss: (toastId?: string) => {
+    try {
+      const { dismiss } = useToast();
+      dismiss(toastId);
+    } catch (err) {
+      console.warn("Toast dismiss error:", err);
+    }
+  },
+  
+  update: (toast: ToasterToast) => {
+    try {
+      const { update } = useToast();
+      update(toast);
+    } catch (err) {
+      console.warn("Toast update error:", err);
+    }
+  },
+  
+  remove: (toastId?: string) => {
+    try {
+      const { remove } = useToast();
+      remove(toastId);
+    } catch (err) {
+      console.warn("Toast remove error:", err);
+    }
+  }
 };
 
 export type { ToasterToast };
+
