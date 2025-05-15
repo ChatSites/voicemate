@@ -221,3 +221,35 @@
   background-color: white;
   color: #000;
 }
+
+/* Light mode card styles */
+.light .bg-voicemate-card {
+  @apply bg-white;
+}
+
+.light .border-gray-800 {
+  @apply border-gray-200;
+}
+
+/* Light mode form element styles */
+.light .bg-black\/30 {
+  @apply bg-gray-50;
+}
+
+.light .border-gray-700 {
+  @apply border-gray-300;
+}
+
+/* Light mode text colors */
+.light .text-gray-400 {
+  @apply text-gray-600;
+}
+
+.light .text-gray-500 {
+  @apply text-gray-500;
+}
+
+/* Fix for gradient border in light mode */
+.light .gradient-border {
+  background: #f8f8f8;
+}

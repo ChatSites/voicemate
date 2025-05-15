@@ -8,8 +8,12 @@ import PulseLoading from '@/components/pulse/PulseLoading';
 import PulseLayout from '@/components/pulse/PulseLayout';
 import PulseContent from '@/components/pulse/PulseContent';
 import PulseSuccess from '@/components/pulse/PulseSuccess';
+import Footer from '@/components/Footer';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 export default function SendPulse() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [pulseTitle, setPulseTitle] = useState('');
@@ -87,32 +91,35 @@ export default function SendPulse() {
   }
   
   return (
-    <PulseLayout title="Create a New Pulse">
-      {showSuccess ? (
-        <PulseSuccess 
-          pulseUrl={pulseUrl}
-          pulseTitle={pulseTitle}
-          onReset={handleReset}
-          onDone={handleDone}
-        />
-      ) : (
-        <PulseContent
-          isRecording={isRecording}
-          recordingTime={recordingTime}
-          recordingData={recordingData}
-          transcription={transcription}
-          suggestedCTAs={suggestedCTAs}
-          pulseTitle={pulseTitle}
-          pulseDescription={pulseDescription}
-          isSending={isSending}
-          onStartRecording={startRecording}
-          onStopRecording={stopRecording}
-          onResetRecording={resetRecording}
-          onTitleChange={setPulseTitle}
-          onDescriptionChange={setPulseDescription}
-          onSendPulse={handleSendPulse}
-        />
-      )}
-    </PulseLayout>
+    <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
+      <PulseLayout title="Create a New Pulse">
+        {showSuccess ? (
+          <PulseSuccess 
+            pulseUrl={pulseUrl}
+            pulseTitle={pulseTitle}
+            onReset={handleReset}
+            onDone={handleDone}
+          />
+        ) : (
+          <PulseContent
+            isRecording={isRecording}
+            recordingTime={recordingTime}
+            recordingData={recordingData}
+            transcription={transcription}
+            suggestedCTAs={suggestedCTAs}
+            pulseTitle={pulseTitle}
+            pulseDescription={pulseDescription}
+            isSending={isSending}
+            onStartRecording={startRecording}
+            onStopRecording={stopRecording}
+            onResetRecording={resetRecording}
+            onTitleChange={setPulseTitle}
+            onDescriptionChange={setPulseDescription}
+            onSendPulse={handleSendPulse}
+          />
+        )}
+      </PulseLayout>
+      <Footer />
+    </div>
   );
-};
+}

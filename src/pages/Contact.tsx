@@ -7,12 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 const Contact = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     document.title = 'Contact Us | VoiceMate ID';
@@ -48,14 +51,14 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white">
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
       <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold mb-4">Contact Us</h1>
-            <p className="text-gray-400">
+            <p className={isDark ? "text-gray-400" : "text-gray-600"}>
               Have questions or need assistance? Reach out to our team and we'll get back to you as soon as possible.
             </p>
           </div>
@@ -64,7 +67,7 @@ const Contact = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Get in Touch</h2>
-                <p className="text-gray-400">
+                <p className={isDark ? "text-gray-400" : "text-gray-600"}>
                   We're here to help with any questions about VoiceMate ID, voice authentication, or our services.
                 </p>
               </div>
@@ -78,17 +81,17 @@ const Contact = () => {
               
               <div>
                 <h3 className="font-medium mb-1">Locations</h3>
-                <p className="text-gray-400">Phoenix, AZ, USA</p>
-                <p className="text-gray-400">Montreal, Quebec, Canada</p>
+                <p className={isDark ? "text-gray-400" : "text-gray-600"}>Phoenix, AZ, USA</p>
+                <p className={isDark ? "text-gray-400" : "text-gray-600"}>Montreal, Quebec, Canada</p>
               </div>
               
               <div>
                 <h3 className="font-medium mb-1">Hours</h3>
-                <p className="text-gray-400">Monday - Friday: 9am - 6pm PST</p>
+                <p className={isDark ? "text-gray-400" : "text-gray-600"}>Monday - Friday: 9am - 6pm PST</p>
               </div>
             </div>
             
-            <div className="bg-voicemate-card/20 p-6 rounded-lg border border-gray-800">
+            <div className={isDark ? "bg-voicemate-card/20 p-6 rounded-lg border border-gray-800" : "bg-gray-50 p-6 rounded-lg border border-gray-200"}>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
@@ -96,7 +99,7 @@ const Contact = () => {
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="bg-black/30 border-gray-700"
+                    className={isDark ? "bg-black/30 border-gray-700" : "bg-white border-gray-300"}
                     placeholder="Your name"
                     required
                   />
@@ -109,7 +112,7 @@ const Contact = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-black/30 border-gray-700"
+                    className={isDark ? "bg-black/30 border-gray-700" : "bg-white border-gray-300"}
                     placeholder="your@email.com"
                     required
                   />
@@ -121,7 +124,7 @@ const Contact = () => {
                     id="message"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="bg-black/30 border-gray-700 min-h-[120px]"
+                    className={isDark ? "bg-black/30 border-gray-700 min-h-[120px]" : "bg-white border-gray-300 min-h-[120px]"}
                     placeholder="How can we help you?"
                     required
                   />
