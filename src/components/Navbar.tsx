@@ -46,13 +46,13 @@ export default function Navbar() {
           <a href="/" className="flex items-center space-x-2">
             {isDark ? (
               <img 
-                src="https://i.ibb.co/k2KwyQhN/voicemate-logo-horiz-dark.png" 
+                src="https://i.ibb.co/k2KwyQh/voicemate-logo-horiz-dark.png" 
                 alt="VoiceMate" 
                 className="h-8" 
               />
             ) : (
               <img 
-                src="https://i.ibb.co/H4sf1Vq/voicemate-logo-horiz-light.png"
+                src="https://i.ibb.co/bM62K2G/voicemate-logo-horiz-light.png"
                 alt="VoiceMate" 
                 className="h-8" 
               />

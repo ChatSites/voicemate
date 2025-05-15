@@ -270,3 +270,8 @@
   background-color: #9b5de5;
   color: white;
 }
+
+/* Fix for gradient border in light mode */
+.light .gradient-border {
+  background: #f8f8f8;
+}
