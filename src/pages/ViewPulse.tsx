@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, PlayCircle, PauseCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, PlayCircle, PauseCircle, ExternalLink, Send } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Input } from '@/components/ui/input';
 
 // Define the Pulse interface to match our database structure
 interface Pulse {
@@ -31,6 +32,8 @@ export default function ViewPulse() {
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isReplying, setIsReplying] = useState(false);
   
   // Fetch pulse data
   useEffect(() => {
@@ -117,10 +120,7 @@ export default function ViewPulse() {
           });
           break;
         case 'open_reply_input':
-          toast({
-            title: "Reply",
-            description: "Opening reply form..."
-          });
+          setIsReplying(true);
           break;
         case 'confirm_rsvp':
           toast({
@@ -134,6 +134,29 @@ export default function ViewPulse() {
             description: `Action: ${cta.action}`
           });
       }
+    }
+  };
+
+  // Handle reply submission
+  const handleReplySubmit = async () => {
+    if (!replyMessage.trim()) return;
+    
+    try {
+      // Here you would implement the actual reply submission to your database
+      // For now, we'll just show a success toast
+      toast({
+        title: "Reply Sent",
+        description: "Your reply has been sent successfully!"
+      });
+      setReplyMessage('');
+      setIsReplying(false);
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send reply. Please try again later.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -244,6 +267,27 @@ export default function ViewPulse() {
               </div>
             )}
             
+            {/* Reply Section */}
+            {isReplying && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-400">Your Reply:</h3>
+                <div className="flex gap-2">
+                  <Input
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    placeholder="Type your reply here..."
+                    className="bg-gray-900 border-gray-700 text-white"
+                  />
+                  <Button 
+                    onClick={handleReplySubmit}
+                    className="bg-voicemate-purple hover:bg-purple-700 text-white"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             {/* CTA Buttons */}
             {pulse.ctas && pulse.ctas.length > 0 && (
               <div className="space-y-3">
@@ -252,7 +296,7 @@ export default function ViewPulse() {
                   {pulse.ctas.map((cta, index) => (
                     <Button 
                       key={index}
-                      className="bg-voicemate-purple hover:bg-purple-700"
+                      className="bg-voicemate-purple hover:bg-purple-700 text-white"
                       onClick={() => handleCTAClick(cta)}
                     >
                       {cta.emoji && <span className="mr-2">{cta.emoji}</span>}
@@ -262,6 +306,16 @@ export default function ViewPulse() {
                   ))}
                 </div>
               </div>
+            )}
+            
+            {/* Reply Button (if not already replying) */}
+            {!isReplying && (
+              <Button 
+                onClick={() => setIsReplying(true)}
+                className="bg-voicemate-purple hover:bg-purple-700 text-white"
+              >
+                <Send className="mr-2 h-4 w-4" /> Reply to this Pulse
+              </Button>
             )}
           </CardContent>
         </Card>
