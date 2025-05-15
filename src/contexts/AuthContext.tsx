@@ -9,6 +9,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signOut: async () => {},
+  refreshSession: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -25,8 +27,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Add a function to refresh the session state
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        throw error;
+      }
+      console.log('Session refreshed:', data.session ? 'yes' : 'no');
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      return data.session;
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      return null;
+    }
+  };
+
   const signOut = async () => {
     try {
+      setLoading(true);
+      
       // Clean up auth state
       cleanupAuthState();
       
@@ -35,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         // Ignore errors
+        console.warn('Error during global sign out:', err);
       }
       
       // Clear any toast notifications
@@ -42,6 +64,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Signed out",
         description: "You have been signed out successfully"
       });
+      
+      // Update state to reflect signed out status
+      setSession(null);
+      setUser(null);
       
       // Force page reload for a clean state
       window.location.href = '/auth';
@@ -52,63 +78,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "There was an issue signing you out. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     console.log('Setting up AuthContext...');
+    let mounted = true;
     
     const setupAuth = async () => {
-      // Set up auth state listener FIRST
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (event, currentSession) => {
-          console.log('Auth state changed:', event);
-          
-          if (event === 'SIGNED_IN') {
-            toast({
-              title: "Signed in successfully",
-              description: "Welcome back!"
-            });
-          } else if (event === 'SIGNED_OUT') {
-            toast({
-              title: "Signed out",
-              description: "You have been signed out"
-            });
-          } else if (event === 'USER_UPDATED') {
-            toast({
-              title: "Account updated",
-              description: "Your account information has been updated"
-            });
+      try {
+        // Set up auth state listener FIRST
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, currentSession) => {
+            console.log('Auth state changed:', event);
+            
+            if (!mounted) return;
+            
+            if (event === 'SIGNED_IN') {
+              toast({
+                title: "Signed in successfully",
+                description: "Welcome back!"
+              });
+            } else if (event === 'SIGNED_OUT') {
+              toast({
+                title: "Signed out",
+                description: "You have been signed out"
+              });
+            } else if (event === 'USER_UPDATED') {
+              toast({
+                title: "Account updated",
+                description: "Your account information has been updated"
+              });
+            } else if (event === 'TOKEN_REFRESHED') {
+              console.log('Auth token refreshed');
+            }
+            
+            // Use setTimeout to prevent potential deadlocks
+            setTimeout(() => {
+              if (mounted) {
+                setSession(currentSession);
+                setUser(currentSession?.user ?? null);
+                setLoading(false);
+              }
+            }, 0);
           }
-          
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
+        );
+
+        // THEN check for existing session
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+          // Clean up auth state on error
+          cleanupAuthState();
+        }
+        
+        console.log('Got existing session:', data.session ? 'yes' : 'no');
+        if (data.session) {
+          console.log('Session user:', data.session.user.email);
+        }
+        
+        if (mounted) {
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
           setLoading(false);
         }
-      );
 
-      // THEN check for existing session
-      const { data } = await supabase.auth.getSession();
-      console.log('Got existing session:', data.session ? 'yes' : 'no');
-      if (data.session) {
-        console.log('Session user:', data.session.user.email);
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (err) {
+        console.error('Error in auth setup:', err);
+        if (mounted) {
+          setLoading(false);
+        }
       }
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-
-      return () => {
-        subscription.unsubscribe();
-      };
     };
 
     setupAuth();
+    
+    // Cleanup function
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  console.log('AuthContext state:', { hasUser: !!user, isLoading: loading, userEmail: user?.email });
+  console.log('AuthContext state:', { 
+    hasUser: !!user, 
+    isLoading: loading, 
+    userEmail: user?.email,
+    sessionExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'none',
+  });
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

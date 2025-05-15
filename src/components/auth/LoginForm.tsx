@@ -7,6 +7,7 @@ import { CardContent, CardFooter } from '@/components/ui/card';
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 type LoginFormProps = {
   onShowResetForm: () => void;
@@ -14,13 +15,16 @@ type LoginFormProps = {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
   const navigate = useNavigate();
+  const { refreshSession } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
     try {
       console.log("Login attempt with:", loginEmail);
@@ -28,12 +32,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
       // Clean up existing state
       cleanupAuthState();
       
-      // Attempt global sign out first
+      // Attempt global sign out first to clear any existing sessions
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         // Continue even if this fails
-        console.error("Sign out before login failed:", err);
+        console.warn("Sign out before login failed:", err);
       }
       
       // Sign in with email/password
@@ -42,7 +46,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
         password: loginPassword,
       });
       
-      console.log("Login response:", { data, error });
+      console.log("Login response:", { data: data ? 'received' : 'none', error: error ? 'error' : 'none' });
       
       if (error) throw error;
       
@@ -51,10 +55,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
           title: "Login successful",
           description: "Welcome back to VoiceMate",
         });
-        navigate('/');
+        
+        // Refresh the session state in the context
+        await refreshSession();
+        
+        // Navigate to home page
+        setTimeout(() => {
+          navigate('/');
+        }, 100);
       }
     } catch (error: any) {
       console.error("Login error:", error);
+      setError(error?.message || "Authentication failed");
       toast({
         title: "Login failed",
         description: error?.message || "Please check your credentials and try again",
@@ -68,6 +80,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
   return (
     <form onSubmit={handleLogin}>
       <CardContent className="space-y-4">
+        {error && (
+          <div className="p-3 bg-red-900/20 border border-red-500/50 rounded-md text-sm text-red-200">
+            {error}
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input 
@@ -78,6 +95,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
             value={loginEmail}
             onChange={(e) => setLoginEmail(e.target.value)}
             required 
+            disabled={loading}
           />
         </div>
         <div className="space-y-2">
@@ -89,6 +107,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
             value={loginPassword}
             onChange={(e) => setLoginPassword(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
       </CardContent>
@@ -106,6 +125,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
           variant="link" 
           className="text-voicemate-purple"
           onClick={onShowResetForm}
+          disabled={loading}
         >
           Forgot Password?
         </Button>
