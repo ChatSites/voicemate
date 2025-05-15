@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +28,7 @@ export default function AuthCallback() {
           if (error) {
             console.error("Auth error:", error.message);
             setMessage("There was a problem confirming your account.");
-            toast.toast({
+            toast({
               title: "Authentication Error",
               description: error.message,
               variant: "destructive"
@@ -40,7 +39,7 @@ export default function AuthCallback() {
           
           console.log("Auth flow completed successfully", data);
           setMessage("Authentication successful!");
-          toast.toast({
+          toast({
             title: "Authentication Successful",
             description: "Your account has been verified!"
           });
@@ -81,7 +80,7 @@ export default function AuthCallback() {
         switch (type) {
           case "signup":
             setMessage("Welcome! Redirecting you to your dashboard...");
-            toast.toast({
+            toast({
               title: "Registration Successful",
               description: "Your account has been created and verified successfully."
             });
@@ -90,7 +89,7 @@ export default function AuthCallback() {
           case "magiclink":
           case "invite":
             setMessage("Login successful! Redirecting...");
-            toast.toast({
+            toast({
               title: "Login Successful",
               description: "Welcome back!"
             });
@@ -98,7 +97,7 @@ export default function AuthCallback() {
             break;
           case "recovery":
             setMessage("Redirecting to password reset page...");
-            toast.toast({
+            toast({
               title: "Password Reset",
               description: "Please set your new password."
             });
@@ -122,7 +121,7 @@ export default function AuthCallback() {
             break;
           case "email_change":
             setMessage("Email updated! Redirecting...");
-            toast.toast({
+            toast({
               title: "Email Updated",
               description: "Your email has been updated successfully."
             });
@@ -144,7 +143,7 @@ export default function AuthCallback() {
       } catch (err) {
         console.error("Auth callback error:", err);
         setMessage("Authentication process failed.");
-        toast.toast({
+        toast({
           title: "Authentication Failed",
           description: "An error occurred during authentication. Please try again.",
           variant: "destructive"

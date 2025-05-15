@@ -52,7 +52,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
       
       if (data.user) {
         try {
-          toast.toast({
+          toast({
             title: "Login successful",
             description: "Welcome back to VoiceMate",
           });
@@ -73,7 +73,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
       setError(error?.message || "Authentication failed");
       
       try {
-        toast.toast({
+        toast({
           title: "Login failed",
           description: error?.message || "Please check your credentials and try again",
           variant: "destructive",
