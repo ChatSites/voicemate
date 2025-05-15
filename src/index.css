@@ -202,11 +202,22 @@
   }
 }
 
-/* Light mode specific styles */
-.light body {
-  background-color: white;
+/* Light mode specific overrides */
+.light .bg-black {
+  @apply bg-white;
 }
 
-.light .bg-black {
+.light .text-white {
+  @apply text-gray-900;
+}
+
+/* Fix for text gradient in light mode */
+.light .text-gradient {
+  @apply bg-gradient-to-r from-gray-900 to-voicemate-purple;
+}
+
+/* Fix for light mode specific colors */
+.light {
   background-color: white;
+  color: #000;
 }
