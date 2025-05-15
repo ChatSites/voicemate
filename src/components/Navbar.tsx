@@ -19,6 +19,8 @@ export default function Navbar() {
   // Corrected logo URLs with the new links
   const darkModeLogo = "https://i.ibb.co/k2KwyQhN/voicemate-logo-horiz-dark.png";
   const lightModeLogo = "https://i.ibb.co/bM62K2G9/voicemate-logo-horiz-light.png";
+  // Small logo for mobile screens
+  const mobileLogoTransparent = "https://i.ibb.co/B2xzy2Kr/vm-logo-transparent.png";
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -48,10 +50,17 @@ export default function Navbar() {
       >
         <div className="container mx-auto flex justify-between items-center py-4">
           <a href="/" className="flex items-center space-x-2">
+            {/* Desktop logo (hidden on small screens) */}
             <img 
               src={isDark ? darkModeLogo : lightModeLogo}
               alt="VoiceMate" 
-              className="h-8" 
+              className="h-8 hidden sm:block" 
+            />
+            {/* Mobile logo (visible on small screens) */}
+            <img 
+              src={mobileLogoTransparent}
+              alt="VM" 
+              className="h-8 sm:hidden" 
             />
             {profile?.pulse_id && (
               <span className={`text-sm ${isDark ? 'text-voicemate-purple' : 'text-voicemate-purple'}`}>@{profile.pulse_id}</span>
