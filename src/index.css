@@ -235,7 +235,7 @@
 
 /* Light mode form element styles */
 .light .bg-black\/30 {
-  background-color: #f9fafb; /* bg-gray-50 */
+  background-color: #ffffff; /* Pure white for better contrast */
   border-color: #d1d5db; /* border-gray-300 */
 }
 
@@ -278,11 +278,9 @@
   background: #f8f8f8;
 }
 
-.light .bg-black\/30 {
-  background-color: #f9fafb;
-}
-
+/* Improved input styling for light mode */
 .light input.bg-black\/30 {
+  background-color: #ffffff;
   border-color: #d1d5db;
   color: #111827;
 }
@@ -292,7 +290,7 @@
 }
 
 .light .PulseIdInput-container {
-  background-color: #f9fafb;
+  background-color: #ffffff;
   border-color: #d1d5db;
 }
 
@@ -313,4 +311,15 @@
 /* Fixes for PulseLayout in light mode */
 .light .min-h-screen.bg-black {
   background-color: #f8f9fa;
+}
+
+/* Additional light mode improvements */
+.light .bg-voicemate-card\/60 {
+  background-color: white;
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Make sure text on buttons is always white in light mode */
+.light .bg-voicemate-red {
+  color: white;
 }

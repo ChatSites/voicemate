@@ -106,7 +106,7 @@ const PulseIdInput: React.FC<PulseIdInputProps> = ({
           value={pulseId}
           onChange={handleChange}
           onBlur={() => setTouched(true)}
-          className={`${isDark ? 'bg-black/30 border-gray-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} pr-10`}
+          className={`${isDark ? 'bg-black/30 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'} pr-10`}
         />
         {isChecking && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">

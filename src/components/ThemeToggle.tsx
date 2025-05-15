@@ -9,7 +9,7 @@ export default function ThemeToggle() {
   const isDark = theme === 'dark';
   
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 p-2 rounded-full bg-opacity-50 backdrop-blur-sm">
       <Sun className={`h-4 w-4 ${!isDark ? 'text-amber-500' : 'text-gray-400'}`} />
       <Switch
         checked={isDark}

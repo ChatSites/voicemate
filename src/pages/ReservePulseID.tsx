@@ -9,11 +9,15 @@ import { ArrowRight } from 'lucide-react';
 import PulseIdInput from '@/components/reserve/PulseIdInput';
 import BenefitsList from '@/components/reserve/BenefitsList';
 import PulseIdHeader from '@/components/reserve/PulseIdHeader';
+import { useTheme } from '@/components/providers/ThemeProvider';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const ReservePulseID = () => {
   const [pulseId, setPulseId] = useState('');
   const [pulseIdAvailable, setPulseIdAvailable] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   
   const proceedToSignup = () => {
     if (pulseIdAvailable) {
@@ -36,17 +40,21 @@ const ReservePulseID = () => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black p-4">
-      <div className="absolute inset-0 bg-mesh-gradient animate-gradient-y -z-10 opacity-10"></div>
+    <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${isDark ? 'bg-black' : 'bg-gray-50'}`}>
+      <div className={`absolute inset-0 bg-mesh-gradient animate-gradient-y -z-10 ${isDark ? 'opacity-10' : 'opacity-5'}`}></div>
       
       <div className="w-full max-w-md">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
+        
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="text-center mb-8"
         >
-          <a href="/" className="text-2xl font-bold text-white inline-block bg-clip-text text-transparent bg-gradient-to-r from-voicemate-purple to-voicemate-red">VoiceMate</a>
+          <a href="/" className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} inline-block bg-clip-text text-transparent bg-gradient-to-r from-voicemate-purple to-voicemate-red`}>VoiceMate</a>
         </motion.div>
         
         <motion.div
@@ -54,7 +62,7 @@ const ReservePulseID = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Card className="border border-gray-800 bg-voicemate-card/60 backdrop-blur-md">
+          <Card className={`${isDark ? 'border-gray-800 bg-voicemate-card/60' : 'border-gray-200 bg-white'} backdrop-blur-md shadow-lg`}>
             <CardContent className="space-y-6 pt-6">
               <div className="space-y-3">
                 <PulseIdHeader 
@@ -70,7 +78,7 @@ const ReservePulseID = () => {
                 
                 <div className="pt-4">
                   <Button 
-                    className="w-full bg-voicemate-red hover:bg-red-600"
+                    className="w-full bg-voicemate-red hover:bg-red-600 text-white flex items-center justify-center"
                     onClick={proceedToSignup}
                     disabled={!pulseIdAvailable || pulseId.length < 3}
                   >
@@ -87,8 +95,8 @@ const ReservePulseID = () => {
           </Card>
         </motion.div>
         
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <a href="/" className="text-voicemate-purple hover:text-voicemate-red transition-colors">
+        <div className="mt-6 text-center">
+          <a href="/" className={`text-sm ${isDark ? 'text-voicemate-purple hover:text-voicemate-red' : 'text-purple-600 hover:text-red-500'} transition-colors`}>
             ← Back to home
           </a>
         </div>
