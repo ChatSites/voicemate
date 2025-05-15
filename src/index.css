@@ -246,7 +246,7 @@
 }
 
 .light .text-gray-500 {
-  @apply text-gray-500;
+  color: #6b7280; /* Direct color value instead of using @apply */
 }
 
 /* Fix for gradient border in light mode */
