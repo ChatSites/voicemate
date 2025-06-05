@@ -1,29 +1,29 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-// Async helper function
-const loadLovableTagger = async () => {
+// Helper function to load lovable-tagger synchronously with error handling
+const loadLovableTagger = () => {
   try {
-    const taggerModule = await import("lovable-tagger");
+    // Try to require the package synchronously
+    // This will throw if the package doesn't exist
+    const taggerModule = require("lovable-tagger");
     if (taggerModule && taggerModule.componentTagger) {
       return taggerModule.componentTagger();
     }
   } catch (error) {
-    if (error instanceof Error) {
-      console.warn('lovable-tagger not available (this is normal in production):', error.message);
-    } else {
-      console.warn('lovable-tagger not available due to an unknown error.');
-    }
+    // Package doesn't exist or failed to load - this is expected in production
+    console.warn('lovable-tagger not available (this is normal in production)');
   }
   return null;
 };
 
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(({ mode }) => {
   const plugins = [react()];
 
   if (mode === 'development') {
-    const taggerPlugin = await loadLovableTagger();
+    const taggerPlugin = loadLovableTagger();
     if (taggerPlugin) {
       plugins.push(taggerPlugin);
     }
