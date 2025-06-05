@@ -14,16 +14,28 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthRedirect = async () => {
       try {
+        console.log("Auth callback initiated with:", {
+          hash: location.hash,
+          search: location.search,
+          pathname: location.pathname
+        });
+
         const code = searchParams.get("code") || 
                      new URLSearchParams(location.hash.substring(1)).get("code");
         
         // Get type from query parameters
-        const type = searchParams.get("type");
-        console.log("Auth callback type:", type);
+        const type = searchParams.get("type") || 
+                     new URLSearchParams(location.hash.substring(1)).get("type");
         
-        // Handle auth redirect with code
+        console.log("Auth callback type:", type, "code present:", !!code);
+        
+        let authResult = null;
+        
+        // Handle code-based authentication (email confirmation, magic links)
         if (code) {
-          setMessage("Processing authentication...");
+          setMessage("Processing authentication code...");
+          console.log("Exchanging code for session");
+          
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           
           if (error) {
@@ -38,21 +50,16 @@ export default function AuthCallback() {
             return;
           }
           
-          console.log("Auth flow completed successfully", data);
-          
-          if (data.session && data.user) {
-            console.log("Session established for user:", data.user.email);
-            setMessage("Authentication successful!");
-            toast({
-              title: "Authentication Successful",
-              description: "Welcome to VoiceMate!"
-            });
-          }
+          authResult = data;
+          console.log("Auth flow completed successfully", {
+            hasSession: !!data.session,
+            hasUser: !!data.user,
+            userEmail: data.user?.email
+          });
         } 
-        // Handle hash-based redirects (older format or magic links)
+        // Handle hash-based redirects (older format)
         else if (location.hash) {
           try {
-            // Parse token from hash manually
             const hashParams = new URLSearchParams(location.hash.substring(1));
             const accessToken = hashParams.get("access_token");
             const refreshToken = hashParams.get("refresh_token");
@@ -61,15 +68,6 @@ export default function AuthCallback() {
               console.log("Found access token in hash, setting session");
               setMessage("Setting up your session...");
               
-              // For recovery flow, redirect to update password
-              if (type === 'recovery' || hashParams.get("type") === 'recovery') {
-                setTimeout(() => {
-                  navigate(`/update-password${location.hash}`);
-                }, 1000);
-                return;
-              }
-              
-              // For magic links and other flows, set the session
               const { data, error } = await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken || "",
@@ -80,14 +78,8 @@ export default function AuthCallback() {
                 throw error;
               }
               
-              if (data.session && data.user) {
-                console.log("Session established via hash for user:", data.user.email);
-                setMessage("Login successful!");
-                toast({
-                  title: "Login Successful",
-                  description: "Welcome back to VoiceMate!"
-                });
-              }
+              authResult = data;
+              console.log("Session established via hash for user:", data.user?.email);
             }
           } catch (e) {
             console.error("Error handling hash params:", e);
@@ -95,45 +87,68 @@ export default function AuthCallback() {
           }
         }
         
-        // Handle redirects based on type
-        switch (type) {
-          case "signup":
-            setMessage("Welcome! Redirecting to registration success...");
-            setTimeout(() => navigate("/registration-success"), 1500);
-            break;
-          case "magiclink":
-            setMessage("Login successful! Redirecting to dashboard...");
-            setTimeout(() => navigate("/dashboard"), 1500);
-            break;
-          case "invite":
-            setMessage("Welcome to VoiceMate! Redirecting to dashboard...");
-            setTimeout(() => navigate("/dashboard"), 1500);
-            break;
-          case "recovery":
-            // Already handled above
-            break;
-          case "email_change":
-            setMessage("Email updated! Redirecting to dashboard...");
-            setTimeout(() => navigate("/dashboard"), 1500);
-            break;
-          default:
-            // Check if we have an active session to determine where to redirect
-            const { data: sessionData } = await supabase.auth.getSession();
-            if (sessionData.session) {
-              // If we have a session but no specific type, check if this was from magic link
-              if (location.hash && location.hash.includes('access_token')) {
-                setMessage("Login successful! Redirecting to dashboard...");
-                setTimeout(() => navigate("/dashboard"), 1500);
-              } else {
-                setMessage("Authentication complete. Redirecting to dashboard...");
-                setTimeout(() => navigate("/dashboard"), 1500);
-              }
-            } else {
-              // No session, redirect to auth
-              setMessage("Authentication required. Redirecting to login...");
-              setTimeout(() => navigate("/auth"), 1500);
-            }
-            break;
+        // If we have a successful auth result, handle the redirect
+        if (authResult?.session && authResult?.user) {
+          console.log("Authentication successful, determining redirect...");
+          
+          // Handle redirects based on type
+          switch (type) {
+            case "signup":
+            case "email_change":
+              setMessage("Account confirmed! Redirecting to registration success...");
+              toast({
+                title: "Account Confirmed",
+                description: "Your account has been verified successfully."
+              });
+              setTimeout(() => navigate("/registration-success"), 1500);
+              break;
+              
+            case "magiclink":
+              setMessage("Login successful! Redirecting to dashboard...");
+              toast({
+                title: "Login Successful",
+                description: "Welcome back to VoiceMate!"
+              });
+              setTimeout(() => navigate("/dashboard"), 1500);
+              break;
+              
+            case "invite":
+              setMessage("Welcome to VoiceMate! Redirecting to dashboard...");
+              toast({
+                title: "Welcome!",
+                description: "Your invitation has been accepted successfully."
+              });
+              setTimeout(() => navigate("/dashboard"), 1500);
+              break;
+              
+            case "recovery":
+              setMessage("Please reset your password.");
+              setTimeout(() => {
+                if (location.hash) {
+                  navigate(`/update-password${location.hash}`);
+                } else {
+                  navigate("/update-password");
+                }
+              }, 1500);
+              break;
+              
+            default:
+              // For any successful authentication without a specific type (including magic links),
+              // redirect to dashboard
+              console.log("No specific type, redirecting authenticated user to dashboard");
+              setMessage("Login successful! Redirecting to dashboard...");
+              toast({
+                title: "Login Successful",
+                description: "Welcome to VoiceMate!"
+              });
+              setTimeout(() => navigate("/dashboard"), 1500);
+              break;
+          }
+        } else {
+          // No session established
+          console.log("No session established, redirecting to auth");
+          setMessage("Authentication required. Redirecting to login...");
+          setTimeout(() => navigate("/auth"), 1500);
         }
       } catch (err) {
         console.error("Auth callback error:", err);
