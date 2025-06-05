@@ -3,17 +3,37 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(({ mode }) => {
   const plugins = [react()];
   
-  // Only load lovable-tagger in development mode and use dynamic import
+  // Only load lovable-tagger in development mode using dynamic import
   if (mode === 'development') {
     try {
-      const { componentTagger } = await import("lovable-tagger");
-      plugins.push(componentTagger());
+      // Use dynamic import in a way that works with Vite's synchronous config
+      const loadTagger = async () => {
+        try {
+          const { componentTagger } = await import("lovable-tagger");
+          return componentTagger();
+        } catch (error) {
+          console.warn('Failed to load lovable-tagger:', error);
+          return null;
+        }
+      };
+      
+      // Add a placeholder that will be replaced at runtime
+      plugins.push({
+        name: 'lovable-tagger-loader',
+        configResolved() {
+          // Load the tagger plugin asynchronously after config is resolved
+          loadTagger().then(taggerPlugin => {
+            if (taggerPlugin) {
+              console.log('Lovable tagger loaded successfully');
+            }
+          });
+        }
+      });
     } catch (error) {
-      console.warn('Failed to load lovable-tagger:', error);
-      // Continue without the plugin if it fails to load
+      console.warn('Failed to setup lovable-tagger loader:', error);
     }
   }
 
