@@ -1,5 +1,5 @@
 
-import React, { lazy } from 'react';
+import React, { lazy, useEffect } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -9,6 +9,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import LazyLoadWrapper from '@/components/LazyLoadWrapper';
+import { logEnvironment } from '@/config/environment';
+import { logBuildInfo } from '@/utils/buildInfo';
+import { performanceMonitor } from '@/utils/performanceMonitor';
 
 // Lazy load all pages for better performance
 const ReservePulseID = lazy(() => import('@/pages/ReservePulseID'));
@@ -47,6 +50,22 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  useEffect(() => {
+    // Initialize production configuration
+    logEnvironment();
+    logBuildInfo();
+    
+    // Start performance monitoring
+    performanceMonitor.getCoreWebVitals();
+    
+    // Log app initialization time
+    performanceMonitor.startTiming('app-initialization');
+    
+    return () => {
+      performanceMonitor.endTiming('app-initialization');
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <HelmetProvider>
