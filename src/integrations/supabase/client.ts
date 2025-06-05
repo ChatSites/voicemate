@@ -66,18 +66,19 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 
 /**
  * Check if a PulseID is already taken by another user
- * Enhanced version with better error handling and debugging
+ * Simplified and more reliable version
  */
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
     if (!pulseId || pulseId.length < 3) {
-      console.log('Supabase: PulseID too short, skipping check');
+      console.log('Supabase: PulseID too short, returning false');
       return false;
     }
     
     const normalizedPulseId = pulseId.toLowerCase().trim();
+    console.log(`Supabase: Checking if PulseID '${normalizedPulseId}' is taken`);
     
-    // Clear any existing cache if force refresh is requested
+    // Clear cache if force refresh is requested
     const bypassCache = localStorage.getItem('force_refresh_pulseId') === 'true';
     if (bypassCache) {
       localStorage.removeItem('force_refresh_pulseId');
@@ -85,13 +86,13 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       console.log('Supabase: Force refresh - clearing all caches');
     }
     
-    // Check cache for very recent results (only 1 second to ensure freshness)
+    // Check cache for recent results (only 500ms to ensure freshness)
     const cacheKey = `pulseId_check_${normalizedPulseId}`;
     const cachedResult = !bypassCache ? localStorage.getItem(cacheKey) : null;
     
     if (cachedResult) {
       const { result, timestamp } = JSON.parse(cachedResult);
-      if (Date.now() - timestamp < 1000) {
+      if (Date.now() - timestamp < 500) {
         console.log(`Supabase: Using cached result for ${normalizedPulseId}: ${result ? 'taken' : 'available'}`);
         return result;
       }
@@ -99,67 +100,26 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     
     console.log(`Supabase: Performing fresh database check for PulseID: ${normalizedPulseId}`);
     
-    // Enhanced query that checks for PulseID - check both pulse_id and username columns
-    const { data: allUsers, error: debugError } = await supabase
-      .from('users')
-      .select('pulse_id, name, email')
-      .not('pulse_id', 'is', null);
-    
-    if (debugError) {
-      console.error('Supabase: Error fetching all users for debugging:', debugError);
-    } else {
-      console.log('Supabase: All existing users in database:', allUsers);
-      console.log('Supabase: Looking for PulseID:', normalizedPulseId);
-    }
-    
-    // Primary check using ilike for case-insensitive search on pulse_id column
-    const { data: pulseIdMatches, error: pulseIdError } = await supabase
+    // Single comprehensive query that checks both pulse_id and name columns
+    const { data: matches, error } = await supabase
       .from('users')
       .select('id, pulse_id, name, email')
-      .ilike('pulse_id', normalizedPulseId)
-      .limit(10);
+      .or(`pulse_id.ilike.${normalizedPulseId},name.ilike.${normalizedPulseId}`)
+      .limit(5);
     
-    if (pulseIdError) {
-      console.error('Supabase: Database error during PulseID check:', pulseIdError);
-      errorReporter.reportError(new Error(pulseIdError.message), 'pulse-id-check-primary');
-      // Don't cache errors, return false to allow registration
-      return false;
+    if (error) {
+      console.error('Supabase: Database error during PulseID check:', error);
+      errorReporter.reportError(new Error(error.message), 'pulse-id-check');
+      // On error, assume taken to be safe
+      return true;
     }
     
-    // Check if we got any results from pulse_id column
-    let isTaken = Array.isArray(pulseIdMatches) && pulseIdMatches.length > 0;
+    console.log(`Supabase: Query returned ${matches?.length || 0} matches for '${normalizedPulseId}':`, matches);
     
-    if (isTaken) {
-      console.log(`Supabase: PulseID '${normalizedPulseId}' is TAKEN in pulse_id column. Found ${pulseIdMatches.length} matches:`, pulseIdMatches);
-    } else {
-      console.log(`Supabase: PulseID '${normalizedPulseId}' is AVAILABLE in pulse_id column - no matches found`);
-      
-      // Also check if there might be a name/username column that contains PulseIDs
-      const { data: nameMatches, error: nameError } = await supabase
-        .from('users')
-        .select('id, name, pulse_id, email')
-        .ilike('name', normalizedPulseId)
-        .limit(10);
-        
-      if (!nameError && nameMatches && nameMatches.length > 0) {
-        console.log(`Supabase: Found matches in 'name' column for '${normalizedPulseId}':`, nameMatches);
-        isTaken = true;
-      }
-    }
+    // If we have any matches, the PulseID is taken
+    const isTaken = Array.isArray(matches) && matches.length > 0;
     
-    // Additional verification with exact match on pulse_id
-    const { data: exactMatch, error: exactError } = await supabase
-      .from('users')
-      .select('id, pulse_id, name, email')
-      .eq('pulse_id', normalizedPulseId)
-      .limit(1);
-    
-    if (!exactError && exactMatch && exactMatch.length > 0) {
-      console.log(`Supabase: Exact match found for '${normalizedPulseId}':`, exactMatch);
-      isTaken = true;
-    }
-    
-    // Cache the result for 1 second only
+    // Cache the result for 500ms only
     localStorage.setItem(cacheKey, JSON.stringify({
       result: isTaken,
       timestamp: Date.now()
@@ -171,8 +131,8 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   } catch (error) {
     console.error('Supabase: Unexpected error checking PulseID:', error);
     errorReporter.reportError(error as Error, 'pulse-id-check-unexpected');
-    // On unexpected errors, don't block registration
-    return false;
+    // On unexpected errors, assume taken to be safe
+    return true;
   }
 };
 

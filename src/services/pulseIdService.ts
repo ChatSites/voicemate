@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 
 // Maintain a cache of already checked pulse IDs to reduce API calls
 const pulseIdCache: Record<string, {available: boolean, timestamp: number}> = {};
-const CACHE_DURATION = 1000; // 1 second cache
+const CACHE_DURATION = 500; // 500ms cache - very short to ensure accuracy
 
 // Flag for forcing a fresh check
 let forceRefresh = false;
@@ -44,7 +44,7 @@ export const checkPulseIdAvailability = async (
     
     console.log(`Service: Checking availability for: ${normalizedPulseId}`);
 
-    // Check cache first to avoid unnecessary API calls, unless skipCache is true
+    // Check cache first, unless skipCache is true
     const cached = pulseIdCache[normalizedPulseId];
     if (!skipCache && cached && (Date.now() - cached.timestamp) < CACHE_DURATION && !forceRefresh) {
       console.log(`Service: Using cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
