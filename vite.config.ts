@@ -4,12 +4,19 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(({ mode }) => {
   const plugins = [react()];
   
   if (mode === 'development') {
-    const { componentTagger } = await import("lovable-tagger");
-    plugins.push(componentTagger());
+    // Handle the dynamic import synchronously by using require or top-level import
+    // Since we can't use top-level await in this context, we'll use a different approach
+    try {
+      // Use require for the dynamic import in development
+      const { componentTagger } = require("lovable-tagger");
+      plugins.push(componentTagger());
+    } catch (error) {
+      console.warn('lovable-tagger not available:', error);
+    }
   }
   
   return {
