@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   // Handle profile error
   if (hasProfileError) {
-    return <DashboardError message={profileErrorMessage || "Unknown error"} />;
+    return <DashboardError error={profileErrorMessage || "Unknown error"} />;
   }
 
   return (
