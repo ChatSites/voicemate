@@ -50,84 +50,82 @@ function App() {
   return (
     <ErrorBoundary>
       <HelmetProvider>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider defaultTheme="dark">
+        <ThemeProvider defaultTheme="dark">
+          <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <Router>
-                <ErrorBoundary>
-                  <Routes>
-                    <Route path="/" element={
-                      <LazyLoadWrapper>
-                        <Index />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/reserve" element={
-                      <LazyLoadWrapper>
-                        <ReservePulseID />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/auth" element={
-                      <LazyLoadWrapper>
-                        <Auth />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/auth/callback" element={
-                      <LazyLoadWrapper>
-                        <AuthCallback />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/auth/confirm" element={
-                      <LazyLoadWrapper>
-                        <AuthConfirmation />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/dashboard" element={
-                      <LazyLoadWrapper>
-                        <Dashboard />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/inbox" element={
-                      <LazyLoadWrapper>
-                        <Inbox />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/send-pulse" element={
-                      <LazyLoadWrapper>
-                        <SendPulse />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/pulse/:id" element={
-                      <LazyLoadWrapper>
-                        <ViewPulse />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/update-password" element={
-                      <LazyLoadWrapper>
-                        <UpdatePassword />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/privacy" element={
-                      <LazyLoadWrapper>
-                        <Privacy />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="/terms" element={
-                      <LazyLoadWrapper>
-                        <Terms />
-                      </LazyLoadWrapper>
-                    } />
-                    <Route path="*" element={
-                      <LazyLoadWrapper>
-                        <NotFound />
-                      </LazyLoadWrapper>
-                    } />
-                  </Routes>
-                </ErrorBoundary>
+                <Routes>
+                  <Route path="/" element={
+                    <LazyLoadWrapper>
+                      <Index />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/reserve" element={
+                    <LazyLoadWrapper>
+                      <ReservePulseID />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/auth" element={
+                    <LazyLoadWrapper>
+                      <Auth />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/auth/callback" element={
+                    <LazyLoadWrapper>
+                      <AuthCallback />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/auth/confirm" element={
+                    <LazyLoadWrapper>
+                      <AuthConfirmation />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/dashboard" element={
+                    <LazyLoadWrapper>
+                      <Dashboard />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/inbox" element={
+                    <LazyLoadWrapper>
+                      <Inbox />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/send-pulse" element={
+                    <LazyLoadWrapper>
+                      <SendPulse />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/pulse/:id" element={
+                    <LazyLoadWrapper>
+                      <ViewPulse />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/update-password" element={
+                    <LazyLoadWrapper>
+                      <UpdatePassword />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/privacy" element={
+                    <LazyLoadWrapper>
+                      <Privacy />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/terms" element={
+                    <LazyLoadWrapper>
+                      <Terms />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="*" element={
+                    <LazyLoadWrapper>
+                      <NotFound />
+                    </LazyLoadWrapper>
+                  } />
+                </Routes>
                 <Toaster />
               </Router>
             </AuthProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
       </HelmetProvider>
     </ErrorBoundary>
   );
