@@ -2,85 +2,64 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { componentTagger } from "lovable-tagger";
 
-// Extend globalThis type to include __LOVABLE_TAGGER__
-declare global {
-  var __LOVABLE_TAGGER__: (() => any) | undefined;
-}
-
-export default defineConfig(({ mode }) => {
-  const plugins = [react()];
-  
-  // Only try to add lovable-tagger in development mode
-  if (mode === 'development') {
-    try {
-      // For ESM-only modules, we'll handle this differently
-      // This will be undefined in most cases, which is fine
-      const lovableTagger = globalThis.__LOVABLE_TAGGER__;
-      if (lovableTagger) {
-        plugins.push(lovableTagger());
-      }
-    } catch (error) {
-      // Type the error properly for TypeScript
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.warn('lovable-tagger not available:', errorMessage);
-    }
-  }
-
-  return {
-    server: {
-      host: "::",
-      port: 8080,
+export default defineConfig(({ mode }) => ({
+  server: {
+    host: "::",
+    port: 8080,
+  },
+  plugins: [
+    react(),
+    mode === 'development' && componentTagger(),
+  ].filter(Boolean),
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
-    plugins,
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
-    },
-    build: {
-      target: 'esnext',
-      minify: 'esbuild',
-      cssMinify: true,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom'],
-            'vendor-ui': ['@radix-ui/react-toast', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-            'vendor-utils': ['clsx', 'class-variance-authority', 'tailwind-merge'],
-            'vendor-supabase': ['@supabase/supabase-js'],
-            'vendor-query': ['@tanstack/react-query'],
-            'vendor-router': ['react-router-dom'],
-            'vendor-motion': ['framer-motion'],
-            'auth-components': [
-              './src/components/auth/LoginForm',
-              './src/components/auth/RegisterForm',
-              './src/components/auth/PasswordResetForm'
-            ],
-            'dashboard-components': [
-              './src/components/dashboard/DashboardCards',
-              './src/components/dashboard/DashboardHeader'
-            ],
-            'pulse-components': [
-              './src/components/pulse/PulseForm',
-              './src/components/pulse/AudioPlayer',
-              './src/components/pulse/RecordingArea'
-            ]
-          }
+  },
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-ui': ['@radix-ui/react-toast', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          'vendor-utils': ['clsx', 'class-variance-authority', 'tailwind-merge'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-router': ['react-router-dom'],
+          'vendor-motion': ['framer-motion'],
+          'auth-components': [
+            './src/components/auth/LoginForm',
+            './src/components/auth/RegisterForm',
+            './src/components/auth/PasswordResetForm'
+          ],
+          'dashboard-components': [
+            './src/components/dashboard/DashboardCards',
+            './src/components/dashboard/DashboardHeader'
+          ],
+          'pulse-components': [
+            './src/components/pulse/PulseForm',
+            './src/components/pulse/AudioPlayer',
+            './src/components/pulse/RecordingArea'
+          ]
         }
-      },
-      chunkSizeWarningLimit: 1000,
-      sourcemap: mode === 'production' ? 'hidden' : true,
+      }
     },
-    define: {
-      __BUILD_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
-      __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
-      __GIT_COMMIT__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA || 'unknown'),
-      __BUILD_NUMBER__: JSON.stringify(process.env.VERCEL_BUILD_ID || 'local'),
-    },
-    preview: {
-      host: "::",
-      port: 4173,
-    },
-  };
-});
+    chunkSizeWarningLimit: 1000,
+    sourcemap: mode === 'production' ? 'hidden' : true,
+  },
+  define: {
+    __BUILD_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+    __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
+    __GIT_COMMIT__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA || 'unknown'),
+    __BUILD_NUMBER__: JSON.stringify(process.env.VERCEL_BUILD_ID || 'local'),
+  },
+  preview: {
+    host: "::",
+    port: 4173,
+  },
+}));
