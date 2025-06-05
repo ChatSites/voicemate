@@ -1,15 +1,34 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck, Mail } from 'lucide-react';
+import { CircleCheck, Mail, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const RegistrationSuccess = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, refreshSession } = useAuth();
+  const [isChecking, setIsChecking] = useState(true);
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      console.log('RegistrationSuccess: Checking auth status...');
+      setIsChecking(true);
+      
+      // Wait a moment for auth state to settle
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Try to refresh the session to get the latest state
+      await refreshSession();
+      
+      setIsChecking(false);
+    };
+
+    checkAuthStatus();
+  }, [refreshSession]);
 
   // Handle dashboard navigation
   const handleGoToDashboard = () => {
@@ -27,7 +46,7 @@ const RegistrationSuccess = () => {
 
   // Auto-redirect authenticated users to dashboard after a delay
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && !isChecking && user) {
       console.log('User is authenticated, will auto-navigate to dashboard in 3 seconds');
       const timer = setTimeout(() => {
         navigate('/dashboard');
@@ -35,7 +54,27 @@ const RegistrationSuccess = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [loading, user, navigate]);
+  }, [loading, isChecking, user, navigate]);
+
+  // Show loading state while checking authentication
+  if (loading || isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black p-4">
+        <div className="absolute inset-0 bg-mesh-gradient animate-gradient-y -z-10 opacity-10"></div>
+        
+        <div className="text-center">
+          <div className="mb-6">
+            <div className="text-2xl font-semibold text-white inline-block bg-clip-text text-transparent bg-gradient-to-r from-voicemate-purple to-voicemate-red">VoiceMate</div>
+          </div>
+          
+          <div className="flex justify-center mb-4">
+            <Loader2 className="h-8 w-8 animate-spin text-voicemate-purple" />
+          </div>
+          <p className="text-gray-400">Checking your authentication status...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -58,22 +97,29 @@ const RegistrationSuccess = () => {
           </CardHeader>
           
           <CardContent className="flex flex-col items-center">
-            <Alert className="mb-4 border-blue-500/20 bg-blue-500/10">
-              <Mail className="h-5 w-5 text-blue-500" />
-              <AlertDescription className="text-sm">
-                Check your email inbox for a verification link to complete your registration.
-              </AlertDescription>
-            </Alert>
-            
             {user ? (
               <div className="text-center mb-6">
-                <p className="text-green-400 mb-2">✓ You are now signed in</p>
+                <Alert className="mb-4 border-green-500/20 bg-green-500/10">
+                  <CircleCheck className="h-5 w-5 text-green-500" />
+                  <AlertDescription className="text-sm text-green-400">
+                    ✓ You are now signed in and ready to use VoiceMate!
+                  </AlertDescription>
+                </Alert>
                 <p className="text-gray-400 text-sm">You'll be redirected to the dashboard automatically...</p>
               </div>
             ) : (
-              <p className="text-center mb-6 text-gray-400">
-                After verifying your email, you'll be able to access all features of VoiceMate.
-              </p>
+              <>
+                <Alert className="mb-4 border-blue-500/20 bg-blue-500/10">
+                  <Mail className="h-5 w-5 text-blue-500" />
+                  <AlertDescription className="text-sm">
+                    Check your email inbox for a verification link to complete your registration.
+                  </AlertDescription>
+                </Alert>
+                
+                <p className="text-center mb-6 text-gray-400">
+                  After verifying your email, you'll be able to access all features of VoiceMate.
+                </p>
+              </>
             )}
             
             <Button 

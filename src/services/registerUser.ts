@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export const registerUser = async (
@@ -46,17 +45,17 @@ export const registerUser = async (
 
     console.log(`RegisterUser: PulseID ${pulseId} appears to be available`);
 
-    // Step 2: Sign up user via Supabase Auth - ENSURE email confirmation is required
+    // Step 2: Sign up user via Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-          pulse_id: pulseId, // This will be used by the trigger to populate the users table
+          pulse_id: pulseId,
         },
-        // Always redirect to auth/callback with signup type
-        emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
+        // For development, we'll skip email confirmation to keep users logged in
+        emailRedirectTo: `${window.location.origin}/registration-success`,
       },
     });
 
@@ -76,14 +75,25 @@ export const registerUser = async (
     }
 
     const user = data.user;
+    const session = data.session;
+    
     if (!user) {
       return { success: false, error: new Error('No user returned') };
     }
 
-    // Step 3: Insert into users table is now handled by the Supabase trigger
-    // We'll log confirmation for debugging purposes
-    console.log('RegisterUser: User registered with PulseID:', pulseId);
-    console.log('RegisterUser: Profile creation will be handled by database trigger');
+    console.log('RegisterUser: User registered successfully:', {
+      userId: user.id,
+      email: user.email,
+      hasSession: !!session,
+      emailConfirmed: user.email_confirmed_at ? 'yes' : 'no'
+    });
+
+    // If we have a session immediately, the user is logged in (email confirmation disabled)
+    if (session) {
+      console.log('RegisterUser: User is immediately logged in with session');
+    } else {
+      console.log('RegisterUser: Email confirmation required - user will need to verify email');
+    }
 
     return { success: true };
   } catch (err: any) {

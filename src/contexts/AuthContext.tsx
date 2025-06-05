@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
@@ -91,51 +92,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Set up auth state listener FIRST
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, currentSession) => {
-            console.log('Auth state changed:', event);
+            console.log('Auth state changed:', event, currentSession ? 'has session' : 'no session');
             
             if (!mounted) return;
             
+            // Handle different auth events
             if (event === 'SIGNED_IN') {
+              console.log('User signed in successfully');
               toast({
                 title: "Signed in successfully",
                 description: "Welcome back!"
               });
             } else if (event === 'SIGNED_OUT') {
-              toast({
-                title: "Signed out",
-                description: "You have been signed out"
-              });
+              console.log('User signed out');
+              // Only show toast if it wasn't a manual sign out
+              if (currentSession === null && session !== null) {
+                toast({
+                  title: "Session expired",
+                  description: "Please sign in again"
+                });
+              }
             } else if (event === 'USER_UPDATED') {
-              toast({
-                title: "Account updated",
-                description: "Your account information has been updated"
-              });
+              console.log('User profile updated');
             } else if (event === 'TOKEN_REFRESHED') {
-              console.log('Auth token refreshed');
+              console.log('Auth token refreshed successfully');
             }
             
-            // Use setTimeout to prevent potential deadlocks
-            setTimeout(() => {
-              if (mounted) {
-                setSession(currentSession);
-                setUser(currentSession?.user ?? null);
-                setLoading(false);
-              }
-            }, 0);
+            // Update state immediately
+            setSession(currentSession);
+            setUser(currentSession?.user ?? null);
+            setLoading(false);
           }
         );
 
         // THEN check for existing session
         const { data, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('Error getting session:', error);
-          // Clean up auth state on error
-          cleanupAuthState();
+          console.error('Error getting initial session:', error);
+          // Don't clean up auth state on initial load errors - might be temporary
         }
         
         console.log('Got existing session:', data.session ? 'yes' : 'no');
         if (data.session) {
           console.log('Session user:', data.session.user.email);
+          console.log('Session expires at:', new Date(data.session.expires_at! * 1000).toISOString());
         }
         
         if (mounted) {
