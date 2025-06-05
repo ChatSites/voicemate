@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/toast"
 
 export function Toaster() {
-  // Get toast context
   const { toasts } = useToast();
   
   return (
