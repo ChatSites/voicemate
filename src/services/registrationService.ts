@@ -1,6 +1,5 @@
-
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 // This is a simplified check, final verification happens during registration
 export const finalEmailCheck = async (email: string): Promise<boolean> => {

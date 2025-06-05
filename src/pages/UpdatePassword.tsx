@@ -1,111 +1,101 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 const UpdatePassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    document.title = 'Update Password | VoiceMate ID';
-    
-    // Extract token from URL parameters or hash
-    const token = searchParams.get('access_token') || 
-                  new URLSearchParams(location.hash.replace('#', '?')).get('access_token');
-    
-    console.log('UpdatePassword: Access token found:', !!token);
-    setAccessToken(token);
-    
-    // Log params for debugging
-    console.log('UpdatePassword params:', 
-      Object.fromEntries(searchParams.entries()),
-      'hash:', location.hash
-    );
-  }, [searchParams, location.hash]);
+    document.title = 'Update Password | VoiceMate';
+  }, []);
 
-  const validatePassword = () => {
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
-    }
-    if (password !== confirmPassword) {
-      return 'Passwords do not match';
-    }
-    return null;
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const error = validatePassword();
-    if (error) {
+    setLoading(true);
+    setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
       toast({
-        title: "Password Error",
-        description: error,
+        title: "Passwords do not match",
+        description: "Please make sure the passwords match.",
         variant: "destructive",
       });
       return;
     }
 
-    setLoading(true);
     try {
-      let updateResult;
-      
-      if (accessToken) {
-        console.log('Updating password with token');
-        
-        // Set the auth token in the session
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: '',
-        });
-        
-        if (sessionError) {
-          console.error('Error setting session:', sessionError);
-          throw sessionError;
-        }
-        
-        console.log('Session set successfully, updating password');
-        
-        // Now update the password
-        updateResult = await supabase.auth.updateUser({ password });
-      } else {
-        // Regular password update (user already authenticated)
-        console.log('Updating password without token');
-        updateResult = await supabase.auth.updateUser({ password });
-      }
-      
-      const { error } = updateResult;
-      
-      if (error) throw error;
+      // Extract token from URL
+      const accessToken = searchParams.get("access_token") || 
+                          new URLSearchParams(location.hash.substring(1)).get("access_token");
 
+      if (!accessToken) {
+        setError("Access token is missing");
+        toast({
+          title: "Access token missing",
+          description: "The access token is missing from the URL. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update password using Supabase API
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+        access_token: accessToken,
+      });
+
+      if (error) {
+        setError(error.message);
+        toast({
+          title: "Password update failed",
+          description: error.message || "Failed to update password. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSuccess(true);
       toast({
-        title: "Password updated",
-        description: "Your password has been successfully updated.",
+        title: "Password updated successfully",
+        description: "Your password has been updated successfully.",
       });
       
       // Redirect to login page after successful password update
-      navigate('/auth?tab=login');
-    } catch (error: any) {
+      setTimeout(() => {
+        navigate('/auth');
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
       toast({
-        title: "Password update failed",
-        description: error?.message || "An error occurred while updating your password.",
+        title: "An unexpected error occurred",
+        description: err.message || "Please try again later.",
         variant: "destructive",
       });
-      console.error('Password update error:', error);
     } finally {
       setLoading(false);
     }
@@ -121,83 +111,89 @@ const UpdatePassword = () => {
         </div>
         
         <Card className="border border-gray-800 bg-voicemate-card/60 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle className="text-xl text-center">Update Password</CardTitle>
-            <CardDescription className="text-center">Create a new password for your account</CardDescription>
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-lg">Update Password</CardTitle>
           </CardHeader>
           
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              {!accessToken && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Invalid or expired password reset link. Please request a new password reset.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="new-password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="bg-black/30 border-gray-700 pr-10"
-                    placeholder="••••••••"
-                    disabled={loading || !accessToken}
-                    required
-                  />
-                  <button 
-                    type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+          <CardContent>
+            {error && (
+              <div className="p-3 mb-4 bg-red-900/20 border border-red-500/50 rounded-md text-sm text-red-200">
+                {error}
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  type={showPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="bg-black/30 border-gray-700"
-                  placeholder="••••••••"
-                  disabled={loading || !accessToken}
-                  required
-                />
-              </div>
-              
-              <div className="text-sm text-gray-400">
-                Password must be at least 8 characters long
-              </div>
-            </CardContent>
+            )}
             
-            <CardFooter className="flex flex-col">
-              <Button 
-                type="submit" 
-                className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90"
-                disabled={loading || !accessToken}
-              >
-                {loading ? "Updating..." : "Update Password"}
-              </Button>
-              
-              <Button 
-                type="button" 
-                variant="link" 
-                className="mt-2 text-voicemate-purple"
-                onClick={() => navigate('/auth')}
-              >
-                Back to Login
-              </Button>
-            </CardFooter>
-          </form>
+            {success ? (
+              <div className="text-green-500 text-center">
+                <Loader2 className="inline-block mr-2 h-4 w-4 animate-spin" />
+                Password updated successfully! Redirecting...
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="bg-black/30 border-gray-700"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"
+                      onClick={togglePasswordVisibility}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">Toggle password visibility</span>
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="bg-black/30 border-gray-700"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"
+                      onClick={toggleConfirmPasswordVisibility}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">Toggle confirm password visibility</span>
+                    </Button>
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-voicemate-purple hover:bg-voicemate-purple/90"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Password"
+                  )}
+                </Button>
+              </form>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>

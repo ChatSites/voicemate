@@ -1,5 +1,5 @@
 
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { RegistrationFormState } from '@/hooks/useRegistrationForm';
 
 export const validateRegistrationForm = (formState: RegistrationFormState): boolean => {

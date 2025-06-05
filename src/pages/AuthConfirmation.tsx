@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 const AuthConfirmation = () => {
@@ -14,6 +13,7 @@ const AuthConfirmation = () => {
   const [actionType, setActionType] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     document.title = 'Confirm Account | VoiceMate ID';
@@ -116,7 +116,7 @@ const AuthConfirmation = () => {
     };
     
     processAuthAction();
-  }, [location.hash, location.search, navigate]);
+  }, [location.hash, location.search, navigate, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">

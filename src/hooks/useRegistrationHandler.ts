@@ -1,6 +1,6 @@
 
 import { useNavigate } from 'react-router-dom';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { registerUser } from '@/services/registerUser';
 import { validateRegistrationForm } from '@/services/validationService';
 import { RegistrationFormState } from '@/hooks/useRegistrationForm';
