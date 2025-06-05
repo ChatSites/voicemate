@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface RegistrationFormData {
   fullName: string;
@@ -29,19 +29,19 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
     loading: false,
   });
 
-  // Update pulseId when prefilledPulseId changes
+  // Update pulseId when prefilledPulseId changes (only if different)
   useEffect(() => {
-    if (prefilledPulseId) {
-      console.log(`useRegistrationForm: Prefilling PulseID with ${prefilledPulseId}`);
+    if (prefilledPulseId && prefilledPulseId !== formState.pulseId) {
+      console.log(`useRegistrationForm: Updating PulseID from ${formState.pulseId} to ${prefilledPulseId}`);
       setFormState(prev => ({ ...prev, pulseId: prefilledPulseId }));
     }
-  }, [prefilledPulseId]);
+  }, [prefilledPulseId, formState.pulseId]);
 
-  const updateField = (field: keyof RegistrationFormData, value: string) => {
+  const updateField = useCallback((field: keyof RegistrationFormData, value: string) => {
     setFormState(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
-  const isFormValid = () => {
+  const isFormValid = useCallback(() => {
     const validFields = 
       formState.fullName.length >= 3 && 
       formState.registerEmail && 
@@ -53,37 +53,37 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
     const validAvailability = formState.pulseIdAvailable === true;
     
     return validFields && validAvailability;
-  };
+  }, [formState]);
 
-  const isPasswordValid = (password: string): boolean => {
+  const isPasswordValid = useCallback((password: string): boolean => {
     const hasLowercase = /[a-z]/.test(password);
     const hasUppercase = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
     
     return hasLowercase && hasUppercase && hasNumber && hasSpecial;
-  };
+  }, []);
 
-  const setPulseIdAvailable = (available: boolean | null) => {
+  const setPulseIdAvailable = useCallback((available: boolean | null) => {
     console.log(`useRegistrationForm: Setting pulseIdAvailable to ${available}`);
     setFormState(prev => ({ ...prev, pulseIdAvailable: available }));
-  };
+  }, []);
 
-  const setPulseIdSuggestions = (suggestions: string[]) => {
+  const setPulseIdSuggestions = useCallback((suggestions: string[]) => {
     setFormState(prev => ({ ...prev, pulseIdSuggestions: suggestions }));
-  };
+  }, []);
 
-  const setIsEmailValid = (valid: boolean | null) => {
+  const setIsEmailValid = useCallback((valid: boolean | null) => {
     setFormState(prev => ({ ...prev, isEmailValid: valid }));
-  };
+  }, []);
 
-  const setRegistrationInProgress = (inProgress: boolean) => {
+  const setRegistrationInProgress = useCallback((inProgress: boolean) => {
     setFormState(prev => ({ ...prev, registrationInProgress: inProgress }));
-  };
+  }, []);
 
-  const setLoading = (loading: boolean) => {
+  const setLoading = useCallback((loading: boolean) => {
     setFormState(prev => ({ ...prev, loading }));
-  };
+  }, []);
 
   return {
     formState,
