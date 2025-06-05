@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
         }
       };
       
-      plugins.push(taggerLoaderPlugin);
+      plugins.push(taggerLoaderPlugin as any);
     } catch (error) {
       console.warn('Failed to setup lovable-tagger loader:', error);
     }
