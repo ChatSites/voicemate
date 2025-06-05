@@ -3,16 +3,17 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(({ mode }) => {
   const plugins = [react()];
   
-  // Dynamically import lovable-tagger only in development
+  // Only try to add lovable-tagger in development mode
   if (mode === 'development') {
     try {
-      const { componentTagger } = await import("lovable-tagger");
+      // Use require for synchronous loading in Node.js environment
+      const { componentTagger } = require("lovable-tagger");
       plugins.push(componentTagger());
     } catch (error) {
-      console.warn('Failed to load lovable-tagger:', error);
+      console.warn('lovable-tagger not available:', error.message);
     }
   }
 
