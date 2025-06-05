@@ -1,3 +1,4 @@
+
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
 import { toast } from "@/hooks/use-toast";
 
@@ -25,15 +26,15 @@ export const registerUser = async (
     // Clean up existing auth state to avoid conflicts
     cleanupAuthState();
     
-    // Prepare user metadata
+    // Prepare user metadata with the claimed PulseID
     const userData = {
       full_name: fullName,
-      username: pulseId,
+      pulse_id: pulseId, // This will be used by the trigger to populate the users table
     };
     
     console.log('Registering with data:', userData);
     
-    // Perform registration
+    // Perform registration with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -69,26 +70,11 @@ export const registerUser = async (
     // Check if we need email confirmation
     const emailConfirmNeeded = !authData.session;
     
-    // Update the user table with the PulseID
+    // The user profile will be automatically created by the database trigger
+    // with the PulseID from the user metadata
     if (authData.user) {
-      try {
-        console.log('Updating profile for user:', authData.user.id);
-        const { error: updateError } = await supabase
-          .from('users')
-          .upsert({
-            id: authData.user.id,
-            name: fullName,
-            pulse_id: pulseId,
-          });
-          
-        if (updateError) {
-          console.error('Failed to update profile:', updateError);
-        } else {
-          console.log('Successfully updated profile with username:', pulseId);
-        }
-      } catch (profileError) {
-        console.error('Failed to update profile:', profileError);
-      }
+      console.log('User registered successfully with PulseID:', pulseId);
+      console.log('Profile will be created automatically by database trigger');
     }
     
     if (emailConfirmNeeded) {
@@ -100,8 +86,8 @@ export const registerUser = async (
       console.log('Email confirmation is required for:', email);
     } else {
       toast({
-        title: "Registration successful",
-        description: "Your account has been created. Welcome to VoiceMate!",
+        title: "PulseID claimed successfully!",
+        description: `Welcome to VoiceMate! Your PulseID "${pulseId}" has been registered.`,
       });
       
       console.log('User registered successfully without email confirmation needed');
@@ -111,7 +97,8 @@ export const registerUser = async (
       success: true, 
       user: authData.user,
       session: authData.session,
-      emailConfirmNeeded
+      emailConfirmNeeded,
+      pulseId
     };
   } catch (error: any) {
     console.error('Registration error:', error);

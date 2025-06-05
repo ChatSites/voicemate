@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +13,7 @@ import { useTheme } from '@/components/providers/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import { forceRefreshNextCheck } from '@/services/pulseIdService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ReservePulseID = () => {
   const [pulseId, setPulseId] = useState('');
@@ -19,7 +21,15 @@ const ReservePulseID = () => {
   const [pulseIdChecks, setPulseIdChecks] = useState(0);
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const isDark = theme === 'dark';
+  
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
   
   // Show welcome toast on initial render with a delay to ensure context is available
   useEffect(() => {
@@ -37,20 +47,20 @@ const ReservePulseID = () => {
     return () => clearTimeout(timer);
   }, []);
   
-  const proceedToSignup = () => {
-    if (pulseIdAvailable) {
-      // Navigate directly to the auth page with the register tab selected and the PulseID prefilled
-      navigate(`/auth?tab=register&pulseId=${pulseId}`);
+  const claimPulseId = () => {
+    if (pulseIdAvailable && pulseId.length >= 3) {
+      console.log(`Claiming PulseID: ${pulseId}`);
+      // Navigate to auth page with register tab and prefilled PulseID
+      navigate(`/auth?tab=register&pulseId=${encodeURIComponent(pulseId)}`);
     } else {
       try {
         toast({
           title: "Check availability first",
-          description: "Please verify that your PulseID is available",
+          description: "Please verify that your PulseID is available before proceeding",
           variant: "destructive",
         });
       } catch (err) {
         console.error("Failed to show error toast:", err);
-        // Fallback alert if toast fails
         alert("Please verify that your PulseID is available before proceeding");
       }
     }
@@ -125,7 +135,7 @@ const ReservePulseID = () => {
                 <div className="pt-4">
                   <Button 
                     className="w-full bg-voicemate-red hover:bg-red-600 text-white flex items-center justify-center"
-                    onClick={proceedToSignup}
+                    onClick={claimPulseId}
                     disabled={!pulseIdAvailable || pulseId.length < 3}
                   >
                     Claim Your PulseID <ArrowRight className="ml-1 h-4 w-4" />

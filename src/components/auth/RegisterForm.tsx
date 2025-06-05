@@ -9,6 +9,7 @@ import RegistrationSubmitButton from './RegistrationSubmitButton';
 import { useRegistrationForm } from '@/hooks/useRegistrationForm';
 import { useRegistrationHandler } from '@/hooks/useRegistrationHandler';
 import { checkPulseIdAvailability } from '@/services/pulseIdService';
+import { toast } from '@/hooks/use-toast';
 
 interface RegisterFormProps {
   prefilledPulseId?: string;
@@ -36,7 +37,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
     onSwitchToLogin
   );
 
-  // Check prefilled PulseID availability on load
+  // Check prefilled PulseID availability on load and show success message
   useEffect(() => {
     const checkPrefilledPulseId = async () => {
       if (prefilledPulseId && prefilledPulseId.length >= 3) {
@@ -46,6 +47,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
           console.log(`RegisterForm: Prefilled PulseID ${prefilledPulseId} is ${result.available ? 'available' : 'taken'}`);
           setPulseIdAvailable(result.available);
           setPulseIdSuggestions(result.available ? [] : result.suggestions);
+          
+          // Show confirmation that the PulseID is ready to claim
+          if (result.available) {
+            toast({
+              title: "PulseID Ready to Claim",
+              description: `"${prefilledPulseId}" is available and ready to be registered to your account.`,
+            });
+          }
         } catch (error) {
           console.error('RegisterForm: Error checking prefilled PulseID:', error);
         }
