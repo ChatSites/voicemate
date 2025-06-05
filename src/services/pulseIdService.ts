@@ -40,7 +40,7 @@ export const checkPulseIdAvailability = async (
     }
 
     // Normalize the pulseID to lowercase for consistent checking
-    const normalizedPulseId = pulseId.toLowerCase();
+    const normalizedPulseId = pulseId.toLowerCase().trim();
     
     console.log(`Service: Checking availability for: ${normalizedPulseId}`);
 
@@ -108,10 +108,10 @@ export const checkPulseIdAvailability = async (
     // Show result toast
     try {
       toast({
-        title: `PulseID ${!isTaken ? 'Available' : 'Unavailable'}`,
+        title: `PulseID ${!isTaken ? 'Available' : 'Taken'}`,
         description: !isTaken 
           ? `'${normalizedPulseId}' is available for you to claim!` 
-          : `'${normalizedPulseId}' is already taken. Try another one.`,
+          : `'${normalizedPulseId}' is already taken by another user.`,
         variant: !isTaken ? "default" : "destructive"
       });
     } catch (err) {

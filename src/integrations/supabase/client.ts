@@ -75,7 +75,7 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       return false;
     }
     
-    const normalizedPulseId = pulseId.toLowerCase();
+    const normalizedPulseId = pulseId.toLowerCase().trim();
     
     // Clear any existing cache if force refresh is requested
     const bypassCache = localStorage.getItem('force_refresh_pulseId') === 'true';
@@ -99,12 +99,25 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     
     console.log(`Supabase: Performing fresh database check for PulseID: ${normalizedPulseId}`);
     
-    // Primary check using exact match with proper case handling
+    // Enhanced query that checks for PulseID with better case handling
+    // First, let's see all PulseIDs in the database for debugging
+    const { data: allPulseIds, error: debugError } = await supabase
+      .from('users')
+      .select('pulse_id')
+      .not('pulse_id', 'is', null);
+    
+    if (debugError) {
+      console.error('Supabase: Error fetching all PulseIDs for debugging:', debugError);
+    } else {
+      console.log('Supabase: All existing PulseIDs in database:', allPulseIds?.map(u => u.pulse_id));
+    }
+    
+    // Primary check using ilike for case-insensitive search
     const { data, error } = await supabase
       .from('users')
       .select('id, pulse_id')
-      .eq('pulse_id', normalizedPulseId)
-      .limit(1);
+      .ilike('pulse_id', normalizedPulseId)
+      .limit(10); // Increased limit to see if there are multiple matches
     
     if (error) {
       console.error('Supabase: Database error during PulseID check:', error);
@@ -117,9 +130,26 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     const isTaken = Array.isArray(data) && data.length > 0;
     
     if (isTaken) {
-      console.log(`Supabase: PulseID '${normalizedPulseId}' is TAKEN. Found user:`, data[0]);
+      console.log(`Supabase: PulseID '${normalizedPulseId}' is TAKEN. Found ${data.length} matches:`, data);
     } else {
-      console.log(`Supabase: PulseID '${normalizedPulseId}' is AVAILABLE`);
+      console.log(`Supabase: PulseID '${normalizedPulseId}' is AVAILABLE - no matches found`);
+    }
+    
+    // Additional verification with exact match
+    const { data: exactMatch, error: exactError } = await supabase
+      .from('users')
+      .select('id, pulse_id')
+      .eq('pulse_id', normalizedPulseId)
+      .limit(1);
+    
+    if (!exactError && exactMatch && exactMatch.length > 0) {
+      console.log(`Supabase: Exact match found for '${normalizedPulseId}':`, exactMatch);
+      // Cache the result for 1 second only
+      localStorage.setItem(cacheKey, JSON.stringify({
+        result: true,
+        timestamp: Date.now()
+      }));
+      return true;
     }
     
     // Cache the result for 1 second only
