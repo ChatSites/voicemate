@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { lazy } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -7,19 +7,20 @@ import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import LazyLoadWrapper from '@/components/LazyLoadWrapper';
 
-// Pages
-import ReservePulseID from '@/pages/ReservePulseID';
-import Index from '@/pages/Index';
-import Auth from '@/pages/Auth';
-import NotFound from '@/pages/NotFound';
-import Dashboard from '@/pages/Dashboard';
-import Inbox from '@/pages/Inbox';
-import SendPulse from '@/pages/SendPulse';
-import ViewPulse from '@/pages/ViewPulse';
-import AuthCallback from '@/pages/auth/callback';
-import AuthConfirmation from '@/pages/AuthConfirmation';
-import UpdatePassword from '@/pages/UpdatePassword';
+// Lazy load all pages for better performance
+const ReservePulseID = lazy(() => import('@/pages/ReservePulseID'));
+const Index = lazy(() => import('@/pages/Index'));
+const Auth = lazy(() => import('@/pages/Auth'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Inbox = lazy(() => import('@/pages/Inbox'));
+const SendPulse = lazy(() => import('@/pages/SendPulse'));
+const ViewPulse = lazy(() => import('@/pages/ViewPulse'));
+const AuthCallback = lazy(() => import('@/pages/auth/callback'));
+const AuthConfirmation = lazy(() => import('@/pages/AuthConfirmation'));
+const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
 
 // Create a client for React Query with error handling
 const queryClient = new QueryClient({
@@ -51,17 +52,61 @@ function App() {
             <Router>
               <ErrorBoundary>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/reserve" element={<ReservePulseID />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/auth/confirm" element={<AuthConfirmation />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/inbox" element={<Inbox />} />
-                  <Route path="/send-pulse" element={<SendPulse />} />
-                  <Route path="/pulse/:id" element={<ViewPulse />} />
-                  <Route path="/update-password" element={<UpdatePassword />} />
-                  <Route path="*" element={<NotFound />} />
+                  <Route path="/" element={
+                    <LazyLoadWrapper>
+                      <Index />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/reserve" element={
+                    <LazyLoadWrapper>
+                      <ReservePulseID />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/auth" element={
+                    <LazyLoadWrapper>
+                      <Auth />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/auth/callback" element={
+                    <LazyLoadWrapper>
+                      <AuthCallback />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/auth/confirm" element={
+                    <LazyLoadWrapper>
+                      <AuthConfirmation />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/dashboard" element={
+                    <LazyLoadWrapper>
+                      <Dashboard />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/inbox" element={
+                    <LazyLoadWrapper>
+                      <Inbox />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/send-pulse" element={
+                    <LazyLoadWrapper>
+                      <SendPulse />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/pulse/:id" element={
+                    <LazyLoadWrapper>
+                      <ViewPulse />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/update-password" element={
+                    <LazyLoadWrapper>
+                      <UpdatePassword />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="*" element={
+                    <LazyLoadWrapper>
+                      <NotFound />
+                    </LazyLoadWrapper>
+                  } />
                 </Routes>
               </ErrorBoundary>
               <Toaster />

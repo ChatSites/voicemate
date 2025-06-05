@@ -1,16 +1,28 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
-import AudioPreview from '@/components/AudioPreview';
-import UseCases from '@/components/UseCases';
-import WhyItMatters from '@/components/WhyItMatters';
-import Story from '@/components/Story';
-import Technology from '@/components/Technology';
-import HowItWorks from '@/components/HowItWorks';
-import CallToAction from '@/components/CallToAction';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load non-critical components for better initial load performance
+const AudioPreview = lazy(() => import('@/components/AudioPreview'));
+const UseCases = lazy(() => import('@/components/UseCases'));
+const WhyItMatters = lazy(() => import('@/components/WhyItMatters'));
+const Story = lazy(() => import('@/components/Story'));
+const Technology = lazy(() => import('@/components/Technology'));
+const HowItWorks = lazy(() => import('@/components/HowItWorks'));
+const CallToAction = lazy(() => import('@/components/CallToAction'));
+
+const SectionSkeleton = () => (
+  <div className="py-12 px-4">
+    <div className="container mx-auto">
+      <Skeleton className="h-12 w-1/2 mx-auto mb-8 bg-gray-800" />
+      <Skeleton className="h-32 w-full bg-gray-800" />
+    </div>
+  </div>
+);
 
 const Index = () => {
   const { theme } = useTheme();
@@ -24,13 +36,35 @@ const Index = () => {
     <div className={`min-h-screen flex flex-col overflow-hidden ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
       <Navbar />
       <Hero />
-      <AudioPreview />
-      <UseCases />
-      <HowItWorks />
-      <WhyItMatters />
-      <Story />
-      <Technology />
-      <CallToAction />
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <AudioPreview />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <UseCases />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <HowItWorks />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <WhyItMatters />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <Story />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <Technology />
+      </Suspense>
+      
+      <Suspense fallback={<SectionSkeleton />}>
+        <CallToAction />
+      </Suspense>
+      
       <Footer />
     </div>
   );
