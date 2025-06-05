@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -49,24 +50,9 @@ const UpdatePassword = () => {
     }
 
     try {
-      // Extract token from URL
-      const accessToken = searchParams.get("access_token") || 
-                          new URLSearchParams(location.hash.substring(1)).get("access_token");
-
-      if (!accessToken) {
-        setError("Access token is missing");
-        toast({
-          title: "Access token missing",
-          description: "The access token is missing from the URL. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Update password using Supabase API
+      // Update password using Supabase API without access_token parameter
       const { error } = await supabase.auth.updateUser({
         password: password,
-        access_token: accessToken,
       });
 
       if (error) {
