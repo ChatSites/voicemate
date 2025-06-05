@@ -22,7 +22,7 @@ export default function AuthCallback() {
     
     const handleAuthRedirect = async () => {
       try {
-        // Use exchangeCodeForSession instead of the deprecated getSessionFromUrl
+        // Handle code-based authentication
         const code = searchParams.get("code") || 
                      new URLSearchParams(location.hash.substring(1)).get("code");
         
@@ -31,11 +31,30 @@ export default function AuthCallback() {
         
         // If we have a code parameter, try to exchange it for a session
         if (code) {
+          console.log("Processing auth code:", code);
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           session = data.session;
           sessionError = error;
-        } else {
-          // For older flows or auth state changes
+        } 
+        // Handle hash-based authentication (magic links)
+        else if (location.hash) {
+          const hashParams = new URLSearchParams(location.hash.substring(1));
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+          
+          if (accessToken) {
+            console.log("Processing magic link tokens");
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            });
+            session = data.session;
+            sessionError = error;
+          }
+        }
+        
+        // If no tokens found, check existing session
+        if (!session && !sessionError) {
           const { data, error } = await supabase.auth.getSession();
           session = data.session;
           sessionError = error;
@@ -49,40 +68,73 @@ export default function AuthCallback() {
           return;
         }
 
-        console.log("Auth callback successful:", session);
+        console.log("Auth callback successful. Session:", session ? 'established' : 'none');
         
         // Get the type parameter to determine what kind of auth flow this is
-        const type = searchParams.get("type");
+        const type = searchParams.get("type") || 
+                     new URLSearchParams(location.hash.substring(1)).get("type");
         
         switch (type) {
           case "signup":
-            setMessage("Account confirmed! Redirecting you to the dashboard...");
-            setTimeout(() => navigate("/dashboard"), 1500);
+            setMessage("Account confirmed! Redirecting to registration success...");
+            toast({
+              title: "Registration Successful",
+              description: "Your account has been created and verified successfully."
+            });
+            setTimeout(() => navigate("/registration-success"), 1500);
             break;
             
           case "magiclink":
-            setMessage("Login successful! Redirecting...");
+            setMessage("Login successful! Redirecting to dashboard...");
+            toast({
+              title: "Login Successful",
+              description: "Welcome back to VoiceMate!"
+            });
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
             
           case "invite":
-            setMessage("Welcome to VoiceMate! Redirecting...");
+            setMessage("Welcome to VoiceMate! Redirecting to dashboard...");
+            toast({
+              title: "Welcome!",
+              description: "Your invitation has been accepted successfully."
+            });
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
             
           case "recovery":
             setMessage("Please reset your password.");
-            setTimeout(() => navigate("/update-password"), 1500);
+            setTimeout(() => {
+              if (location.hash) {
+                navigate(`/update-password${location.hash}`);
+              } else {
+                navigate("/update-password");
+              }
+            }, 1500);
             break;
             
           case "email_change":
-            setMessage("Email updated successfully! Redirecting...");
+            setMessage("Email updated successfully! Redirecting to dashboard...");
+            toast({
+              title: "Email Updated",
+              description: "Your email has been updated successfully."
+            });
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
             
           default:
-            setMessage("Authentication complete. Redirecting...");
-            setTimeout(() => navigate("/dashboard"), 1500);
+            // Default behavior - check if we have a session to determine redirect
+            if (session) {
+              setMessage("Authentication complete. Redirecting to dashboard...");
+              toast({
+                title: "Login Successful",
+                description: "Welcome to VoiceMate!"
+              });
+              setTimeout(() => navigate("/dashboard"), 1500);
+            } else {
+              setMessage("Authentication required. Redirecting to login...");
+              setTimeout(() => navigate("/auth"), 1500);
+            }
             break;
         }
         

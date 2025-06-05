@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,105 +39,99 @@ export default function AuthCallback() {
           }
           
           console.log("Auth flow completed successfully", data);
-          setMessage("Authentication successful!");
-          toast({
-            title: "Authentication Successful",
-            description: "Your account has been verified!"
-          });
+          
+          if (data.session && data.user) {
+            console.log("Session established for user:", data.user.email);
+            setMessage("Authentication successful!");
+            toast({
+              title: "Authentication Successful",
+              description: "Welcome to VoiceMate!"
+            });
+          }
         } 
-        // Handle hash-based redirects (older format)
+        // Handle hash-based redirects (older format or magic links)
         else if (location.hash) {
           try {
             // Parse token from hash manually
             const hashParams = new URLSearchParams(location.hash.substring(1));
             const accessToken = hashParams.get("access_token");
+            const refreshToken = hashParams.get("refresh_token");
             
             if (accessToken) {
               console.log("Found access token in hash, setting session");
               setMessage("Setting up your session...");
-              // For recovery flow, don't set the session yet - just store the token
-              // and redirect to the update password page
+              
+              // For recovery flow, redirect to update password
               if (type === 'recovery' || hashParams.get("type") === 'recovery') {
-                // Redirect to update password with token
                 setTimeout(() => {
                   navigate(`/update-password${location.hash}`);
                 }, 1000);
                 return;
               }
               
-              // For other flows, set the session
-              const { error } = await supabase.auth.setSession({
+              // For magic links and other flows, set the session
+              const { data, error } = await supabase.auth.setSession({
                 access_token: accessToken,
-                refresh_token: hashParams.get("refresh_token") || "",
+                refresh_token: refreshToken || "",
               });
               
-              if (error) throw error;
+              if (error) {
+                console.error("Session setup error:", error);
+                throw error;
+              }
+              
+              if (data.session && data.user) {
+                console.log("Session established via hash for user:", data.user.email);
+                setMessage("Login successful!");
+                toast({
+                  title: "Login Successful",
+                  description: "Welcome back to VoiceMate!"
+                });
+              }
             }
           } catch (e) {
             console.error("Error handling hash params:", e);
+            throw e;
           }
         }
         
+        // Handle redirects based on type
         switch (type) {
           case "signup":
-            setMessage("Welcome! Redirecting you to your dashboard...");
-            toast({
-              title: "Registration Successful",
-              description: "Your account has been created and verified successfully."
-            });
-            setTimeout(() => navigate("/dashboard"), 1500);
+            setMessage("Welcome! Redirecting to registration success...");
+            setTimeout(() => navigate("/registration-success"), 1500);
             break;
           case "magiclink":
+            setMessage("Login successful! Redirecting to dashboard...");
+            setTimeout(() => navigate("/dashboard"), 1500);
+            break;
           case "invite":
-            setMessage("Login successful! Redirecting...");
-            toast({
-              title: "Login Successful",
-              description: "Welcome back!"
-            });
+            setMessage("Welcome to VoiceMate! Redirecting to dashboard...");
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
           case "recovery":
-            setMessage("Redirecting to password reset page...");
-            toast({
-              title: "Password Reset",
-              description: "Please set your new password."
-            });
-            
-            // Extract token from either query params or hash
-            const accessToken = searchParams.get("access_token") || 
-                               new URLSearchParams(location.hash.substring(1)).get("access_token");
-            
-            setTimeout(() => {
-              // If we have a token in the URL, pass it along
-              if (accessToken) {
-                navigate(`/update-password?access_token=${accessToken}`);
-              } else if (location.hash) {
-                // If no token in URL params but we have a hash, pass the entire hash
-                navigate(`/update-password${location.hash}`);
-              } else {
-                // Fallback
-                navigate("/update-password");
-              }
-            }, 1000);
+            // Already handled above
             break;
           case "email_change":
-            setMessage("Email updated! Redirecting...");
-            toast({
-              title: "Email Updated",
-              description: "Your email has been updated successfully."
-            });
+            setMessage("Email updated! Redirecting to dashboard...");
             setTimeout(() => navigate("/dashboard"), 1500);
             break;
           default:
-            // If no type is specified but we have a hash with recovery type
-            if (location.hash && location.hash.includes('type=recovery')) {
-              setMessage("Redirecting to password reset page...");
-              setTimeout(() => {
-                navigate(`/update-password${location.hash}`);
-              }, 1000);
+            // Check if we have an active session to determine where to redirect
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData.session) {
+              // If we have a session but no specific type, check if this was from magic link
+              if (location.hash && location.hash.includes('access_token')) {
+                setMessage("Login successful! Redirecting to dashboard...");
+                setTimeout(() => navigate("/dashboard"), 1500);
+              } else {
+                setMessage("Authentication complete. Redirecting to dashboard...");
+                setTimeout(() => navigate("/dashboard"), 1500);
+              }
             } else {
-              setMessage("Authentication complete. Redirecting to dashboard...");
-              setTimeout(() => navigate("/dashboard"), 1500);
+              // No session, redirect to auth
+              setMessage("Authentication required. Redirecting to login...");
+              setTimeout(() => navigate("/auth"), 1500);
             }
             break;
         }
