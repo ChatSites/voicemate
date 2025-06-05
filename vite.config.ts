@@ -9,10 +9,10 @@ export default defineConfig(async ({ mode }) => {
   
   if (mode === 'development') {
     const { componentTagger } = await import("lovable-tagger");
-    plugins.push(componentTagger() as any);
+    plugins.push(componentTagger());
   }
   
-  const config = {
+  return {
     server: {
       host: "::",
       port: 8080,
@@ -68,6 +68,4 @@ export default defineConfig(async ({ mode }) => {
       port: 4173,
     },
   };
-  
-  return config;
 });
