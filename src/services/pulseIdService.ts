@@ -49,16 +49,6 @@ export const checkPulseIdAvailability = async (
     if (!skipCache && cached && (Date.now() - cached.timestamp) < CACHE_DURATION && !forceRefresh) {
       console.log(`Service: Using cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
       
-      try {
-        toast({
-          title: "Using cached result",
-          description: `PulseID '${normalizedPulseId}' is ${cached.available ? 'available' : 'already taken'} (cached)`,
-          variant: cached.available ? "default" : "destructive"
-        });
-      } catch (err) {
-        console.error("Toast error:", err);
-      }
-      
       return {
         available: cached.available,
         suggestions: cached.available ? [] : generateSuggestions(normalizedPulseId)
@@ -70,30 +60,10 @@ export const checkPulseIdAvailability = async (
       forceRefresh = false;
       clearAllPulseIdCaches();
       console.log('Service: Force refresh activated, all caches cleared');
-      
-      try {
-        toast({
-          title: "Force Refresh",
-          description: "Cleared caches for a fresh availability check",
-          variant: "default"
-        });
-      } catch (err) {
-        console.error("Toast error:", err);
-      }
     }
 
     // Check with Supabase
     console.log(`Service: Calling Supabase to check ${normalizedPulseId}`);
-    
-    try {
-      toast({
-        title: "Checking availability",
-        description: `Verifying if '${normalizedPulseId}' is available...`,
-        variant: "default"
-      });
-    } catch (err) {
-      console.error("Toast error:", err);
-    }
     
     const isTaken = await isPulseIdTaken(normalizedPulseId);
     console.log(`Service: Supabase result for ${normalizedPulseId}: ${isTaken ? 'taken' : 'available'}`);
@@ -104,19 +74,6 @@ export const checkPulseIdAvailability = async (
       available: !isTaken,
       timestamp: currentTime
     };
-    
-    // Show result toast
-    try {
-      toast({
-        title: `PulseID ${!isTaken ? 'Available' : 'Taken'}`,
-        description: !isTaken 
-          ? `'${normalizedPulseId}' is available for you to claim!` 
-          : `'${normalizedPulseId}' is already taken by another user.`,
-        variant: !isTaken ? "default" : "destructive"
-      });
-    } catch (err) {
-      console.error("Toast error:", err);
-    }
 
     return {
       available: !isTaken,
@@ -124,16 +81,6 @@ export const checkPulseIdAvailability = async (
     };
   } catch (error) {
     console.error('Service: Error checking PulseID availability:', error);
-    
-    try {
-      toast({
-        title: "Availability Check Error",
-        description: "Could not verify PulseID availability. Please try again or click 'Force refresh'.",
-        variant: "destructive"
-      });
-    } catch (err) {
-      console.error("Toast error:", err);
-    }
     
     return {
       available: null,
@@ -163,15 +110,6 @@ export const clearPulseIdCache = () => {
     delete pulseIdCache[key];
   }
   clearAllPulseIdCaches();
-  
-  try {
-    toast({
-      title: "Cache Cleared",
-      description: "All PulseID availability caches have been cleared.",
-    });
-  } catch (err) {
-    console.error("Toast error:", err);
-  }
 };
 
 // Force the next check to bypass all caches
@@ -182,13 +120,4 @@ export const forceRefreshNextCheck = () => {
   
   // Clear all cached results
   clearPulseIdCache();
-  
-  try {
-    toast({
-      title: "Cache Cleared",
-      description: "All cached PulseID data has been cleared. Next check will be fresh.",
-    });
-  } catch (err) {
-    console.error("Toast error:", err);
-  }
 };

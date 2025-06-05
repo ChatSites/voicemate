@@ -13,14 +13,23 @@ export const registerUser = async (
   pulseIdSuggestions?: string[];
 }> => {
   try {
-    // Step 1: Check PulseID availability using ilike for case insensitivity
+    console.log(`RegisterUser: Attempting to register with PulseID: ${pulseId}`);
+    
+    // Step 1: Check PulseID availability using both possible columns
     const { data: existingPulseId, error: pulseIdError } = await supabase
       .from('users')
-      .select('id')
-      .ilike('pulse_id', pulseId)
-      .maybeSingle();
+      .select('id, pulse_id, name')
+      .or(`pulse_id.ilike.${pulseId},name.ilike.${pulseId}`)
+      .limit(1);
 
-    if (existingPulseId) {
+    console.log(`RegisterUser: PulseID check result:`, { existingPulseId, pulseIdError });
+
+    if (pulseIdError) {
+      console.error('RegisterUser: Error checking PulseID:', pulseIdError);
+    }
+
+    if (existingPulseId && existingPulseId.length > 0) {
+      console.log(`RegisterUser: PulseID ${pulseId} is already taken:`, existingPulseId);
       const pulseIdSuggestions = [
         `${pulseId}_${Math.floor(Math.random() * 1000)}`,
         `${pulseId}.${Date.now().toString().slice(-4)}`,
@@ -35,6 +44,8 @@ export const registerUser = async (
       };
     }
 
+    console.log(`RegisterUser: PulseID ${pulseId} appears to be available`);
+
     // Step 2: Sign up user via Supabase Auth - ENSURE email confirmation is required
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -42,7 +53,7 @@ export const registerUser = async (
       options: {
         data: {
           full_name: fullName,
-          pulse_id: pulseId, // Make sure pulse_id is included here
+          pulse_id: pulseId, // This will be used by the trigger to populate the users table
         },
         // Always redirect to auth/callback with signup type
         emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
@@ -50,6 +61,7 @@ export const registerUser = async (
     });
 
     if (error) {
+      console.error('RegisterUser: Supabase auth error:', error);
       if (error.status === 409 || error.message.includes('already registered')) {
         return {
           success: false,
@@ -70,11 +82,12 @@ export const registerUser = async (
 
     // Step 3: Insert into users table is now handled by the Supabase trigger
     // We'll log confirmation for debugging purposes
-    console.log('User registered with PulseID:', pulseId);
-    console.log('Profile creation will be handled by database trigger');
+    console.log('RegisterUser: User registered with PulseID:', pulseId);
+    console.log('RegisterUser: Profile creation will be handled by database trigger');
 
     return { success: true };
   } catch (err: any) {
+    console.error('RegisterUser: Unexpected error:', err);
     return {
       success: false,
       error: new Error(err?.message || 'Unknown registration error'),
