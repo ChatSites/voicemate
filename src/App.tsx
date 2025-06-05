@@ -27,6 +27,7 @@ const AuthConfirmation = lazy(() => import('@/pages/AuthConfirmation'));
 const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 const Terms = lazy(() => import('@/pages/Terms'));
+const RegistrationSuccess = lazy(() => import('@/pages/RegistrationSuccess'));
 
 // Create a client for React Query with error handling
 const queryClient = new QueryClient({
@@ -97,6 +98,11 @@ function App() {
                   <Route path="/auth/confirm" element={
                     <LazyLoadWrapper>
                       <AuthConfirmation />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/registration-success" element={
+                    <LazyLoadWrapper>
+                      <RegistrationSuccess />
                     </LazyLoadWrapper>
                   } />
                   <Route path="/dashboard" element={
