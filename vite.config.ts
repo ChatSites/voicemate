@@ -3,6 +3,11 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// Extend globalThis type to include __LOVABLE_TAGGER__
+declare global {
+  var __LOVABLE_TAGGER__: (() => any) | undefined;
+}
+
 export default defineConfig(({ mode }) => {
   const plugins = [react()];
   
