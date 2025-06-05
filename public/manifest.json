@@ -1,0 +1,23 @@
+
+{
+  "name": "VoiceMate Pulse ID",
+  "short_name": "VoiceMate",
+  "description": "Your Voice, Your Identity",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/B2xzy2Kr/vm-logo-transparent.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.ibb.co/B2xzy2Kr/vm-logo-transparent.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

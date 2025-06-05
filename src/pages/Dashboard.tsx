@@ -6,6 +6,7 @@ import DashboardCards from '@/components/dashboard/DashboardCards';
 import DashboardLoading from '@/components/dashboard/DashboardLoading';
 import DashboardError from '@/components/dashboard/DashboardError';
 import Footer from '@/components/Footer';
+import SEO from '@/components/SEO';
 import { useDashboardAuth } from '@/hooks/useDashboardAuth';
 import { useTheme } from '@/components/providers/ThemeProvider';
 
@@ -53,13 +54,21 @@ export default function Dashboard() {
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
-      <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-12">
-        <DashboardHeader displayName={displayName} displayPulseId={displayPulseId} />
-        <DashboardCards />
+    <>
+      <SEO 
+        title="Dashboard"
+        description="Manage your VoiceMate Pulse ID, send voice messages, and control your voice identification settings."
+        url="https://voicemate.id/dashboard"
+        noIndex={true}
+      />
+      <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 pb-12">
+          <DashboardHeader displayName={displayName} displayPulseId={displayPulseId} />
+          <DashboardCards />
+        </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </>
   );
 }
