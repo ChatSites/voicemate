@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,7 +8,7 @@ import {
 } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 2000; 
+const TOAST_REMOVE_DELAY = 3000; // Changed from 2000 to 3000 (3 seconds)
 
 export type ToasterToast = Omit<ToastProps, "children"> & {
   id: string;
