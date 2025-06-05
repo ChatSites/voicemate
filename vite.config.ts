@@ -3,20 +3,30 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// Helper function to safely load lovable-tagger if available
+const loadLovableTagger = () => {
+  try {
+    // Check if lovable-tagger is available by attempting to require the package
+    const taggerModule = require("lovable-tagger");
+    if (taggerModule && taggerModule.componentTagger) {
+      return taggerModule.componentTagger();
+    }
+  } catch (error) {
+    // Package not available or not compatible - this is fine in production
+    console.warn('lovable-tagger not available (this is normal in production):', error.message);
+  }
+  return null;
+};
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const plugins = [react()];
   
+  // Only try to load lovable-tagger in development mode
   if (mode === 'development') {
-    try {
-      // Use dynamic import for ESM module - this will be handled at runtime
-      import("lovable-tagger").then(({ componentTagger }) => {
-        plugins.push(componentTagger());
-      }).catch((error) => {
-        console.warn('lovable-tagger not available:', error);
-      });
-    } catch (error) {
-      console.warn('lovable-tagger not available:', error);
+    const taggerPlugin = loadLovableTagger();
+    if (taggerPlugin) {
+      plugins.push(taggerPlugin);
     }
   }
   
