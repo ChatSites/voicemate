@@ -12,7 +12,7 @@ export default defineConfig(async ({ mode }) => {
     plugins.push(componentTagger() as any);
   }
   
-  return {
+  const config = {
     server: {
       host: "::",
       port: 8080,
@@ -24,16 +24,12 @@ export default defineConfig(async ({ mode }) => {
       },
     },
     build: {
-      // Production optimizations
       target: 'esnext',
       minify: 'esbuild',
       cssMinify: true,
-      
-      // Code splitting
       rollupOptions: {
         output: {
           manualChunks: {
-            // Vendor chunks
             'vendor-react': ['react', 'react-dom'],
             'vendor-ui': ['@radix-ui/react-toast', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
             'vendor-utils': ['clsx', 'class-variance-authority', 'tailwind-merge'],
@@ -41,8 +37,6 @@ export default defineConfig(async ({ mode }) => {
             'vendor-query': ['@tanstack/react-query'],
             'vendor-router': ['react-router-dom'],
             'vendor-motion': ['framer-motion'],
-            
-            // Feature chunks
             'auth-components': [
               './src/components/auth/LoginForm',
               './src/components/auth/RegisterForm',
@@ -60,26 +54,20 @@ export default defineConfig(async ({ mode }) => {
           }
         }
       },
-      
-      // Chunk size warnings
       chunkSizeWarningLimit: 1000,
-      
-      // Source maps for production debugging
       sourcemap: mode === 'production' ? 'hidden' : true,
     },
-    
-    // Environment variables
     define: {
       __BUILD_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
       __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
       __GIT_COMMIT__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA || 'unknown'),
       __BUILD_NUMBER__: JSON.stringify(process.env.VERCEL_BUILD_ID || 'local'),
     },
-    
-    // Preview server configuration
     preview: {
       host: "::",
       port: 4173,
     },
   };
+  
+  return config;
 });

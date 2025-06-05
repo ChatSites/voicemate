@@ -28,20 +28,16 @@ export const supabase = createClient<Database>(
 
 /**
  * Cleanup auth state by removing all Supabase related keys from storage
- * This helps prevent "auth limbo" issues where old tokens remain
  */
 export const cleanupAuthState = () => {
-  // Remove standard auth tokens
   localStorage.removeItem('supabase.auth.token');
   
-  // Remove all Supabase auth keys from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
       localStorage.removeItem(key);
     }
   });
   
-  // Also clean sessionStorage if in use
   if (typeof sessionStorage !== 'undefined') {
     Object.keys(sessionStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
@@ -53,18 +49,13 @@ export const cleanupAuthState = () => {
 
 /**
  * Check if an email is already registered using format check only
- * IMPORTANT: This function only does format validation to avoid 429 rate limits
  */
 export const isEmailRegistered = async (email: string): Promise<boolean> => {
   try {
-    // Only do format validation to avoid rate limits
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return false; // Invalid email format
+      return false;
     }
-    
-    // Don't actually check with Supabase to avoid rate limits
-    // Just return false to allow registration attempt
     return false;
   } catch (error) {
     console.error('Error checking email existence:', error);
@@ -75,138 +66,73 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 
 /**
  * Check if a PulseID is already taken by another user
- * Enhanced version with multiple query strategies and minimal caching
+ * Enhanced version with better error handling and debugging
  */
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
-    // Skip validation for very short pulse IDs to avoid unnecessary requests
     if (!pulseId || pulseId.length < 3) {
       console.log('Supabase: PulseID too short, skipping check');
       return false;
     }
     
-    // Normalize pulseId to lowercase for consistent checks
     const normalizedPulseId = pulseId.toLowerCase();
     
-    // Check if we should bypass cache completely (for important checks)
+    // Clear any existing cache if force refresh is requested
     const bypassCache = localStorage.getItem('force_refresh_pulseId') === 'true';
+    if (bypassCache) {
+      localStorage.removeItem('force_refresh_pulseId');
+      clearAllPulseIdCaches();
+      console.log('Supabase: Force refresh - clearing all caches');
+    }
     
-    // Use a cache timestamp to limit API calls (very short cache time - 2 seconds)
+    // Check cache for very recent results (only 1 second to ensure freshness)
     const cacheKey = `pulseId_check_${normalizedPulseId}`;
     const cachedResult = !bypassCache ? localStorage.getItem(cacheKey) : null;
     
     if (cachedResult) {
       const { result, timestamp } = JSON.parse(cachedResult);
-      
-      // Use cached result if less than 2 seconds old (reduced from 5 seconds)
-      if (Date.now() - timestamp < 2000) {
+      if (Date.now() - timestamp < 1000) {
         console.log(`Supabase: Using cached result for ${normalizedPulseId}: ${result ? 'taken' : 'available'}`);
         return result;
       }
     }
     
-    // Clear the force refresh flag if it was set
-    if (bypassCache) {
-      localStorage.removeItem('force_refresh_pulseId');
-    }
+    console.log(`Supabase: Performing fresh database check for PulseID: ${normalizedPulseId}`);
     
-    console.log(`Supabase: Checking availability for PulseID: ${normalizedPulseId}`);
-    
-    // APPROACH 1: First query using case-insensitive matching
-    const { data: dataIlike, error: errorIlike } = await supabase
-      .from('users')
-      .select('id, pulse_id')
-      .ilike('pulse_id', normalizedPulseId)
-      .limit(1);
-    
-    if (errorIlike) {
-      console.error('Supabase: Error in ilike check:', errorIlike);
-      errorReporter.reportError(new Error(errorIlike.message), 'pulse-id-check-ilike');
-      // Continue to the next approach instead of throwing
-    } else if (Array.isArray(dataIlike) && dataIlike.length > 0) {
-      console.log(`Supabase: Database result for ${normalizedPulseId}: taken (ilike match)`);
-      console.log(`Supabase: Found matching PulseID: ${dataIlike[0].pulse_id}`);
-      
-      // Cache the result for 2 seconds
-      localStorage.setItem(cacheKey, JSON.stringify({
-        result: true, // It is taken
-        timestamp: Date.now()
-      }));
-      
-      return true; // PulseID is taken
-    }
-    
-    // APPROACH 2: Try exact match query as a double-check
-    console.log(`Supabase: Double-checking PulseID availability with exact match for: ${normalizedPulseId}`);
-    const { data: dataExact, error: errorExact } = await supabase
+    // Primary check using exact match with proper case handling
+    const { data, error } = await supabase
       .from('users')
       .select('id, pulse_id')
       .eq('pulse_id', normalizedPulseId)
       .limit(1);
     
-    if (errorExact) {
-      console.error('Supabase: Error in exact match check:', errorExact);
-      errorReporter.reportError(new Error(errorExact.message), 'pulse-id-check-exact');
-    } else if (Array.isArray(dataExact) && dataExact.length > 0) {
-      console.log(`Supabase: Double-check found ${normalizedPulseId} is TAKEN (exact match)`);
-      console.log(`Supabase: Found matching PulseID: ${dataExact[0].pulse_id}`);
-      
-      // Cache the result for 2 seconds
-      localStorage.setItem(cacheKey, JSON.stringify({
-        result: true, // Override with taken
-        timestamp: Date.now()
-      }));
-      
-      return true; // PulseID is taken
+    if (error) {
+      console.error('Supabase: Database error during PulseID check:', error);
+      errorReporter.reportError(new Error(error.message), 'pulse-id-check-primary');
+      // Don't cache errors, return false to allow registration
+      return false;
     }
     
-    // APPROACH 3: Check for similar PulseIDs as a final verification
-    console.log(`Supabase: Final verification for similar PulseIDs to: ${normalizedPulseId}`);
-    const { data: dataSimilar, error: errorSimilar } = await supabase
-      .from('users')
-      .select('id, pulse_id')
-      .like('pulse_id', `%${normalizedPulseId}%`)
-      .limit(5);
+    // Check if we got any results
+    const isTaken = Array.isArray(data) && data.length > 0;
     
-    if (errorSimilar) {
-      console.error('Supabase: Error in similar match check:', errorSimilar);
-      errorReporter.reportError(new Error(errorSimilar.message), 'pulse-id-check-similar');
-    } else if (Array.isArray(dataSimilar) && dataSimilar.length > 0) {
-      // Check if any of the similar results are an exact match (case-insensitive)
-      const exactMatch = dataSimilar.some(user => 
-        user.pulse_id.toLowerCase() === normalizedPulseId
-      );
-      
-      if (exactMatch) {
-        console.log(`Supabase: Found exact match in similar results for ${normalizedPulseId}`);
-        
-        // Cache the result for 2 seconds
-        localStorage.setItem(cacheKey, JSON.stringify({
-          result: true, // It is taken
-          timestamp: Date.now()
-        }));
-        
-        return true; // PulseID is taken
-      }
-      
-      // Log similar IDs for debugging
-      console.log(`Supabase: Found similar PulseIDs: ${dataSimilar.map(u => u.pulse_id).join(', ')}`);
+    if (isTaken) {
+      console.log(`Supabase: PulseID '${normalizedPulseId}' is TAKEN. Found user:`, data[0]);
+    } else {
+      console.log(`Supabase: PulseID '${normalizedPulseId}' is AVAILABLE`);
     }
     
-    // If we reach here, the ID appears to be available
-    console.log(`Supabase: Database result for ${normalizedPulseId}: available (all checks passed)`);
-    
-    // Cache the result for only 2 seconds
+    // Cache the result for 1 second only
     localStorage.setItem(cacheKey, JSON.stringify({
-      result: false,
+      result: isTaken,
       timestamp: Date.now()
     }));
     
-    return false; // PulseID is available
+    return isTaken;
   } catch (error) {
-    console.error('Supabase: Error checking PulseID:', error);
-    errorReporter.reportError(error as Error, 'pulse-id-check-general');
-    // On error, assume ID is not taken to avoid blocking registration
+    console.error('Supabase: Unexpected error checking PulseID:', error);
+    errorReporter.reportError(error as Error, 'pulse-id-check-unexpected');
+    // On unexpected errors, don't block registration
     return false;
   }
 };
@@ -219,6 +145,5 @@ export const clearAllPulseIdCaches = () => {
       localStorage.removeItem(key);
     }
   });
-  // Set force refresh flag
   localStorage.setItem('force_refresh_pulseId', 'true');
 };

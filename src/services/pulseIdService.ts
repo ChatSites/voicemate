@@ -8,9 +8,8 @@ import { toast } from "@/hooks/use-toast";
  */
 
 // Maintain a cache of already checked pulse IDs to reduce API calls
-// Using a shorter cache duration for more accurate results
 const pulseIdCache: Record<string, {available: boolean, timestamp: number}> = {};
-const CACHE_DURATION = 1000; // 1 second cache (reduced for more accurate checks)
+const CACHE_DURATION = 1000; // 1 second cache
 
 // Flag for forcing a fresh check
 let forceRefresh = false;
@@ -25,7 +24,7 @@ export const checkPulseIdAvailability = async (
   pulseId: string, 
   skipCache: boolean = false
 ): Promise<{
-  available: boolean,
+  available: boolean | null,
   suggestions: string[],
   errorMessage?: string
 }> => {
@@ -50,7 +49,6 @@ export const checkPulseIdAvailability = async (
     if (!skipCache && cached && (Date.now() - cached.timestamp) < CACHE_DURATION && !forceRefresh) {
       console.log(`Service: Using cache for ${normalizedPulseId}: ${cached.available ? 'available' : 'taken'}`);
       
-      // Show a toast when using cached results
       try {
         toast({
           title: "Using cached result",
@@ -67,13 +65,12 @@ export const checkPulseIdAvailability = async (
       };
     }
     
-    // Reset force refresh flag
+    // Reset force refresh flag and clear caches
     if (forceRefresh) {
       forceRefresh = false;
-      clearAllPulseIdCaches(); // Clear all Supabase caches too
+      clearAllPulseIdCaches();
       console.log('Service: Force refresh activated, all caches cleared');
       
-      // Show a toast when force refreshing
       try {
         toast({
           title: "Force Refresh",
@@ -85,10 +82,9 @@ export const checkPulseIdAvailability = async (
       }
     }
 
-    // Check with Supabase - this will check its own cache first
+    // Check with Supabase
     console.log(`Service: Calling Supabase to check ${normalizedPulseId}`);
     
-    // Show a toast when checking with Supabase
     try {
       toast({
         title: "Checking availability",
@@ -102,14 +98,14 @@ export const checkPulseIdAvailability = async (
     const isTaken = await isPulseIdTaken(normalizedPulseId);
     console.log(`Service: Supabase result for ${normalizedPulseId}: ${isTaken ? 'taken' : 'available'}`);
     
-    // Update cache with consistent timestamp
+    // Update cache with the result
     const currentTime = Date.now();
     pulseIdCache[normalizedPulseId] = {
       available: !isTaken,
       timestamp: currentTime
     };
     
-    // Always show a toast with the result
+    // Show result toast
     try {
       toast({
         title: `PulseID ${!isTaken ? 'Available' : 'Unavailable'}`,
@@ -122,7 +118,6 @@ export const checkPulseIdAvailability = async (
       console.error("Toast error:", err);
     }
 
-    // Return result
     return {
       available: !isTaken,
       suggestions: isTaken ? generateSuggestions(normalizedPulseId) : []
@@ -130,7 +125,6 @@ export const checkPulseIdAvailability = async (
   } catch (error) {
     console.error('Service: Error checking PulseID availability:', error);
     
-    // On error, don't assume availability - warn the user
     try {
       toast({
         title: "Availability Check Error",
@@ -142,7 +136,7 @@ export const checkPulseIdAvailability = async (
     }
     
     return {
-      available: null, // Return null instead of assuming true
+      available: null,
       suggestions: [],
       errorMessage: "Availability check failed"
     };
@@ -162,13 +156,13 @@ const generateSuggestions = (pulseId: string): string[] => {
   ];
 };
 
-// Clear the entire cache when needed (e.g., on logout)
+// Clear the entire cache when needed
 export const clearPulseIdCache = () => {
   console.log('Service: Clearing PulseID cache');
   for (const key in pulseIdCache) {
     delete pulseIdCache[key];
   }
-  clearAllPulseIdCaches(); // Also clear Supabase caches
+  clearAllPulseIdCaches();
   
   try {
     toast({
@@ -186,10 +180,9 @@ export const forceRefreshNextCheck = () => {
   forceRefresh = true;
   localStorage.setItem('force_refresh_pulseId', 'true');
   
-  // Also clear all cached results
+  // Clear all cached results
   clearPulseIdCache();
   
-  // Show toast to confirm refresh
   try {
     toast({
       title: "Cache Cleared",
