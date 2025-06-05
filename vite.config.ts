@@ -4,14 +4,17 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(({ mode }) => {
   const plugins = [react()];
   
   if (mode === 'development') {
     try {
-      // Use dynamic import for ESM module
-      const { componentTagger } = await import("lovable-tagger");
-      plugins.push(componentTagger());
+      // Use dynamic import for ESM module - this will be handled at runtime
+      import("lovable-tagger").then(({ componentTagger }) => {
+        plugins.push(componentTagger());
+      }).catch((error) => {
+        console.warn('lovable-tagger not available:', error);
+      });
     } catch (error) {
       console.warn('lovable-tagger not available:', error);
     }
