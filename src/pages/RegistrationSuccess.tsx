@@ -11,32 +11,31 @@ const RegistrationSuccess = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Handle dashboard navigation - use direct path instead of relative navigation
+  // Handle dashboard navigation
   const handleGoToDashboard = () => {
-    // Force navigation to the absolute path
-    window.location.href = '/dashboard';
+    console.log('Dashboard button clicked - User:', user ? 'authenticated' : 'not authenticated');
+    
+    if (user) {
+      // User is authenticated, go directly to dashboard
+      navigate('/dashboard');
+    } else {
+      // User is not authenticated yet, redirect to auth page with a message
+      console.log('User not authenticated, redirecting to auth page');
+      navigate('/auth');
+    }
   };
 
-  // Log authentication state for debugging
-  console.log('RegistrationSuccess - Auth loading:', loading);
-  console.log('RegistrationSuccess - User:', user);
-
-  // Redirect authenticated users directly to dashboard
+  // Auto-redirect authenticated users to dashboard after a delay
   useEffect(() => {
-    if (!loading) {
-      // If user is authenticated, navigate to dashboard after short delay
-      if (user) {
-        console.log('User is authenticated, will navigate to dashboard soon');
-        const timer = setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 2000);
-        
-        return () => clearTimeout(timer);
-      } else {
-        console.log('User is not authenticated yet');
-      }
+    if (!loading && user) {
+      console.log('User is authenticated, will auto-navigate to dashboard in 3 seconds');
+      const timer = setTimeout(() => {
+        navigate('/dashboard');
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [loading, user]);
+  }, [loading, user, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -66,15 +65,22 @@ const RegistrationSuccess = () => {
               </AlertDescription>
             </Alert>
             
-            <p className="text-center mb-6 text-gray-400">
-              After verifying your email, you'll be able to access all features of VoiceMate.
-            </p>
+            {user ? (
+              <div className="text-center mb-6">
+                <p className="text-green-400 mb-2">✓ You are now signed in</p>
+                <p className="text-gray-400 text-sm">You'll be redirected to the dashboard automatically...</p>
+              </div>
+            ) : (
+              <p className="text-center mb-6 text-gray-400">
+                After verifying your email, you'll be able to access all features of VoiceMate.
+              </p>
+            )}
             
             <Button 
               className="w-full bg-voicemate-purple hover:bg-purple-700"
               onClick={handleGoToDashboard}
             >
-              Go to Dashboard
+              {user ? "Go to Dashboard" : "Continue to Sign In"}
             </Button>
           </CardContent>
         </Card>
