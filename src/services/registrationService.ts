@@ -1,3 +1,4 @@
+
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
 
 // Basic email format check
@@ -128,15 +129,12 @@ export const registerUser = async (
       try {
         const { error: profileError } = await supabase
           .from('users')
-          .insert(
-            {
-              id: authData.user.id,
-              name: fullName,
-              pulse_id: pulseId,
-              email: email,
-            },
-            { onConflict: 'id' }
-          );
+          .insert({
+            id: authData.user.id,
+            name: fullName,
+            pulse_id: pulseId,
+            email: email,
+          });
 
         if (profileError) {
           console.error('Manual profile creation failed:', profileError);
