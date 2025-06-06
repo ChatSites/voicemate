@@ -22,7 +22,7 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Inbox = lazy(() => import('@/pages/Inbox'));
 const SendPulse = lazy(() => import('@/pages/SendPulse'));
 const ViewPulse = lazy(() => import('@/pages/ViewPulse'));
-const AuthCallback = lazy(() => import('@/pages/auth/callback'));
+const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
 const AuthConfirmation = lazy(() => import('@/pages/AuthConfirmation'));
 const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
