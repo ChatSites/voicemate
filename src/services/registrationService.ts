@@ -1,16 +1,13 @@
-
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
 
-// This is a simplified check, final verification happens during registration
+// Basic email format check
 export const finalEmailCheck = async (email: string): Promise<boolean> => {
-  // Just do basic format validation
-  return email && email.includes('@');
+  return !!email && email.includes('@');
 };
 
-// This is a simplified check, final verification happens during registration
+// Basic PulseID format check
 export const finalPulseIdCheck = async (id: string): Promise<boolean> => {
-  // Just do basic format validation
-  return id && id.length >= 3;
+  return !!id && id.length >= 3;
 };
 
 export const registerUser = async (
@@ -29,25 +26,24 @@ export const registerUser = async (
 }> => {
   console.log('=== REGISTRATION PROCESS START ===');
   console.log('Registration attempt:', { fullName, email, pulseId, passwordLength: password.length });
-  
+
   try {
-    // Clean up any existing auth state first
+    // Clean up any existing auth state
     console.log('Cleaning up existing auth state...');
     cleanupAuthState();
-    
-    // Try to sign out any existing sessions
+
     try {
       await supabase.auth.signOut({ scope: 'global' });
-    } catch (err) {
+    } catch {
       console.log('No existing session to sign out');
     }
 
-    // Check if PulseID is available before proceeding
+    // Check PulseID availability
     console.log('Checking PulseID availability...');
     const { data: existingPulseId, error: pulseIdError } = await supabase
       .from('users')
-      .select('id, pulse_id, name')
-      .or(`pulse_id.ilike.${pulseId},name.ilike.${pulseId}`)
+      .select('id')
+      .or(`pulse_id.eq.${pulseId},name.eq.${pulseId}`)
       .limit(1);
 
     if (pulseIdError) {
@@ -70,7 +66,7 @@ export const registerUser = async (
       };
     }
 
-    // Attempt registration with Supabase Auth
+    // Attempt Supabase Auth registration
     console.log('Calling Supabase auth.signUp...');
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -79,89 +75,86 @@ export const registerUser = async (
         data: {
           full_name: fullName,
           pulse_id: pulseId,
-        }
-      }
+        },
+      },
     });
 
     if (authError) {
       console.error('Auth registration error:', authError);
-      
-      if (authError.message.includes("User already registered")) {
-        return { 
-          success: false, 
-          error: new Error("This email was previously used. Please try logging in or use a different email."),
+
+      if (authError?.status === 400 && authError?.message?.toLowerCase().includes('user already registered')) {
+        return {
+          success: false,
+          error: new Error('This email was previously used. Please try logging in or use a different email.'),
         };
       }
-      
-      return { 
-        success: false, 
-        error: new Error(authError.message || "Registration failed")
+
+      return {
+        success: false,
+        error: new Error(authError?.message || 'Registration failed'),
       };
     }
 
     console.log('Auth registration successful:', {
       userId: authData.user?.id,
       hasSession: !!authData.session,
-      emailConfirmed: authData.user?.email_confirmed_at ? 'YES' : 'NO'
+      emailConfirmed: authData.user?.email_confirmed_at ? 'YES' : 'NO',
     });
 
-    // Wait a moment for the trigger to potentially create the profile
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait for possible trigger to complete
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Check if profile was created by trigger - fix the 406 error
     let profileCreated = false;
+
     if (authData.user?.id) {
-      try {
-        console.log('Checking if profile was created by trigger...');
-        const { data: existingProfile, error: profileCheckError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', authData.user.id)
-          .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors when no rows found
-        
-        if (profileCheckError) {
-          console.log('Profile check error (expected if not created yet):', profileCheckError);
-        }
-        
-        profileCreated = !!existingProfile;
-        console.log('Profile created by trigger:', profileCreated);
-      } catch (err) {
-        console.log('Profile check failed, will create manually:', err);
+      console.log('Checking if profile was created by trigger...');
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (profileCheckError) {
+        console.log('Profile check error (may be expected):', profileCheckError);
       }
+
+      profileCreated = !!existingProfile;
+      console.log('Profile created by trigger:', profileCreated);
     }
 
-    // If we got a session immediately, user is logged in
-    if (authData.session) {
-      console.log('User logged in immediately');
-      
-      // Create profile manually if trigger didn't create it
-      if (!profileCreated && authData.user?.id) {
-        console.log('Creating profile manually...');
-        try {
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert({
+    // Manually create profile if trigger didn't
+    if (!profileCreated && authData.user?.id) {
+      console.log('Creating profile manually...');
+      try {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert(
+            {
               id: authData.user.id,
               name: fullName,
               pulse_id: pulseId,
-              email: email
-            });
+              email: email,
+            },
+            { onConflict: 'id' }
+          );
 
-          if (profileError) {
-            console.error('Manual profile creation failed:', profileError);
-          } else {
-            console.log('Profile created manually');
-          }
-        } catch (err) {
-          console.error('Error creating profile manually:', err);
+        if (profileError) {
+          console.error('Manual profile creation failed:', profileError);
+        } else {
+          console.log('Profile created manually');
         }
+      } catch (err) {
+        console.error('Error creating profile manually:', err);
       }
+    }
 
+    if (authData.session) {
+      console.log('User logged in immediately');
       return {
         success: true,
         user: authData.user,
         session: authData.session,
-        emailConfirmNeeded: false
+        emailConfirmNeeded: false,
       };
     } else {
       console.log('Email confirmation required');
@@ -169,15 +162,14 @@ export const registerUser = async (
         success: true,
         user: authData.user,
         session: null,
-        emailConfirmNeeded: true
+        emailConfirmNeeded: true,
       };
     }
-
   } catch (error: any) {
     console.error('=== REGISTRATION PROCESS ERROR ===', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error : new Error(error?.message || 'Unknown registration error')
+    return {
+      success: false,
+      error: error instanceof Error ? error : new Error(error?.message || 'Unknown registration error'),
     };
   }
 };
