@@ -47,22 +47,19 @@ export const registerUser = async (
     if (authError) {
       console.error('Auth registration error:', authError);
       
-      // Special handling for "User already registered"
+      // Special handling for "User already registered" - don't show toast here, let the calling component handle it
       if (authError.message.includes("User already registered")) {
-        toast({
-          title: "Email previously registered",
-          description: "This email was previously used. Please try logging in or use a different email.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Registration failed",
-          description: authError.message || "Something went wrong during registration",
-          variant: "destructive",
-        });
+        return { 
+          success: false, 
+          error: new Error("This email was previously used. Please try logging in or use a different email."),
+          isEmailAlreadyRegistered: true
+        };
       }
       
-      throw authError;
+      return { 
+        success: false, 
+        error: new Error(authError.message || "Something went wrong during registration")
+      };
     }
     
     console.log('Auth registration succeeded:', authData);
@@ -77,19 +74,10 @@ export const registerUser = async (
       console.log('Profile will be created automatically by database trigger');
     }
     
+    // Only show success toast if registration was truly successful
     if (emailConfirmNeeded) {
-      toast({
-        title: "Email confirmation required",
-        description: "Please check your email and confirm your account before logging in.",
-      });
-      
       console.log('Email confirmation is required for:', email);
     } else {
-      toast({
-        title: "PulseID claimed successfully!",
-        description: `Welcome to VoiceMate! Your PulseID "${pulseId}" has been registered.`,
-      });
-      
       console.log('User registered successfully without email confirmation needed');
     }
     

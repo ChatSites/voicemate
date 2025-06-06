@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,8 +8,8 @@ import {
   ToastProps,
 } from "@/components/ui/toast";
 
-const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 3000; // Changed from 2000 to 3000 (3 seconds)
+const TOAST_LIMIT = 3; // Reduced from 5 to prevent overcrowding
+const TOAST_REMOVE_DELAY = 4000; // Increased to 4 seconds for better UX
 
 export type ToasterToast = Omit<ToastProps, "children"> & {
   id: string;
@@ -121,7 +122,6 @@ export const toast = (props: Omit<ToasterToast, "id">): string => {
       return addToastFn(props);
     } else {
       console.warn("Toast called before context was ready");
-      // Return an empty string to avoid errors
       return "";
     }
   }
@@ -134,14 +134,20 @@ export function useToast() {
   });
 
   React.useEffect(() => {
-    state.toasts.forEach((t) => {
-      if (!t.open && !toastTimeouts.has(t.id)) {
-        const timeout = setTimeout(() => {
-          dispatch({ type: actionTypes.REMOVE_TOAST, toastId: t.id });
-          toastTimeouts.delete(t.id);
+    state.toasts.forEach((toast) => {
+      if (toast.open !== false && !toastTimeouts.has(toast.id)) {
+        // Auto-dismiss after delay
+        const dismissTimeout = setTimeout(() => {
+          dispatch({ type: actionTypes.DISMISS_TOAST, toastId: toast.id });
         }, TOAST_REMOVE_DELAY);
         
-        toastTimeouts.set(t.id, timeout);
+        // Remove from DOM after dismiss animation
+        const removeTimeout = setTimeout(() => {
+          dispatch({ type: actionTypes.REMOVE_TOAST, toastId: toast.id });
+          toastTimeouts.delete(toast.id);
+        }, TOAST_REMOVE_DELAY + 300); // Extra time for dismiss animation
+        
+        toastTimeouts.set(toast.id, removeTimeout);
       }
     });
   }, [state.toasts]);
@@ -163,7 +169,7 @@ export function useToast() {
 
       return id;
     },
-    [dispatch]
+    []
   );
 
   const updateToast = React.useCallback(
@@ -177,7 +183,7 @@ export function useToast() {
         toast: props,
       });
     },
-    [dispatch]
+    []
   );
 
   const dismissToast = React.useCallback(
@@ -187,12 +193,13 @@ export function useToast() {
         toastId,
       });
     },
-    [dispatch]
+    []
   );
 
   const removeToast = React.useCallback(
     (toastId?: string) => {
-      if (toastId) {
+      if (toastId && toastTimeouts.has(toastId)) {
+        clearTimeout(toastTimeouts.get(toastId));
         toastTimeouts.delete(toastId);
       }
 
@@ -201,7 +208,7 @@ export function useToast() {
         toastId,
       });
     },
-    [dispatch]
+    []
   );
 
   React.useEffect(() => {
@@ -209,6 +216,7 @@ export function useToast() {
     addToastFn = addToast;
     return () => {
       addToastFn = null;
+      // Clear all timeouts on cleanup
       for (const timeout of Array.from(toastTimeouts.values())) {
         clearTimeout(timeout);
       }
