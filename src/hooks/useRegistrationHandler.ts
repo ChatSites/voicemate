@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { toast } from "@/hooks/use-toast";
-import { registerUser } from '@/services/registerUser';
+import { registerUser } from '@/services/registrationService';
 import { validateRegistrationForm } from '@/services/validationService';
 import { RegistrationFormState } from '@/hooks/useRegistrationForm';
 
@@ -54,7 +54,12 @@ export const useRegistrationHandler = (
         if (result.pulseIdAvailable === false) {
           setPulseIdAvailable(false);
           setPulseIdSuggestions(result.pulseIdSuggestions || []);
-          throw new Error("PulseID is already taken. Please choose another one.");
+          toast({
+            title: "PulseID taken",
+            description: "This PulseID is already in use. Please choose another one.",
+            variant: "destructive"
+          });
+          return;
         }
         
         if (result.error && result.error.message.includes("already registered")) {
@@ -66,15 +71,20 @@ export const useRegistrationHandler = (
           if (onSwitchToLogin) {
             setTimeout(() => onSwitchToLogin(), 1500);
           }
-          throw new Error("Email already registered");
+          return;
         }
         
         if (result.error) {
-          throw result.error;
+          toast({
+            title: "Registration failed",
+            description: result.error.message,
+            variant: "destructive",
+          });
+          return;
         }
       }
       
-      // Registration successful - show toast and navigate to success page
+      // Registration successful
       toast({
         title: "Registration successful",
         description: "Welcome to VoiceMate! Setting up your account...",
@@ -87,16 +97,11 @@ export const useRegistrationHandler = (
       
     } catch (error: any) {
       console.error('Registration error:', error);
-      
-      // Only show error if it's not already handled above
-      if (!error?.message?.includes("already registered") && 
-          !error?.message?.includes("PulseID is already taken")) {
-        toast({
-          title: "Registration failed",
-          description: error?.message || "Please check your information and try again",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Registration failed",
+        description: error?.message || "Please check your information and try again",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
       setRegistrationInProgress(false);

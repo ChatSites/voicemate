@@ -19,20 +19,56 @@ export const registerUser = async (
   email: string,
   pulseId: string,
   password: string
-) => {
+): Promise<{
+  success: boolean;
+  error?: Error;
+  pulseIdAvailable?: boolean;
+  pulseIdSuggestions?: string[];
+  user?: any;
+  session?: any;
+  emailConfirmNeeded?: boolean;
+}> => {
   console.log('Starting registration process for:', email, 'with PulseID:', pulseId);
   
   try {
     // Clean up existing auth state to avoid conflicts
     cleanupAuthState();
     
+    // First check if PulseID is available
+    console.log('Checking PulseID availability before registration...');
+    const { data: existingPulseId, error: pulseIdError } = await supabase
+      .from('users')
+      .select('id, pulse_id, name')
+      .or(`pulse_id.ilike.${pulseId},name.ilike.${pulseId}`)
+      .limit(1);
+
+    if (pulseIdError) {
+      console.error('Error checking PulseID:', pulseIdError);
+    }
+
+    if (existingPulseId && existingPulseId.length > 0) {
+      console.log(`PulseID ${pulseId} is already taken:`, existingPulseId);
+      const pulseIdSuggestions = [
+        `${pulseId}_${Math.floor(Math.random() * 1000)}`,
+        `${pulseId}.${Date.now().toString().slice(-4)}`,
+        `${pulseId}123`,
+      ];
+
+      return {
+        success: false,
+        pulseIdAvailable: false,
+        pulseIdSuggestions,
+        error: new Error('PulseID is already taken'),
+      };
+    }
+    
     // Prepare user metadata with the claimed PulseID
     const userData = {
       full_name: fullName,
-      pulse_id: pulseId, // This will be used by the trigger to populate the users table
+      pulse_id: pulseId,
     };
     
-    console.log('Registering with data:', userData);
+    console.log('Registering with Supabase Auth, data:', userData);
     
     // Perform registration with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -47,12 +83,10 @@ export const registerUser = async (
     if (authError) {
       console.error('Auth registration error:', authError);
       
-      // Special handling for "User already registered" - don't show toast here, let the calling component handle it
       if (authError.message.includes("User already registered")) {
         return { 
           success: false, 
           error: new Error("This email was previously used. Please try logging in or use a different email."),
-          isEmailAlreadyRegistered: true
         };
       }
       
@@ -67,34 +101,54 @@ export const registerUser = async (
     // Check if we need email confirmation
     const emailConfirmNeeded = !authData.session;
     
-    // The user profile will be automatically created by the database trigger
-    // with the PulseID from the user metadata
     if (authData.user) {
-      console.log('User registered successfully with PulseID:', pulseId);
-      console.log('Profile will be created automatically by database trigger');
-    }
-    
-    // Only show success toast if registration was truly successful
-    if (emailConfirmNeeded) {
-      console.log('Email confirmation is required for:', email);
-    } else {
-      console.log('User registered successfully without email confirmation needed');
+      console.log('User registered successfully with ID:', authData.user.id);
+      
+      // Wait a moment for the trigger to potentially create the profile
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if user profile was created by trigger
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+      
+      if (profileError || !userProfile) {
+        console.log('Trigger did not create profile, creating manually...');
+        
+        // Create the user profile manually as fallback
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            name: fullName,
+            pulse_id: pulseId,
+            email: email
+          });
+        
+        if (insertError) {
+          console.error('Failed to create user profile manually:', insertError);
+          // Don't fail registration if profile creation fails
+        } else {
+          console.log('User profile created manually successfully');
+        }
+      } else {
+        console.log('User profile created by trigger:', userProfile);
+      }
     }
     
     return { 
       success: true, 
       user: authData.user,
       session: authData.session,
-      emailConfirmNeeded,
-      pulseId
+      emailConfirmNeeded
     };
   } catch (error: any) {
     console.error('Registration error:', error);
     return { 
       success: false, 
-      error,
-      pulseIdAvailable: true,
-      pulseIdSuggestions: []
+      error: error instanceof Error ? error : new Error(error?.message || 'Unknown registration error')
     };
   }
 };
