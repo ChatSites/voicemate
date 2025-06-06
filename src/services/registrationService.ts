@@ -79,8 +79,8 @@ export const registerUser = async (
 
     console.log('User created successfully:', data.user.id);
 
-    // Wait a moment for the trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait a bit longer for the improved trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Check if the user profile was created in our database
     console.log('Checking if user profile was created...');
@@ -96,7 +96,7 @@ export const registerUser = async (
       } else if (userProfile) {
         console.log('User profile created successfully:', userProfile);
       } else {
-        console.log('User profile not yet created, but registration succeeded');
+        console.log('User profile not yet created - this may be normal for email confirmation flow');
       }
     } catch (profileCheckError) {
       console.log('Profile check failed, but continuing with registration...');
@@ -108,7 +108,7 @@ export const registerUser = async (
     if (needsEmailConfirmation) {
       console.log('Email confirmation required');
     } else {
-      console.log('User immediately confirmed');
+      console.log('User immediately confirmed and logged in');
     }
 
     return {
