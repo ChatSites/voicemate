@@ -32,7 +32,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
-        throw error;
+        console.error('Error refreshing session:', error);
+        return null;
       }
       console.log('Session refreshed:', data.session ? 'yes' : 'no');
       setSession(data.session);
@@ -96,32 +97,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             if (!mounted) return;
             
+            // Update state immediately
+            setSession(currentSession);
+            setUser(currentSession?.user ?? null);
+            setLoading(false);
+            
             // Handle different auth events
-            if (event === 'SIGNED_IN') {
+            if (event === 'SIGNED_IN' && currentSession?.user) {
               console.log('User signed in successfully');
-              toast({
-                title: "Signed in successfully",
-                description: "Welcome back!"
-              });
+              try {
+                toast({
+                  title: "Signed in successfully",
+                  description: "Welcome back!"
+                });
+              } catch (toastError) {
+                console.error("Failed to show toast notification:", toastError);
+              }
             } else if (event === 'SIGNED_OUT') {
               console.log('User signed out');
-              // Only show toast if it wasn't a manual sign out
-              if (currentSession === null && session !== null) {
-                toast({
-                  title: "Session expired",
-                  description: "Please sign in again"
-                });
-              }
             } else if (event === 'USER_UPDATED') {
               console.log('User profile updated');
             } else if (event === 'TOKEN_REFRESHED') {
               console.log('Auth token refreshed successfully');
             }
-            
-            // Update state immediately
-            setSession(currentSession);
-            setUser(currentSession?.user ?? null);
-            setLoading(false);
           }
         );
 

@@ -70,13 +70,14 @@ export const registerUser = async (
     
     console.log('Calling Supabase auth.signUp with data:', userData);
     
-    // Perform registration with Supabase Auth
+    // Check if email confirmation is required by attempting registration without redirect first
+    console.log('Attempting registration...');
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: userData,
-        emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
+        // Don't set emailRedirectTo to avoid email confirmation requirement for now
       }
     });
     
@@ -98,7 +99,7 @@ export const registerUser = async (
     
     console.log('Auth registration response:', authData);
     
-    // Check if we need email confirmation
+    // Check if we have a session (no email confirmation needed) or just a user (email confirmation needed)
     const emailConfirmNeeded = !authData.session;
     console.log('Email confirmation needed:', emailConfirmNeeded);
     
@@ -106,25 +107,30 @@ export const registerUser = async (
       console.log('User registered successfully with ID:', authData.user.id);
       console.log('User metadata:', authData.user.user_metadata);
       
-      // Wait for the trigger to create the profile
-      console.log('Waiting 2 seconds for database trigger to create profile...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Verify the profile was created by the trigger
-      console.log('Verifying profile creation...');
-      const { data: finalProfile, error: verifyError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
-      
-      if (verifyError || !finalProfile) {
-        console.error('Profile verification failed:', verifyError);
-        console.log('Trigger may have failed, but auth user was created successfully');
-        // Don't fail the registration just because profile creation failed
-        // The user can still log in and we can create the profile later
+      // If we have a session, try to create the profile immediately
+      if (authData.session) {
+        console.log('User has session, creating profile directly...');
+        
+        // Create the user profile directly since we have an active session
+        const { data: insertedProfile, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            name: fullName,
+            pulse_id: pulseId,
+            email: email
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Failed to create user profile:', insertError);
+          // Don't fail registration, profile can be created later
+        } else {
+          console.log('User profile created successfully:', insertedProfile);
+        }
       } else {
-        console.log('Profile created successfully by trigger:', finalProfile);
+        console.log('No session yet, profile will be created after email confirmation');
       }
     }
     
