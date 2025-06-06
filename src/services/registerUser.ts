@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const registerUser = async (
@@ -45,7 +46,7 @@ export const registerUser = async (
 
     console.log(`RegisterUser: PulseID ${pulseId} appears to be available`);
 
-    // Step 2: Sign up user via Supabase Auth
+    // Step 2: Sign up user via Supabase Auth with proper email confirmation
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -54,8 +55,8 @@ export const registerUser = async (
           full_name: fullName,
           pulse_id: pulseId,
         },
-        // For development, we'll skip email confirmation to keep users logged in
-        emailRedirectTo: `${window.location.origin}/registration-success`,
+        // Enable email confirmation and set redirect URL
+        emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
       },
     });
 
@@ -88,9 +89,39 @@ export const registerUser = async (
       emailConfirmed: user.email_confirmed_at ? 'yes' : 'no'
     });
 
-    // If we have a session immediately, the user is logged in (email confirmation disabled)
+    // The database trigger should automatically create the user profile
+    // Let's verify it was created
     if (session) {
       console.log('RegisterUser: User is immediately logged in with session');
+      
+      // Double-check that the user profile was created by the trigger
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError || !userProfile) {
+        console.error('RegisterUser: User profile not created by trigger:', profileError);
+        
+        // Manual fallback - create the profile if trigger failed
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            name: fullName,
+            pulse_id: pulseId,
+            email: email
+          });
+        
+        if (insertError) {
+          console.error('RegisterUser: Failed to create user profile manually:', insertError);
+        } else {
+          console.log('RegisterUser: User profile created manually as fallback');
+        }
+      } else {
+        console.log('RegisterUser: User profile created successfully by trigger:', userProfile);
+      }
     } else {
       console.log('RegisterUser: Email confirmation required - user will need to verify email');
     }

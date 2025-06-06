@@ -56,6 +56,44 @@ export default function AuthCallback() {
             hasUser: !!data.user,
             userEmail: data.user?.email
           });
+          
+          // For signup confirmations, ensure the user profile exists
+          if (type === "signup" && data.user && data.session) {
+            console.log("Signup confirmation - checking user profile exists");
+            
+            const { data: userProfile, error: profileError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+            
+            if (profileError || !userProfile) {
+              console.log("User profile not found, attempting to create from metadata");
+              
+              // Try to create profile from user metadata
+              const fullName = data.user.user_metadata?.full_name || data.user.email?.split('@')[0];
+              const pulseId = data.user.user_metadata?.pulse_id;
+              
+              if (pulseId) {
+                const { error: insertError } = await supabase
+                  .from('users')
+                  .insert({
+                    id: data.user.id,
+                    name: fullName,
+                    pulse_id: pulseId,
+                    email: data.user.email
+                  });
+                
+                if (insertError) {
+                  console.error("Failed to create user profile:", insertError);
+                } else {
+                  console.log("User profile created successfully");
+                }
+              }
+            } else {
+              console.log("User profile already exists:", userProfile);
+            }
+          }
         } 
         // Handle hash-based redirects (older format)
         else if (location.hash) {
