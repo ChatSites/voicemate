@@ -11,9 +11,9 @@ const RegistrationSuccess = () => {
   const navigate = useNavigate();
   const { user, loading, refreshSession } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
-  const [profileCreated, setProfileCreated] = useState(false);
+  const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
 
-  // Check authentication status and profile creation
+  // Check authentication status and determine if email confirmation is needed
   useEffect(() => {
     const checkStatus = async () => {
       console.log('RegistrationSuccess: Checking authentication status...');
@@ -26,16 +26,22 @@ const RegistrationSuccess = () => {
         await refreshSession();
       }
       
+      // If still no user after refresh, likely needs email confirmation
+      if (!user && !loading) {
+        console.log('RegistrationSuccess: No authenticated user found, email confirmation likely required');
+        setEmailConfirmationRequired(true);
+      }
+      
       setIsChecking(false);
     };
 
     checkStatus();
-  }, [loading, refreshSession]);
+  }, [loading, refreshSession, user]);
 
   // Auto-redirect authenticated users to dashboard
   useEffect(() => {
     if (!loading && !isChecking && user) {
-      console.log('User is authenticated, redirecting to dashboard...');
+      console.log('RegistrationSuccess: User is authenticated, redirecting to dashboard...');
       const timer = setTimeout(() => {
         navigate('/dashboard');
       }, 3000);
@@ -92,12 +98,12 @@ const RegistrationSuccess = () => {
               )}
             </div>
             <CardTitle className="text-xl text-center">
-              {user ? "Welcome to VoiceMate!" : "Check Your Email"}
+              {user ? "Welcome to VoiceMate!" : "Registration Successful!"}
             </CardTitle>
             <CardDescription className="text-center">
               {user 
-                ? "Your account has been created successfully"
-                : "Please verify your email to complete registration"
+                ? "Your account has been created and is ready to use"
+                : "Please check your email to verify your account"
               }
             </CardDescription>
           </CardHeader>
@@ -108,22 +114,33 @@ const RegistrationSuccess = () => {
                 <Alert className="mb-4 border-green-500/20 bg-green-500/10">
                   <CircleCheck className="h-5 w-5 text-green-500" />
                   <AlertDescription className="text-sm text-green-400">
-                    Account created successfully! Redirecting to dashboard...
+                    Account verified and ready! Redirecting to dashboard...
                   </AlertDescription>
                 </Alert>
               </div>
-            ) : (
+            ) : emailConfirmationRequired ? (
               <div className="text-center mb-6 w-full">
                 <Alert className="mb-4 border-blue-500/20 bg-blue-500/10">
                   <Mail className="h-5 w-5 text-blue-500" />
                   <AlertDescription className="text-sm text-blue-400">
-                    Check your email inbox for a verification link to complete your registration.
+                    Registration successful! Check your email for a verification link to complete setup.
                   </AlertDescription>
                 </Alert>
                 
-                <p className="text-center mb-4 text-gray-400">
-                  After verifying your email, you'll be able to sign in and access all features.
-                </p>
+                <div className="text-sm text-gray-400 mb-4">
+                  <p className="mb-2">• Check your email inbox (and spam folder)</p>
+                  <p className="mb-2">• Click the verification link in the email</p>
+                  <p>• Return here to sign in after verification</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center mb-6 w-full">
+                <Alert className="mb-4 border-yellow-500/20 bg-yellow-500/10">
+                  <AlertCircle className="h-5 w-5 text-yellow-500" />
+                  <AlertDescription className="text-sm text-yellow-400">
+                    Registration in progress. If you don't receive an email within a few minutes, try signing in directly.
+                  </AlertDescription>
+                </Alert>
               </div>
             )}
             

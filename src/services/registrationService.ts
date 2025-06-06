@@ -87,6 +87,24 @@ export const registerUser = async (
 
     console.log('User created successfully:', data.user.id);
 
+    // Check if the user profile was created in our database
+    console.log('Checking if user profile was created...');
+    try {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileError) {
+        console.log('User profile not found, this is expected if email confirmation is required');
+      } else {
+        console.log('User profile found:', userProfile);
+      }
+    } catch (profileCheckError) {
+      console.log('Profile check failed, but continuing with registration...');
+    }
+
     // If no session, email confirmation is required
     const needsEmailConfirmation = !data.session;
     
