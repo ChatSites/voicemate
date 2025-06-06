@@ -108,20 +108,25 @@ export const registerUser = async (
     // Wait a moment for the trigger to potentially create the profile
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Check if profile was created by trigger
+    // Check if profile was created by trigger - fix the 406 error
     let profileCreated = false;
     if (authData.user?.id) {
       try {
-        const { data: existingProfile } = await supabase
+        console.log('Checking if profile was created by trigger...');
+        const { data: existingProfile, error: profileCheckError } = await supabase
           .from('users')
           .select('id')
           .eq('id', authData.user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors when no rows found
+        
+        if (profileCheckError) {
+          console.log('Profile check error (expected if not created yet):', profileCheckError);
+        }
         
         profileCreated = !!existingProfile;
         console.log('Profile created by trigger:', profileCreated);
       } catch (err) {
-        console.log('No profile found, will create manually');
+        console.log('Profile check failed, will create manually:', err);
       }
     }
 
