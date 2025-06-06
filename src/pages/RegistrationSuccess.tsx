@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { CircleCheck, Mail, Loader2, AlertCircle, Database } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +12,8 @@ const RegistrationSuccess = () => {
   const navigate = useNavigate();
   const { user, loading, refreshSession } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
-  const [profileStatus, setProfileStatus] = useState<'checking' | 'exists' | 'missing' | 'created'>('checking');
+  const [profileStatus, setProfileStatus] = useState<'checking' | 'exists' | 'missing' | 'created' | 'failed'>('checking');
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   // Check authentication status and profile on component mount
   useEffect(() => {
@@ -37,10 +38,21 @@ const RegistrationSuccess = () => {
     const checkProfile = async () => {
       if (!user || loading || isChecking) return;
       
-      console.log('Checking user profile for:', user.id);
+      console.log('RegistrationSuccess: Checking user profile for:', user.id);
       setProfileStatus('checking');
       
       try {
+        // First, let's see what's in the database
+        console.log('RegistrationSuccess: Fetching ALL users to debug...');
+        const { data: allUsers, error: allUsersError } = await supabase
+          .from('users')
+          .select('*')
+          .limit(10);
+        
+        console.log('RegistrationSuccess: All users in database:', allUsers);
+        setDebugInfo({ allUsers, allUsersError });
+        
+        // Now check for this specific user
         const { data: profile, error } = await supabase
           .from('users')
           .select('*')
@@ -48,16 +60,16 @@ const RegistrationSuccess = () => {
           .maybeSingle();
         
         if (error) {
-          console.error('Error checking profile:', error);
-          setProfileStatus('missing');
+          console.error('RegistrationSuccess: Error checking profile:', error);
+          setProfileStatus('failed');
           return;
         }
         
         if (profile) {
-          console.log('Profile found:', profile);
+          console.log('RegistrationSuccess: Profile found:', profile);
           setProfileStatus('exists');
         } else {
-          console.log('No profile found, attempting to create...');
+          console.log('RegistrationSuccess: No profile found, attempting to create...');
           
           // Try to create profile using user metadata
           const fullName = user.user_metadata?.full_name || user.email?.split('@')[0];
@@ -76,19 +88,20 @@ const RegistrationSuccess = () => {
               .single();
             
             if (createError) {
-              console.error('Failed to create profile:', createError);
-              setProfileStatus('missing');
+              console.error('RegistrationSuccess: Failed to create profile:', createError);
+              setProfileStatus('failed');
             } else {
-              console.log('Profile created successfully:', newProfile);
+              console.log('RegistrationSuccess: Profile created successfully:', newProfile);
               setProfileStatus('created');
             }
           } else {
+            console.error('RegistrationSuccess: No pulse_id in user metadata');
             setProfileStatus('missing');
           }
         }
       } catch (err) {
-        console.error('Profile check error:', err);
-        setProfileStatus('missing');
+        console.error('RegistrationSuccess: Profile check error:', err);
+        setProfileStatus('failed');
       }
     };
 
@@ -97,14 +110,14 @@ const RegistrationSuccess = () => {
 
   // Handle dashboard navigation
   const handleGoToDashboard = () => {
-    console.log('Dashboard button clicked - User:', user ? 'authenticated' : 'not authenticated');
+    console.log('RegistrationSuccess: Dashboard button clicked - User:', user ? 'authenticated' : 'not authenticated');
     
     if (user) {
       // User is authenticated, go directly to dashboard
       navigate('/dashboard');
     } else {
       // User is not authenticated yet, redirect to auth page with a message
-      console.log('User not authenticated, redirecting to auth page');
+      console.log('RegistrationSuccess: User not authenticated, redirecting to auth page');
       navigate('/auth');
     }
   };
@@ -112,7 +125,7 @@ const RegistrationSuccess = () => {
   // Auto-redirect authenticated users to dashboard after a delay
   useEffect(() => {
     if (!loading && !isChecking && user && profileStatus === 'exists') {
-      console.log('User is authenticated with profile, will auto-navigate to dashboard in 3 seconds');
+      console.log('RegistrationSuccess: User is authenticated with profile, will auto-navigate to dashboard in 3 seconds');
       const timer = setTimeout(() => {
         navigate('/dashboard');
       }, 3000);
@@ -155,40 +168,63 @@ const RegistrationSuccess = () => {
             <div className="flex justify-center mb-4">
               <CircleCheck className="h-16 w-16 text-green-500" />
             </div>
-            <CardTitle className="text-xl text-center">Registration Successful!</CardTitle>
+            <CardTitle className="text-xl text-center">Registration Status</CardTitle>
             <CardDescription className="text-center">
-              {user ? "Your account has been created successfully" : "Please check your email to verify your account"}
+              {user ? "Checking your profile setup..." : "Please check your email to verify your account"}
             </CardDescription>
           </CardHeader>
           
           <CardContent className="flex flex-col items-center">
             {user ? (
-              <div className="text-center mb-6 w-full">
-                <Alert className="mb-4 border-green-500/20 bg-green-500/10">
-                  <CircleCheck className="h-5 w-5 text-green-500" />
-                  <AlertDescription className="text-sm text-green-400">
-                    ✓ You are now signed in and ready to use VoiceMate!
+              <div className="text-center mb-6 w-full space-y-4">
+                <Alert className="border-blue-500/20 bg-blue-500/10">
+                  <CircleCheck className="h-5 w-5 text-blue-500" />
+                  <AlertDescription className="text-sm text-blue-400">
+                    ✓ Authentication successful
                   </AlertDescription>
                 </Alert>
                 
                 {profileStatus === 'checking' && (
-                  <div className="flex items-center justify-center mb-4">
+                  <div className="flex items-center justify-center">
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     <span className="text-gray-400 text-sm">Setting up your profile...</span>
                   </div>
                 )}
                 
-                {profileStatus === 'missing' && (
-                  <Alert className="mb-4 border-amber-500/20 bg-amber-500/10">
-                    <AlertCircle className="h-5 w-5 text-amber-500" />
-                    <AlertDescription className="text-sm text-amber-400">
-                      Profile setup incomplete. You can still access your dashboard.
+                {profileStatus === 'exists' && (
+                  <Alert className="border-green-500/20 bg-green-500/10">
+                    <Database className="h-5 w-5 text-green-500" />
+                    <AlertDescription className="text-sm text-green-400">
+                      ✓ Profile setup complete! Redirecting to dashboard...
                     </AlertDescription>
                   </Alert>
                 )}
                 
-                {(profileStatus === 'exists' || profileStatus === 'created') && (
-                  <p className="text-gray-400 text-sm">You'll be redirected to the dashboard automatically...</p>
+                {profileStatus === 'created' && (
+                  <Alert className="border-green-500/20 bg-green-500/10">
+                    <Database className="h-5 w-5 text-green-500" />
+                    <AlertDescription className="text-sm text-green-400">
+                      ✓ Profile created successfully!
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {(profileStatus === 'missing' || profileStatus === 'failed') && (
+                  <Alert className="border-red-500/20 bg-red-500/10">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                    <AlertDescription className="text-sm text-red-400">
+                      ⚠ Profile setup incomplete. Check console for details.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {debugInfo && (
+                  <div className="text-xs text-gray-500 bg-gray-900 p-2 rounded">
+                    <div>Users in DB: {debugInfo.allUsers?.length || 0}</div>
+                    {debugInfo.allUsersError && (
+                      <div className="text-red-400">DB Error: {debugInfo.allUsersError.message}</div>
+                    )}
+                  </div>
                 )}
               </div>
             ) : (

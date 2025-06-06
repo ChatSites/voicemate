@@ -70,14 +70,13 @@ export const registerUser = async (
     
     console.log('Calling Supabase auth.signUp with data:', userData);
     
-    // Check if email confirmation is required by attempting registration without redirect first
-    console.log('Attempting registration...');
+    // Attempt registration with explicit configuration
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: userData,
-        // Don't set emailRedirectTo to avoid email confirmation requirement for now
+        // Don't set emailRedirectTo to avoid email confirmation requirement
       }
     });
     
@@ -98,21 +97,36 @@ export const registerUser = async (
     }
     
     console.log('Auth registration response:', authData);
-    
-    // Check if we have a session (no email confirmation needed) or just a user (email confirmation needed)
-    const emailConfirmNeeded = !authData.session;
-    console.log('Email confirmation needed:', emailConfirmNeeded);
+    console.log('User created:', authData.user ? 'YES' : 'NO');
+    console.log('Session created:', authData.session ? 'YES' : 'NO');
     
     if (authData.user) {
-      console.log('User registered successfully with ID:', authData.user.id);
+      console.log('User ID:', authData.user.id);
+      console.log('User email:', authData.user.email);
       console.log('User metadata:', authData.user.user_metadata);
       
-      // If we have a session, try to create the profile immediately
-      if (authData.session) {
-        console.log('User has session, creating profile directly...');
+      // Wait a moment for the trigger to potentially fire
+      console.log('Waiting 2 seconds for database trigger...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check if profile was created by trigger
+      console.log('Checking if profile was created by trigger...');
+      const { data: triggerProfile, error: triggerCheckError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+      
+      if (triggerCheckError) {
+        console.error('Error checking for trigger-created profile:', triggerCheckError);
+      } else if (triggerProfile) {
+        console.log('SUCCESS: Profile was created by trigger:', triggerProfile);
+      } else {
+        console.log('WARNING: No profile found after trigger delay');
         
-        // Create the user profile directly since we have an active session
-        const { data: insertedProfile, error: insertError } = await supabase
+        // Manually create profile since trigger failed
+        console.log('Attempting manual profile creation...');
+        const { data: manualProfile, error: manualError } = await supabase
           .from('users')
           .insert({
             id: authData.user.id,
@@ -123,17 +137,38 @@ export const registerUser = async (
           .select()
           .single();
         
-        if (insertError) {
-          console.error('Failed to create user profile:', insertError);
-          // Don't fail registration, profile can be created later
+        if (manualError) {
+          console.error('Manual profile creation failed:', manualError);
+          console.error('Manual error details:', {
+            message: manualError.message,
+            details: manualError.details,
+            hint: manualError.hint,
+            code: manualError.code
+          });
         } else {
-          console.log('User profile created successfully:', insertedProfile);
+          console.log('SUCCESS: Manual profile creation worked:', manualProfile);
         }
+      }
+      
+      // Final verification - check if we have a profile now
+      console.log('Final profile verification...');
+      const { data: finalProfile, error: finalError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+      
+      if (finalError) {
+        console.error('Final profile check error:', finalError);
+      } else if (finalProfile) {
+        console.log('FINAL SUCCESS: Profile exists:', finalProfile);
       } else {
-        console.log('No session yet, profile will be created after email confirmation');
+        console.error('FINAL FAILURE: No profile found after all attempts');
       }
     }
     
+    const emailConfirmNeeded = !authData.session;
+    console.log('Email confirmation needed:', emailConfirmNeeded);
     console.log('=== REGISTRATION DEBUG END ===');
     
     return { 
