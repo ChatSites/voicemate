@@ -9,21 +9,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const RegistrationSuccess = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, refreshSession } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
+  const [profileCreated, setProfileCreated] = useState(false);
 
-  // Check authentication status on component mount
+  // Check authentication status and profile creation
   useEffect(() => {
     const checkStatus = async () => {
       console.log('RegistrationSuccess: Checking authentication status...');
       
-      // Wait a moment for auth state to settle
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for auth to settle
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Try to refresh session to get latest state
+      if (!loading) {
+        await refreshSession();
+      }
+      
       setIsChecking(false);
     };
 
     checkStatus();
-  }, []);
+  }, [loading, refreshSession]);
 
   // Auto-redirect authenticated users to dashboard
   useEffect(() => {
@@ -31,7 +38,7 @@ const RegistrationSuccess = () => {
       console.log('User is authenticated, redirecting to dashboard...');
       const timer = setTimeout(() => {
         navigate('/dashboard');
-      }, 2000);
+      }, 3000);
       
       return () => clearTimeout(timer);
     }
@@ -60,7 +67,7 @@ const RegistrationSuccess = () => {
           <div className="flex justify-center mb-4">
             <Loader2 className="h-8 w-8 animate-spin text-voicemate-purple" />
           </div>
-          <p className="text-gray-400">Checking your registration status...</p>
+          <p className="text-gray-400">Setting up your account...</p>
         </div>
       </div>
     );
@@ -78,15 +85,19 @@ const RegistrationSuccess = () => {
         <Card className="border border-gray-800 bg-voicemate-card/60 backdrop-blur-md">
           <CardHeader>
             <div className="flex justify-center mb-4">
-              <CircleCheck className="h-16 w-16 text-green-500" />
+              {user ? (
+                <CircleCheck className="h-16 w-16 text-green-500" />
+              ) : (
+                <Mail className="h-16 w-16 text-blue-500" />
+              )}
             </div>
             <CardTitle className="text-xl text-center">
-              {user ? "Registration Complete!" : "Registration Successful!"}
+              {user ? "Welcome to VoiceMate!" : "Check Your Email"}
             </CardTitle>
             <CardDescription className="text-center">
               {user 
-                ? "You're all set! Redirecting to your dashboard..."
-                : "Please check your email to verify your account"
+                ? "Your account has been created successfully"
+                : "Please verify your email to complete registration"
               }
             </CardDescription>
           </CardHeader>
@@ -97,13 +108,9 @@ const RegistrationSuccess = () => {
                 <Alert className="mb-4 border-green-500/20 bg-green-500/10">
                   <CircleCheck className="h-5 w-5 text-green-500" />
                   <AlertDescription className="text-sm text-green-400">
-                    ✓ You're signed in and ready to use VoiceMate!
+                    Account created successfully! Redirecting to dashboard...
                   </AlertDescription>
                 </Alert>
-                
-                <p className="text-center mb-4 text-gray-400">
-                  You'll be automatically redirected to your dashboard in a moment.
-                </p>
               </div>
             ) : (
               <div className="text-center mb-6 w-full">
@@ -115,7 +122,7 @@ const RegistrationSuccess = () => {
                 </Alert>
                 
                 <p className="text-center mb-4 text-gray-400">
-                  After verifying your email, you'll be able to access all features of VoiceMate.
+                  After verifying your email, you'll be able to sign in and access all features.
                 </p>
               </div>
             )}

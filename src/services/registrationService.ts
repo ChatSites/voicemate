@@ -105,27 +105,51 @@ export const registerUser = async (
       emailConfirmed: authData.user?.email_confirmed_at ? 'YES' : 'NO'
     });
 
+    // Wait a moment for the trigger to potentially create the profile
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Check if profile was created by trigger
+    let profileCreated = false;
+    if (authData.user?.id) {
+      try {
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', authData.user.id)
+          .single();
+        
+        profileCreated = !!existingProfile;
+        console.log('Profile created by trigger:', profileCreated);
+      } catch (err) {
+        console.log('No profile found, will create manually');
+      }
+    }
+
     // If we got a session immediately, user is logged in
     if (authData.session) {
-      console.log('User logged in immediately, creating profile manually...');
+      console.log('User logged in immediately');
       
-      // Create profile manually since we have a session
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user!.id,
-          name: fullName,
-          pulse_id: pulseId,
-          email: email
-        })
-        .select()
-        .single();
+      // Create profile manually if trigger didn't create it
+      if (!profileCreated && authData.user?.id) {
+        console.log('Creating profile manually...');
+        try {
+          const { error: profileError } = await supabase
+            .from('users')
+            .insert({
+              id: authData.user.id,
+              name: fullName,
+              pulse_id: pulseId,
+              email: email
+            });
 
-      if (profileError) {
-        console.error('Profile creation failed:', profileError);
-        // Continue anyway - the user is still registered
-      } else {
-        console.log('Profile created successfully:', profile);
+          if (profileError) {
+            console.error('Manual profile creation failed:', profileError);
+          } else {
+            console.log('Profile created manually');
+          }
+        } catch (err) {
+          console.error('Error creating profile manually:', err);
+        }
       }
 
       return {
