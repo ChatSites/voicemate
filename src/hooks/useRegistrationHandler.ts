@@ -18,7 +18,14 @@ export const useRegistrationHandler = (
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== REGISTRATION FORM SUBMITTED ===');
+    console.log('=== REGISTRATION HANDLER CALLED ===');
+    console.log('Form data received:', {
+      fullName: formState.fullName,
+      email: formState.registerEmail,
+      pulseId: formState.pulseId,
+      passwordLength: formState.registerPassword.length,
+      registrationInProgress: formState.registrationInProgress
+    });
     
     // Prevent multiple submission attempts
     if (formState.registrationInProgress) {
@@ -27,6 +34,7 @@ export const useRegistrationHandler = (
     }
     
     // Form validation
+    console.log('Validating form...');
     if (!validateRegistrationForm(formState)) {
       console.log('Form validation failed');
       toast({
@@ -40,6 +48,7 @@ export const useRegistrationHandler = (
     console.log('Form validation passed, starting registration...');
     
     // Mark registration as in-progress
+    console.log('Setting registration in progress...');
     setRegistrationInProgress(true);
     setLoading(true);
     
@@ -130,6 +139,7 @@ export const useRegistrationHandler = (
         variant: "destructive",
       });
     } finally {
+      console.log('Resetting registration state...');
       setLoading(false);
       setRegistrationInProgress(false);
       console.log('=== REGISTRATION PROCESS COMPLETE ===');

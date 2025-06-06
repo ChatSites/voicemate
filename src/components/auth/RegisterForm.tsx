@@ -74,8 +74,24 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
     }
   }, [prefilledPulseId]);
 
+  // Add debugging for form submission
+  const handleFormSubmit = (e: React.FormEvent) => {
+    console.log('=== REGISTER FORM SUBMIT TRIGGERED ===');
+    console.log('Form state:', {
+      fullName: formState.fullName,
+      email: formState.registerEmail,
+      pulseId: formState.pulseId,
+      passwordLength: formState.registerPassword.length,
+      isFormValid: isFormValid(),
+      pulseIdAvailable: formState.pulseIdAvailable,
+      registrationInProgress: formState.registrationInProgress
+    });
+    
+    handleRegister(e);
+  };
+
   return (
-    <form onSubmit={handleRegister}>
+    <form onSubmit={handleFormSubmit}>
       <CardContent className="space-y-4">
         <FullNameInput 
           fullName={formState.fullName} 
