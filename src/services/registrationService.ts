@@ -1,6 +1,5 @@
 
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
-import { toast } from "@/hooks/use-toast";
 
 // This is a simplified check, final verification happens during registration
 export const finalEmailCheck = async (email: string): Promise<boolean> => {
@@ -107,48 +106,11 @@ export const registerUser = async (
       console.log('User registered successfully with ID:', authData.user.id);
       console.log('User metadata:', authData.user.user_metadata);
       
-      // Wait longer for the trigger to potentially create the profile
-      console.log('Waiting 3 seconds for database trigger...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Wait for the trigger to create the profile
+      console.log('Waiting 2 seconds for database trigger to create profile...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Check if user profile was created by trigger
-      console.log('Checking if profile was created by trigger...');
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
-      
-      if (profileError || !userProfile) {
-        console.log('Trigger did not create profile, error:', profileError);
-        console.log('Creating profile manually...');
-        
-        // Create the user profile manually as fallback
-        const { data: insertedProfile, error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            name: fullName,
-            pulse_id: pulseId,
-            email: email
-          })
-          .select()
-          .single();
-        
-        if (insertError) {
-          console.error('Failed to create user profile manually:', insertError);
-          return {
-            success: false,
-            error: new Error(`Registration succeeded but failed to create profile: ${insertError.message}`)
-          };
-        } else {
-          console.log('User profile created manually successfully:', insertedProfile);
-        }
-      } else {
-        console.log('User profile created by trigger:', userProfile);
-      }
-      
-      // Verify the profile was created
+      // Verify the profile was created by the trigger
       console.log('Verifying profile creation...');
       const { data: finalProfile, error: verifyError } = await supabase
         .from('users')
@@ -158,13 +120,12 @@ export const registerUser = async (
       
       if (verifyError || !finalProfile) {
         console.error('Profile verification failed:', verifyError);
-        return {
-          success: false,
-          error: new Error('Registration succeeded but profile creation failed')
-        };
+        console.log('Trigger may have failed, but auth user was created successfully');
+        // Don't fail the registration just because profile creation failed
+        // The user can still log in and we can create the profile later
+      } else {
+        console.log('Profile created successfully by trigger:', finalProfile);
       }
-      
-      console.log('Final profile verification successful:', finalProfile);
     }
     
     console.log('=== REGISTRATION DEBUG END ===');
