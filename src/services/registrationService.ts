@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const registerUser = async (
@@ -14,8 +15,6 @@ export const registerUser = async (
     console.log('Cleaning up existing auth state...');
     await supabase.auth.signOut();
 
-    // Note: We'll let the registration attempt proceed and handle conflicts during signup
-    // since the PulseID check might not catch auth-only users
     console.log('Proceeding with registration...');
 
     // Attempt registration with Supabase Auth
@@ -50,7 +49,7 @@ export const registerUser = async (
         };
       }
       
-      // Handle PulseID conflicts that might not have been caught by availability check
+      // Handle PulseID conflicts
       if (error.message.includes('unique') || error.message.includes('duplicate')) {
         return {
           success: false,
@@ -80,6 +79,9 @@ export const registerUser = async (
 
     console.log('User created successfully:', data.user.id);
 
+    // Wait a moment for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Check if the user profile was created in our database
     console.log('Checking if user profile was created...');
     try {
@@ -89,16 +91,18 @@ export const registerUser = async (
         .eq('id', data.user.id)
         .single();
       
-      if (profileError) {
-        console.log('User profile not found, this is expected if email confirmation is required');
+      if (profileError && !profileError.message.includes('Row not found')) {
+        console.error('Profile check error:', profileError);
+      } else if (userProfile) {
+        console.log('User profile created successfully:', userProfile);
       } else {
-        console.log('User profile found:', userProfile);
+        console.log('User profile not yet created, but registration succeeded');
       }
     } catch (profileCheckError) {
       console.log('Profile check failed, but continuing with registration...');
     }
 
-    // If no session, email confirmation is required
+    // Determine if email confirmation is needed
     const needsEmailConfirmation = !data.session;
     
     if (needsEmailConfirmation) {
