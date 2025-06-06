@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Add a function to refresh the session state
+  // Function to refresh the session state
   const refreshSession = async () => {
     try {
       const { data, error } = await supabase.auth.getSession();
@@ -52,25 +52,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clean up auth state
       cleanupAuthState();
       
-      // Attempt global sign out (fallback if it fails)
+      // Attempt global sign out
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
-        // Ignore errors
         console.warn('Error during global sign out:', err);
       }
       
-      // Clear any toast notifications
+      // Clear state
+      setSession(null);
+      setUser(null);
+      
       toast({
         title: "Signed out",
         description: "You have been signed out successfully"
       });
       
-      // Update state to reflect signed out status
-      setSession(null);
-      setUser(null);
-      
-      // Force page reload for a clean state
+      // Force page reload for clean state
       window.location.href = '/auth';
     } catch (error) {
       console.error('Error signing out:', error);
@@ -90,51 +88,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const setupAuth = async () => {
       try {
-        // Set up auth state listener FIRST
+        // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, currentSession) => {
             console.log('Auth state changed:', event, currentSession ? 'has session' : 'no session');
             
             if (!mounted) return;
             
-            // Update state immediately
             setSession(currentSession);
             setUser(currentSession?.user ?? null);
             setLoading(false);
             
-            // Handle different auth events
             if (event === 'SIGNED_IN' && currentSession?.user) {
               console.log('User signed in successfully');
-              try {
-                toast({
-                  title: "Signed in successfully",
-                  description: "Welcome back!"
-                });
-              } catch (toastError) {
-                console.error("Failed to show toast notification:", toastError);
-              }
-            } else if (event === 'SIGNED_OUT') {
-              console.log('User signed out');
-            } else if (event === 'USER_UPDATED') {
-              console.log('User profile updated');
-            } else if (event === 'TOKEN_REFRESHED') {
-              console.log('Auth token refreshed successfully');
+              toast({
+                title: "Signed in successfully",
+                description: "Welcome back!"
+              });
             }
           }
         );
 
-        // THEN check for existing session
+        // Check for existing session
         const { data, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Error getting initial session:', error);
-          // Don't clean up auth state on initial load errors - might be temporary
         }
         
         console.log('Got existing session:', data.session ? 'yes' : 'no');
-        if (data.session) {
-          console.log('Session user:', data.session.user.email);
-          console.log('Session expires at:', new Date(data.session.expires_at! * 1000).toISOString());
-        }
         
         if (mounted) {
           setSession(data.session);
@@ -155,7 +136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setupAuth();
     
-    // Cleanup function
     return () => {
       mounted = false;
     };
