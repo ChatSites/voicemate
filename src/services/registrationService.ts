@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export const registerUser = async (
@@ -15,29 +14,9 @@ export const registerUser = async (
     console.log('Cleaning up existing auth state...');
     await supabase.auth.signOut();
 
-    // Check if PulseID is already taken in our users table
-    console.log('Checking PulseID availability...');
-    const { data: existingPulseId } = await supabase
-      .from('users')
-      .select('id')
-      .eq('pulse_id', pulseId)
-      .single();
-
-    if (existingPulseId) {
-      console.log('PulseID already taken');
-      return {
-        success: false,
-        error: new Error('PulseID is already taken'),
-        pulseIdAvailable: false,
-        pulseIdSuggestions: [
-          `${pulseId}${Math.floor(Math.random() * 1000)}`,
-          `${pulseId}_${Date.now().toString().slice(-4)}`,
-          `${pulseId}123`
-        ]
-      };
-    }
-
-    console.log('PulseID available, proceeding with registration...');
+    // Note: We'll let the registration attempt proceed and handle conflicts during signup
+    // since the PulseID check might not catch auth-only users
+    console.log('Proceeding with registration...');
 
     // Attempt registration with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
@@ -68,6 +47,20 @@ export const registerUser = async (
         return {
           success: false,
           error: new Error('This email is already registered. Please sign in instead.')
+        };
+      }
+      
+      // Handle PulseID conflicts that might not have been caught by availability check
+      if (error.message.includes('unique') || error.message.includes('duplicate')) {
+        return {
+          success: false,
+          error: new Error('This PulseID or email is already taken. Please choose another.'),
+          pulseIdAvailable: false,
+          pulseIdSuggestions: [
+            `${pulseId}${Math.floor(Math.random() * 1000)}`,
+            `${pulseId}_${Date.now().toString().slice(-4)}`,
+            `${pulseId}123`
+          ]
         };
       }
       
