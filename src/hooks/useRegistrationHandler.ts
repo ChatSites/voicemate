@@ -18,6 +18,8 @@ export const useRegistrationHandler = (
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('=== REGISTRATION FORM SUBMITTED ===');
+    
     // Prevent multiple submission attempts
     if (formState.registrationInProgress) {
       console.log('Registration already in progress, ignoring submission');
@@ -26,6 +28,7 @@ export const useRegistrationHandler = (
     
     // Form validation
     if (!validateRegistrationForm(formState)) {
+      console.log('Form validation failed');
       toast({
         title: "Please complete all fields",
         description: "Make sure all fields are filled out properly before registering.",
@@ -34,19 +37,15 @@ export const useRegistrationHandler = (
       return;
     }
     
-    // Mark registration as in-progress to prevent further checks
+    console.log('Form validation passed, starting registration...');
+    
+    // Mark registration as in-progress
     setRegistrationInProgress(true);
     setLoading(true);
     
-    console.log('=== STARTING REGISTRATION PROCESS ===');
-    console.log('Form data:', {
-      fullName: formState.fullName,
-      email: formState.registerEmail,
-      pulseId: formState.pulseId,
-      passwordLength: formState.registerPassword.length
-    });
-    
     try {
+      console.log('Calling registration service...');
+      
       const result = await registerUser(
         formState.fullName,
         formState.registerEmail,
@@ -54,11 +53,18 @@ export const useRegistrationHandler = (
         formState.registerPassword
       );
       
-      console.log('Registration service result:', result);
+      console.log('Registration service completed with result:', {
+        success: result.success,
+        hasUser: !!result.user,
+        hasSession: !!result.session,
+        emailConfirmNeeded: result.emailConfirmNeeded,
+        error: result.error?.message
+      });
       
       if (!result.success) {
         // Handle PulseID taken during registration
         if (result.pulseIdAvailable === false) {
+          console.log('PulseID was taken during registration');
           setPulseIdAvailable(false);
           setPulseIdSuggestions(result.pulseIdSuggestions || []);
           toast({
@@ -69,7 +75,9 @@ export const useRegistrationHandler = (
           return;
         }
         
+        // Handle email already registered
         if (result.error && result.error.message.includes("already registered")) {
+          console.log('Email already registered');
           toast({
             title: "Email already registered",
             description: "This email is already in use. Please log in instead.",
@@ -81,6 +89,7 @@ export const useRegistrationHandler = (
           return;
         }
         
+        // Handle other errors
         if (result.error) {
           console.error('Registration failed with error:', result.error);
           toast({
@@ -93,7 +102,7 @@ export const useRegistrationHandler = (
       }
       
       // Registration successful
-      console.log('Registration successful, showing success toast');
+      console.log('Registration successful!');
       
       if (result.emailConfirmNeeded) {
         toast({
@@ -107,17 +116,17 @@ export const useRegistrationHandler = (
         });
       }
       
-      // Small delay to allow auth state to update before navigation
-      console.log('Navigating to registration success page');
+      // Navigate to success page
+      console.log('Navigating to registration success page...');
       setTimeout(() => {
         navigate('/registration-success');
       }, 500);
       
     } catch (error: any) {
-      console.error('=== REGISTRATION HANDLER ERROR ===', error);
+      console.error('=== REGISTRATION HANDLER EXCEPTION ===', error);
       toast({
         title: "Registration failed",
-        description: error?.message || "Please check your information and try again",
+        description: error?.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
