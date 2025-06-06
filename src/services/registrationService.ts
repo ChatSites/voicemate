@@ -28,7 +28,8 @@ export const registerUser = async (
   session?: any;
   emailConfirmNeeded?: boolean;
 }> => {
-  console.log('Starting registration process for:', email, 'with PulseID:', pulseId);
+  console.log('=== REGISTRATION DEBUG START ===');
+  console.log('Registration data:', { fullName, email, pulseId, passwordLength: password.length });
   
   try {
     // Clean up existing auth state to avoid conflicts
@@ -68,7 +69,7 @@ export const registerUser = async (
       pulse_id: pulseId,
     };
     
-    console.log('Registering with Supabase Auth, data:', userData);
+    console.log('Calling Supabase auth.signUp with data:', userData);
     
     // Perform registration with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -96,18 +97,22 @@ export const registerUser = async (
       };
     }
     
-    console.log('Auth registration succeeded:', authData);
+    console.log('Auth registration response:', authData);
     
     // Check if we need email confirmation
     const emailConfirmNeeded = !authData.session;
+    console.log('Email confirmation needed:', emailConfirmNeeded);
     
     if (authData.user) {
       console.log('User registered successfully with ID:', authData.user.id);
+      console.log('User metadata:', authData.user.user_metadata);
       
-      // Wait a moment for the trigger to potentially create the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait longer for the trigger to potentially create the profile
+      console.log('Waiting 3 seconds for database trigger...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Check if user profile was created by trigger
+      console.log('Checking if profile was created by trigger...');
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -115,28 +120,54 @@ export const registerUser = async (
         .single();
       
       if (profileError || !userProfile) {
-        console.log('Trigger did not create profile, creating manually...');
+        console.log('Trigger did not create profile, error:', profileError);
+        console.log('Creating profile manually...');
         
         // Create the user profile manually as fallback
-        const { error: insertError } = await supabase
+        const { data: insertedProfile, error: insertError } = await supabase
           .from('users')
           .insert({
             id: authData.user.id,
             name: fullName,
             pulse_id: pulseId,
             email: email
-          });
+          })
+          .select()
+          .single();
         
         if (insertError) {
           console.error('Failed to create user profile manually:', insertError);
-          // Don't fail registration if profile creation fails
+          return {
+            success: false,
+            error: new Error(`Registration succeeded but failed to create profile: ${insertError.message}`)
+          };
         } else {
-          console.log('User profile created manually successfully');
+          console.log('User profile created manually successfully:', insertedProfile);
         }
       } else {
         console.log('User profile created by trigger:', userProfile);
       }
+      
+      // Verify the profile was created
+      console.log('Verifying profile creation...');
+      const { data: finalProfile, error: verifyError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+      
+      if (verifyError || !finalProfile) {
+        console.error('Profile verification failed:', verifyError);
+        return {
+          success: false,
+          error: new Error('Registration succeeded but profile creation failed')
+        };
+      }
+      
+      console.log('Final profile verification successful:', finalProfile);
     }
+    
+    console.log('=== REGISTRATION DEBUG END ===');
     
     return { 
       success: true, 
@@ -145,7 +176,7 @@ export const registerUser = async (
       emailConfirmNeeded
     };
   } catch (error: any) {
-    console.error('Registration error:', error);
+    console.error('=== REGISTRATION ERROR ===', error);
     return { 
       success: false, 
       error: error instanceof Error ? error : new Error(error?.message || 'Unknown registration error')

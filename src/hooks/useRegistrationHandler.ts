@@ -20,6 +20,7 @@ export const useRegistrationHandler = (
     
     // Prevent multiple submission attempts
     if (formState.registrationInProgress) {
+      console.log('Registration already in progress, ignoring submission');
       return;
     }
     
@@ -37,7 +38,13 @@ export const useRegistrationHandler = (
     setRegistrationInProgress(true);
     setLoading(true);
     
-    console.log('Attempting registration for:', formState.registerEmail, 'with PulseID:', formState.pulseId);
+    console.log('=== STARTING REGISTRATION PROCESS ===');
+    console.log('Form data:', {
+      fullName: formState.fullName,
+      email: formState.registerEmail,
+      pulseId: formState.pulseId,
+      passwordLength: formState.registerPassword.length
+    });
     
     try {
       const result = await registerUser(
@@ -47,7 +54,7 @@ export const useRegistrationHandler = (
         formState.registerPassword
       );
       
-      console.log('Registration result:', result);
+      console.log('Registration service result:', result);
       
       if (!result.success) {
         // Handle PulseID taken during registration
@@ -75,6 +82,7 @@ export const useRegistrationHandler = (
         }
         
         if (result.error) {
+          console.error('Registration failed with error:', result.error);
           toast({
             title: "Registration failed",
             description: result.error.message,
@@ -85,18 +93,28 @@ export const useRegistrationHandler = (
       }
       
       // Registration successful
-      toast({
-        title: "Registration successful",
-        description: "Welcome to VoiceMate! Setting up your account...",
-      });
+      console.log('Registration successful, showing success toast');
+      
+      if (result.emailConfirmNeeded) {
+        toast({
+          title: "Registration successful",
+          description: "Please check your email to verify your account before signing in.",
+        });
+      } else {
+        toast({
+          title: "Registration successful",
+          description: "Welcome to VoiceMate! You are now signed in.",
+        });
+      }
       
       // Small delay to allow auth state to update before navigation
+      console.log('Navigating to registration success page');
       setTimeout(() => {
         navigate('/registration-success');
       }, 500);
       
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('=== REGISTRATION HANDLER ERROR ===', error);
       toast({
         title: "Registration failed",
         description: error?.message || "Please check your information and try again",
@@ -105,6 +123,7 @@ export const useRegistrationHandler = (
     } finally {
       setLoading(false);
       setRegistrationInProgress(false);
+      console.log('=== REGISTRATION PROCESS COMPLETE ===');
     }
   };
 
