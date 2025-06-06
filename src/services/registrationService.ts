@@ -67,7 +67,7 @@ export const registerUser = async (
       };
     }
 
-    // Attempt Supabase Auth registration
+    // Attempt Supabase Auth registration with email redirect
     console.log('Calling Supabase auth.signUp...');
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -77,6 +77,7 @@ export const registerUser = async (
           full_name: fullName,
           pulse_id: pulseId,
         },
+        emailRedirectTo: `${window.location.origin}/auth/confirm`,
       },
     });
 
@@ -102,8 +103,8 @@ export const registerUser = async (
       emailConfirmed: authData.user?.email_confirmed_at ? 'YES' : 'NO',
     });
 
-    // Wait for possible trigger to complete
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Wait longer for trigger to complete
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     let profileCreated = false;
 
@@ -116,14 +117,14 @@ export const registerUser = async (
         .maybeSingle();
 
       if (profileCheckError) {
-        console.log('Profile check error (may be expected):', profileCheckError);
+        console.log('Profile check error:', profileCheckError);
       }
 
       profileCreated = !!existingProfile;
       console.log('Profile created by trigger:', profileCreated);
     }
 
-    // Manually create profile if trigger didn't
+    // Manually create profile if trigger didn't work
     if (!profileCreated && authData.user?.id) {
       console.log('Creating profile manually...');
       try {
@@ -138,6 +139,21 @@ export const registerUser = async (
 
         if (profileError) {
           console.error('Manual profile creation failed:', profileError);
+          // Try upsert as fallback
+          const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+              id: authData.user.id,
+              name: fullName,
+              pulse_id: pulseId,
+              email: email,
+            });
+          
+          if (upsertError) {
+            console.error('Profile upsert also failed:', upsertError);
+          } else {
+            console.log('Profile created via upsert');
+          }
         } else {
           console.log('Profile created manually');
         }
