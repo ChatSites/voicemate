@@ -66,7 +66,7 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 
 /**
  * Check if a PulseID is already taken by another user
- * Simplified and more reliable version
+ * Improved version with better query logic
  */
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
@@ -86,13 +86,13 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       console.log('Supabase: Force refresh - clearing all caches');
     }
     
-    // Check cache for recent results (only 500ms to ensure freshness)
+    // Check cache for recent results (only 100ms to ensure freshness for this critical check)
     const cacheKey = `pulseId_check_${normalizedPulseId}`;
     const cachedResult = !bypassCache ? localStorage.getItem(cacheKey) : null;
     
     if (cachedResult) {
       const { result, timestamp } = JSON.parse(cachedResult);
-      if (Date.now() - timestamp < 500) {
+      if (Date.now() - timestamp < 100) {
         console.log(`Supabase: Using cached result for ${normalizedPulseId}: ${result ? 'taken' : 'available'}`);
         return result;
       }
@@ -100,26 +100,55 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     
     console.log(`Supabase: Performing fresh database check for PulseID: ${normalizedPulseId}`);
     
-    // Single comprehensive query that checks both pulse_id and name columns
-    const { data: matches, error } = await supabase
+    // Use two separate queries to be absolutely sure we catch all matches
+    console.log(`Supabase: Checking pulse_id column for: ${normalizedPulseId}`);
+    const { data: pulseIdMatches, error: pulseIdError } = await supabase
       .from('users')
-      .select('id, pulse_id, name, email')
-      .or(`pulse_id.ilike.${normalizedPulseId},name.ilike.${normalizedPulseId}`)
-      .limit(5);
+      .select('id, pulse_id, email')
+      .eq('pulse_id', normalizedPulseId)
+      .limit(1);
     
-    if (error) {
-      console.error('Supabase: Database error during PulseID check:', error);
-      errorReporter.reportError(new Error(error.message), 'pulse-id-check');
-      // On error, assume taken to be safe
+    if (pulseIdError) {
+      console.error('Supabase: Error checking pulse_id column:', pulseIdError);
+    } else {
+      console.log(`Supabase: pulse_id column check returned:`, pulseIdMatches);
+    }
+    
+    console.log(`Supabase: Checking name column for: ${normalizedPulseId}`);
+    const { data: nameMatches, error: nameError } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('name', normalizedPulseId)
+      .limit(1);
+    
+    if (nameError) {
+      console.error('Supabase: Error checking name column:', nameError);
+    } else {
+      console.log(`Supabase: name column check returned:`, nameMatches);
+    }
+    
+    // If either query had an error, assume taken to be safe
+    if (pulseIdError || nameError) {
+      console.error('Supabase: Database error during PulseID check, assuming taken');
+      errorReporter.reportError(new Error(`PulseID check error: ${pulseIdError?.message || nameError?.message}`), 'pulse-id-check');
       return true;
     }
     
-    console.log(`Supabase: Query returned ${matches?.length || 0} matches for '${normalizedPulseId}':`, matches);
+    // Check if we found any matches in either column
+    const pulseIdTaken = Array.isArray(pulseIdMatches) && pulseIdMatches.length > 0;
+    const nameTaken = Array.isArray(nameMatches) && nameMatches.length > 0;
+    const isTaken = pulseIdTaken || nameTaken;
     
-    // If we have any matches, the PulseID is taken
-    const isTaken = Array.isArray(matches) && matches.length > 0;
+    console.log(`Supabase: PulseID check results:`, {
+      normalizedPulseId,
+      pulseIdMatches: pulseIdMatches?.length || 0,
+      nameMatches: nameMatches?.length || 0,
+      pulseIdTaken,
+      nameTaken,
+      finalResult: isTaken ? 'TAKEN' : 'AVAILABLE'
+    });
     
-    // Cache the result for 500ms only
+    // Cache the result for only 100ms
     localStorage.setItem(cacheKey, JSON.stringify({
       result: isTaken,
       timestamp: Date.now()
