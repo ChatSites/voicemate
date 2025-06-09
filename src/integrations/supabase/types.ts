@@ -84,27 +84,6 @@ export type Database = {
         }
         Relationships: []
       }
-      users: {
-        Row: {
-          email: string | null
-          id: string
-          name: string | null
-          pulse_id: string | null
-        }
-        Insert: {
-          email?: string | null
-          id?: string
-          name?: string | null
-          pulse_id?: string | null
-        }
-        Update: {
-          email?: string | null
-          id?: string
-          name?: string | null
-          pulse_id?: string | null
-        }
-        Relationships: []
-      }
       voiceprints: {
         Row: {
           created_at: string
