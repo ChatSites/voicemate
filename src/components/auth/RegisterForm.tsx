@@ -76,6 +76,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
 
   // Add debugging for form submission
   const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     console.log('=== REGISTER FORM SUBMIT TRIGGERED ===');
     console.log('Form state:', {
       fullName: formState.fullName,
@@ -87,6 +88,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
       registrationInProgress: formState.registrationInProgress
     });
     
+    console.log('Submit button should be enabled:', !formState.loading && isFormValid() && !formState.registrationInProgress);
+    
+    if (!isFormValid()) {
+      console.log('=== FORM VALIDATION FAILED - NOT CALLING HANDLER ===');
+      toast({
+        title: "Form incomplete",
+        description: "Please fill out all required fields correctly.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log('=== CALLING REGISTRATION HANDLER ===');
     handleRegister(e);
   };
 
@@ -122,6 +136,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ prefilledPulseId = '', onSw
           setPassword={(value) => updateField('registerPassword', value)}
           registrationInProgress={formState.registrationInProgress}
         />
+
+        {/* Debug info */}
+        <div className="text-xs text-gray-500 p-2 bg-gray-800/20 rounded">
+          Form Valid: {isFormValid() ? 'Yes' : 'No'} | 
+          Loading: {formState.loading ? 'Yes' : 'No'} | 
+          In Progress: {formState.registrationInProgress ? 'Yes' : 'No'}
+        </div>
       </CardContent>
       
       <CardFooter>

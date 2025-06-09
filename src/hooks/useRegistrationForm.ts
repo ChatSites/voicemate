@@ -38,7 +38,30 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
   }, [prefilledPulseId, formState.pulseId]);
 
   const updateField = useCallback((field: keyof RegistrationFormData, value: string) => {
+    console.log(`useRegistrationForm: Updating ${field} to:`, value);
     setFormState(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const isPasswordValid = useCallback((password: string): boolean => {
+    if (password.length < 8) {
+      console.log('Password validation failed: too short');
+      return false;
+    }
+    
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
+    
+    console.log('Password validation:', {
+      length: password.length,
+      hasLowercase,
+      hasUppercase, 
+      hasNumber,
+      hasSpecial
+    });
+    
+    return hasLowercase && hasUppercase && hasNumber && hasSpecial;
   }, []);
 
   const isFormValid = useCallback(() => {
@@ -47,22 +70,25 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
       formState.registerEmail && 
       formState.registerEmail.includes('@') && 
       formState.pulseId.length >= 3 && 
-      formState.registerPassword.length >= 8 &&
-      isPasswordValid(formState.registerPassword);
+      formState.registerPassword.length >= 8;
     
+    const validPassword = isPasswordValid(formState.registerPassword);
     const validAvailability = formState.pulseIdAvailable === true;
     
-    return validFields && validAvailability;
-  }, [formState]);
-
-  const isPasswordValid = useCallback((password: string): boolean => {
-    const hasLowercase = /[a-z]/.test(password);
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
+    console.log('Form validation check:', {
+      validFields,
+      validPassword,
+      validAvailability,
+      fullNameLength: formState.fullName.length,
+      hasEmail: !!formState.registerEmail,
+      emailHasAt: formState.registerEmail.includes('@'),
+      pulseIdLength: formState.pulseId.length,
+      passwordLength: formState.registerPassword.length,
+      pulseIdAvailable: formState.pulseIdAvailable
+    });
     
-    return hasLowercase && hasUppercase && hasNumber && hasSpecial;
-  }, []);
+    return validFields && validPassword && validAvailability;
+  }, [formState, isPasswordValid]);
 
   const setPulseIdAvailable = useCallback((available: boolean | null) => {
     console.log(`useRegistrationForm: Setting pulseIdAvailable to ${available}`);
@@ -78,10 +104,12 @@ export const useRegistrationForm = (prefilledPulseId: string = '') => {
   }, []);
 
   const setRegistrationInProgress = useCallback((inProgress: boolean) => {
+    console.log(`useRegistrationForm: Setting registrationInProgress to ${inProgress}`);
     setFormState(prev => ({ ...prev, registrationInProgress: inProgress }));
   }, []);
 
   const setLoading = useCallback((loading: boolean) => {
+    console.log(`useRegistrationForm: Setting loading to ${loading}`);
     setFormState(prev => ({ ...prev, loading }));
   }, []);
 

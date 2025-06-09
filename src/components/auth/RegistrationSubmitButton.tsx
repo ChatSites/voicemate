@@ -13,11 +13,20 @@ const RegistrationSubmitButton: React.FC<RegistrationSubmitButtonProps> = ({
   isFormValid,
   isRegistrationInProgress
 }) => {
+  const isDisabled = isLoading || !isFormValid || isRegistrationInProgress;
+  
+  console.log('RegistrationSubmitButton state:', {
+    isLoading,
+    isFormValid,
+    isRegistrationInProgress,
+    isDisabled
+  });
+
   return (
     <Button 
       type="submit" 
       className="w-full bg-voicemate-red hover:bg-red-600"
-      disabled={isLoading || !isFormValid || isRegistrationInProgress}
+      disabled={isDisabled}
     >
       {isLoading ? "Creating account..." : "Claim Your PulseID"}
     </Button>
