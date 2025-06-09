@@ -79,25 +79,30 @@ export const registerUser = async (
 
     console.log('User created successfully:', data.user.id);
 
-    // Wait a bit for the trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Wait a bit longer for the trigger to complete and create the profile
+    console.log('Waiting for database trigger to create user profile...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Check if the user profile was created in our database
-    console.log('Checking if user profile was created...');
+    // Verify that the user profile was created in our database
+    console.log('Verifying user profile creation...');
     try {
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('*')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
       
       if (profileError) {
-        console.log('Profile check error (may be normal for email confirmation):', profileError);
+        console.log('Profile verification error:', profileError);
+        // Don't fail registration if profile check fails
       } else if (userProfile) {
-        console.log('User profile created successfully:', userProfile);
+        console.log('User profile verified successfully:', userProfile);
+      } else {
+        console.log('User profile not found yet, but registration was successful');
+        // The trigger might still be processing, this is okay
       }
     } catch (profileCheckError) {
-      console.log('Profile check failed, but continuing with registration...');
+      console.log('Profile verification failed, but continuing with registration...', profileCheckError);
     }
 
     // Determine if email confirmation is needed

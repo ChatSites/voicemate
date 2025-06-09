@@ -121,7 +121,7 @@ export const useRegistrationHandler = (
       } else {
         toast({
           title: "Registration successful",
-          description: "Welcome to VoiceMate! You are now signed in.",
+          description: "Welcome to VoiceMate! Your profile is being set up...",
         });
       }
       
@@ -129,7 +129,7 @@ export const useRegistrationHandler = (
       console.log('Navigating to registration success page...');
       setTimeout(() => {
         navigate('/registration-success');
-      }, 500);
+      }, 1000);
       
     } catch (error: any) {
       console.error('=== REGISTRATION HANDLER EXCEPTION ===', error);

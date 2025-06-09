@@ -8,6 +8,7 @@ export interface UserProfile {
   id: string;
   name: string | null;
   pulse_id: string | null;
+  email: string | null;
 }
 
 export const useUserProfile = () => {
@@ -27,31 +28,55 @@ export const useUserProfile = () => {
 
         console.log("Fetching profile for user ID:", user.id);
 
-        // Select from the recreated users table
-        const { data, error: profileError } = await supabase
-          .from('users')
-          .select('id, name, pulse_id')
-          .eq('id', user.id)
-          .maybeSingle();
+        // Try to fetch the profile with retries for new users
+        let attempts = 0;
+        const maxAttempts = 3;
+        let profileData = null;
 
-        if (profileError) {
-          console.error("Profile fetch error:", profileError);
-          setError(profileError.message);
-        } else if (data) {
-          console.log("Profile data received:", data);
+        while (attempts < maxAttempts && !profileData) {
+          const { data, error: profileError } = await supabase
+            .from('users')
+            .select('id, name, pulse_id, email')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (profileError) {
+            console.error("Profile fetch error:", profileError);
+            setError(profileError.message);
+            break;
+          }
+
+          if (data) {
+            profileData = data;
+            break;
+          }
+
+          // If no data found and this is not the last attempt, wait and retry
+          if (attempts < maxAttempts - 1) {
+            console.log(`Profile not found, retrying in 1 second... (attempt ${attempts + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+
+          attempts++;
+        }
+
+        if (profileData) {
+          console.log("Profile data received:", profileData);
           const userProfile: UserProfile = {
-            id: data.id,
-            name: data.name ?? user.user_metadata?.full_name ?? null,
-            pulse_id: data.pulse_id ?? null,
+            id: profileData.id,
+            name: profileData.name ?? user.user_metadata?.full_name ?? null,
+            pulse_id: profileData.pulse_id ?? user.user_metadata?.pulse_id ?? null,
+            email: profileData.email ?? user.email ?? null,
           };
           setProfile(userProfile);
         } else {
-          console.log("No profile data found for user, creating from metadata");
-          // Handle case where user exists in auth but not in users table yet
+          console.log("No profile data found after retries, creating fallback from auth metadata");
+          // Create a fallback profile from auth metadata if database profile doesn't exist yet
           const userProfile: UserProfile = {
             id: user.id,
             name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? null,
             pulse_id: user.user_metadata?.pulse_id ?? null,
+            email: user.email ?? null,
           };
           setProfile(userProfile);
         }
