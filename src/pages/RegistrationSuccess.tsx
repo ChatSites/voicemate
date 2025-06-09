@@ -20,8 +20,8 @@ const RegistrationSuccess = () => {
       console.log('RegistrationSuccess: Current user:', user ? `ID: ${user.id}` : 'None');
       console.log('RegistrationSuccess: Auth loading:', loading);
       
-      // Wait for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Wait for auth to settle with shorter delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Try to refresh session to get latest state
       if (!loading) {
@@ -47,10 +47,10 @@ const RegistrationSuccess = () => {
   // Auto-redirect authenticated users to dashboard
   useEffect(() => {
     if (!loading && !isChecking && user) {
-      console.log('RegistrationSuccess: User is authenticated, redirecting to dashboard in 3 seconds...');
+      console.log('RegistrationSuccess: User is authenticated, redirecting to dashboard in 2 seconds...');
       const timer = setTimeout(() => {
         navigate('/dashboard');
-      }, 3000);
+      }, 2000);
       
       return () => clearTimeout(timer);
     }
@@ -120,7 +120,7 @@ const RegistrationSuccess = () => {
                 <Alert className="mb-4 border-green-500/20 bg-green-500/10">
                   <CircleCheck className="h-5 w-5 text-green-500" />
                   <AlertDescription className="text-sm text-green-400">
-                    Account verified and ready! Redirecting to dashboard in 3 seconds...
+                    Account verified and ready! Redirecting to dashboard in 2 seconds...
                   </AlertDescription>
                 </Alert>
                 

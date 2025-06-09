@@ -80,15 +80,15 @@ export const registerUser = async (
     console.log('User created successfully:', data.user.id);
     console.log('User metadata sent:', data.user.user_metadata);
 
-    // Give the database trigger more time to complete
+    // Give the database trigger time to complete
     console.log('Waiting for database trigger to create user profile...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Verify that the user profile was created in our database with retries
+    // Verify that the user profile was created in our database
     console.log('Verifying user profile creation...');
     let profileCreated = false;
     let attempts = 0;
-    const maxAttempts = 5;
+    const maxAttempts = 3;
 
     while (!profileCreated && attempts < maxAttempts) {
       try {
@@ -111,16 +111,18 @@ export const registerUser = async (
       }
 
       if (!profileCreated && attempts < maxAttempts - 1) {
-        console.log(`Waiting 2 seconds before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log(`Waiting 1 second before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
       attempts++;
     }
 
     if (!profileCreated) {
-      console.warn('Profile was not created by trigger, but registration was successful');
-      // Don't fail the registration - the profile might be created later or by the useUserProfile hook
+      console.warn('Profile was not created by trigger within expected time, but registration was successful');
+      // Don't fail the registration - the profile should be available via the useUserProfile fallback
+    } else {
+      console.log('Profile creation confirmed!');
     }
 
     // Determine if email confirmation is needed

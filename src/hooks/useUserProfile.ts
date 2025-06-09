@@ -28,9 +28,9 @@ export const useUserProfile = () => {
 
         console.log("useUserProfile: Fetching profile for user ID:", user.id);
 
-        // Try to fetch the profile with retries for new users
+        // Try to fetch the profile with a shorter retry mechanism
         let attempts = 0;
-        const maxAttempts = 5;
+        const maxAttempts = 3;
         let profileData = null;
 
         while (attempts < maxAttempts && !profileData) {
@@ -53,8 +53,8 @@ export const useUserProfile = () => {
 
           // If no data found and this is not the last attempt, wait and retry
           if (attempts < maxAttempts - 1) {
-            console.log(`useUserProfile: Profile not found, retrying in 2 seconds... (attempt ${attempts + 1}/${maxAttempts})`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            console.log(`useUserProfile: Profile not found, retrying in 1 second... (attempt ${attempts + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
 
           attempts++;
@@ -80,8 +80,8 @@ export const useUserProfile = () => {
           };
           setProfile(userProfile);
           
-          // Log this situation for debugging
-          console.warn("useUserProfile: Using fallback profile - database trigger may not have fired");
+          // The trigger should have created the profile, but if it didn't, log it for debugging
+          console.warn("useUserProfile: Using fallback profile - database trigger may not have completed yet");
         }
       } catch (err: any) {
         console.error("useUserProfile: Unexpected profile fetch error:", err);
