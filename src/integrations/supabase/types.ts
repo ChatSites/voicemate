@@ -87,26 +87,26 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
-          email: string | null
+          email: string
           id: string
-          name: string | null
-          pulse_id: string | null
+          name: string
+          pulse_id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          email?: string | null
-          id?: string
-          name?: string | null
-          pulse_id?: string | null
+          email: string
+          id: string
+          name: string
+          pulse_id: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          email?: string | null
+          email?: string
           id?: string
-          name?: string | null
-          pulse_id?: string | null
+          name?: string
+          pulse_id?: string
           updated_at?: string | null
         }
         Relationships: []
