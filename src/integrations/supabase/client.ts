@@ -66,7 +66,6 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 
 /**
  * Check if a PulseID is already taken by another user
- * Now includes a more comprehensive check that accounts for auth system users
  */
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
@@ -99,6 +98,8 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     if (publicError) {
       console.error('Supabase: Error checking public users table:', publicError);
       errorReporter.reportError(publicError, 'pulse-id-check-public');
+      // On error, be conservative and assume not taken so user can attempt registration
+      return false;
     } else {
       console.log(`Supabase: Public users table check returned:`, publicUsers);
       console.log(`Supabase: Found ${publicUsers?.length || 0} matches in public.users`);
@@ -110,33 +111,13 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       return true;
     }
     
-    // If no matches in public table, let's also check if there are any auth users
-    // that might have this PulseID in their metadata but haven't been copied to public table yet
-    try {
-      console.log(`Supabase: Checking for auth users with similar metadata...`);
-      
-      // Try to sign up with a test to see if the email/pulseId combination would conflict
-      // This is a more reliable way to check if something is already taken in the auth system
-      const testEmail = `test-${normalizedPulseId}-${Date.now()}@example.com`;
-      
-      // First, let's check if we can find any indication this PulseID might be taken
-      // by attempting a registration with it (we'll cancel it immediately)
-      console.log(`Supabase: PulseID appears available in public table, marking as available`);
-      
-      return false;
-      
-    } catch (authError) {
-      console.error('Supabase: Error during auth check:', authError);
-      // If there's an error with auth checks, be conservative and assume not taken
-      // since the public table check was clean
-      return false;
-    }
+    console.log(`Supabase: PulseID '${normalizedPulseId}' appears to be available`);
+    return false;
     
   } catch (error) {
     console.error('Supabase: Unexpected error checking PulseID:', error);
     errorReporter.reportError(error as Error, 'pulse-id-check-unexpected');
-    // On unexpected errors, assume not taken if we got this far
-    // since the user should be able to attempt registration
+    // On unexpected errors, assume not taken so user can attempt registration
     return false;
   }
 };

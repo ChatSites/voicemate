@@ -27,7 +27,7 @@ export const useUserProfile = () => {
 
         console.log("Fetching profile for user ID:", user.id);
 
-        // Only select columns that exist in the users table
+        // Select from the recreated users table
         const { data, error: profileError } = await supabase
           .from('users')
           .select('id, name, pulse_id')
@@ -41,14 +41,13 @@ export const useUserProfile = () => {
           console.log("Profile data received:", data);
           const userProfile: UserProfile = {
             id: data.id,
-            // Use user metadata if available, otherwise fall back to profile data
-            name: user.user_metadata?.full_name ?? data.name ?? null,
+            name: data.name ?? user.user_metadata?.full_name ?? null,
             pulse_id: data.pulse_id ?? null,
           };
           setProfile(userProfile);
         } else {
-          console.log("No profile data found for user");
-          // Handle case where user exists in auth but not in users table
+          console.log("No profile data found for user, creating from metadata");
+          // Handle case where user exists in auth but not in users table yet
           const userProfile: UserProfile = {
             id: user.id,
             name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? null,

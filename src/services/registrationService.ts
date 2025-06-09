@@ -79,8 +79,8 @@ export const registerUser = async (
 
     console.log('User created successfully:', data.user.id);
 
-    // Wait a bit longer for the improved trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait a bit for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Check if the user profile was created in our database
     console.log('Checking if user profile was created...');
@@ -91,12 +91,10 @@ export const registerUser = async (
         .eq('id', data.user.id)
         .single();
       
-      if (profileError && !profileError.message.includes('Row not found')) {
-        console.error('Profile check error:', profileError);
+      if (profileError) {
+        console.log('Profile check error (may be normal for email confirmation):', profileError);
       } else if (userProfile) {
         console.log('User profile created successfully:', userProfile);
-      } else {
-        console.log('User profile not yet created - this may be normal for email confirmation flow');
       }
     } catch (profileCheckError) {
       console.log('Profile check failed, but continuing with registration...');
