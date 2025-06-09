@@ -17,12 +17,15 @@ const RegistrationSuccess = () => {
   useEffect(() => {
     const checkStatus = async () => {
       console.log('RegistrationSuccess: Checking authentication status...');
+      console.log('RegistrationSuccess: Current user:', user ? `ID: ${user.id}` : 'None');
+      console.log('RegistrationSuccess: Auth loading:', loading);
       
       // Wait for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Try to refresh session to get latest state
       if (!loading) {
+        console.log('RegistrationSuccess: Refreshing session...');
         await refreshSession();
       }
       
@@ -30,6 +33,9 @@ const RegistrationSuccess = () => {
       if (!user && !loading) {
         console.log('RegistrationSuccess: No authenticated user found, email confirmation likely required');
         setEmailConfirmationRequired(true);
+      } else if (user) {
+        console.log('RegistrationSuccess: User is authenticated:', user.id);
+        console.log('RegistrationSuccess: User metadata:', user.user_metadata);
       }
       
       setIsChecking(false);
@@ -41,7 +47,7 @@ const RegistrationSuccess = () => {
   // Auto-redirect authenticated users to dashboard
   useEffect(() => {
     if (!loading && !isChecking && user) {
-      console.log('RegistrationSuccess: User is authenticated, redirecting to dashboard...');
+      console.log('RegistrationSuccess: User is authenticated, redirecting to dashboard in 3 seconds...');
       const timer = setTimeout(() => {
         navigate('/dashboard');
       }, 3000);
@@ -114,9 +120,15 @@ const RegistrationSuccess = () => {
                 <Alert className="mb-4 border-green-500/20 bg-green-500/10">
                   <CircleCheck className="h-5 w-5 text-green-500" />
                   <AlertDescription className="text-sm text-green-400">
-                    Account verified and ready! Redirecting to dashboard...
+                    Account verified and ready! Redirecting to dashboard in 3 seconds...
                   </AlertDescription>
                 </Alert>
+                
+                <div className="text-sm text-gray-400 mb-4">
+                  <p className="mb-2">✓ Registration complete</p>
+                  <p className="mb-2">✓ Profile created</p>
+                  <p>✓ Ready to start using VoiceMate</p>
+                </div>
               </div>
             ) : emailConfirmationRequired ? (
               <div className="text-center mb-6 w-full">
@@ -138,7 +150,7 @@ const RegistrationSuccess = () => {
                 <Alert className="mb-4 border-yellow-500/20 bg-yellow-500/10">
                   <AlertCircle className="h-5 w-5 text-yellow-500" />
                   <AlertDescription className="text-sm text-yellow-400">
-                    Registration in progress. If you don't receive an email within a few minutes, try signing in directly.
+                    Registration processing. If you don't receive an email within a few minutes, try signing in directly.
                   </AlertDescription>
                 </Alert>
               </div>

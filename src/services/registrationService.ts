@@ -31,7 +31,7 @@ export const registerUser = async (
     });
 
     console.log('Supabase signUp response:', { 
-      user: data.user ? 'created' : 'none', 
+      user: data.user ? `created with ID: ${data.user.id}` : 'none', 
       session: data.session ? 'active' : 'none',
       error: error?.message 
     });
@@ -78,31 +78,49 @@ export const registerUser = async (
     }
 
     console.log('User created successfully:', data.user.id);
+    console.log('User metadata sent:', data.user.user_metadata);
 
-    // Wait a bit longer for the trigger to complete and create the profile
+    // Give the database trigger more time to complete
     console.log('Waiting for database trigger to create user profile...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Verify that the user profile was created in our database
+    // Verify that the user profile was created in our database with retries
     console.log('Verifying user profile creation...');
-    try {
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .maybeSingle();
-      
-      if (profileError) {
-        console.log('Profile verification error:', profileError);
-        // Don't fail registration if profile check fails
-      } else if (userProfile) {
-        console.log('User profile verified successfully:', userProfile);
-      } else {
-        console.log('User profile not found yet, but registration was successful');
-        // The trigger might still be processing, this is okay
+    let profileCreated = false;
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (!profileCreated && attempts < maxAttempts) {
+      try {
+        const { data: userProfile, error: profileError } = await supabase
+          .from('users')
+          .select('id, name, pulse_id, email, created_at')
+          .eq('id', data.user.id)
+          .maybeSingle();
+        
+        if (profileError) {
+          console.log(`Profile verification attempt ${attempts + 1} error:`, profileError);
+        } else if (userProfile) {
+          console.log('User profile verified successfully:', userProfile);
+          profileCreated = true;
+        } else {
+          console.log(`Profile verification attempt ${attempts + 1}: Profile not found yet`);
+        }
+      } catch (profileCheckError) {
+        console.log(`Profile verification attempt ${attempts + 1} exception:`, profileCheckError);
       }
-    } catch (profileCheckError) {
-      console.log('Profile verification failed, but continuing with registration...', profileCheckError);
+
+      if (!profileCreated && attempts < maxAttempts - 1) {
+        console.log(`Waiting 2 seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      attempts++;
+    }
+
+    if (!profileCreated) {
+      console.warn('Profile was not created by trigger, but registration was successful');
+      // Don't fail the registration - the profile might be created later or by the useUserProfile hook
     }
 
     // Determine if email confirmation is needed
@@ -118,7 +136,8 @@ export const registerUser = async (
       success: true,
       user: data.user,
       session: data.session,
-      emailConfirmNeeded: needsEmailConfirmation
+      emailConfirmNeeded: needsEmailConfirmation,
+      profileCreated
     };
 
   } catch (error: any) {

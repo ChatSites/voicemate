@@ -21,16 +21,16 @@ export const useUserProfile = () => {
     const fetchProfile = async () => {
       try {
         if (!user?.id) {
-          console.log("No user ID available for profile fetch");
+          console.log("useUserProfile: No user ID available for profile fetch");
           setLoading(false);
           return;
         }
 
-        console.log("Fetching profile for user ID:", user.id);
+        console.log("useUserProfile: Fetching profile for user ID:", user.id);
 
         // Try to fetch the profile with retries for new users
         let attempts = 0;
-        const maxAttempts = 3;
+        const maxAttempts = 5;
         let profileData = null;
 
         while (attempts < maxAttempts && !profileData) {
@@ -41,7 +41,7 @@ export const useUserProfile = () => {
             .maybeSingle();
 
           if (profileError) {
-            console.error("Profile fetch error:", profileError);
+            console.error("useUserProfile: Profile fetch error:", profileError);
             setError(profileError.message);
             break;
           }
@@ -53,15 +53,15 @@ export const useUserProfile = () => {
 
           // If no data found and this is not the last attempt, wait and retry
           if (attempts < maxAttempts - 1) {
-            console.log(`Profile not found, retrying in 1 second... (attempt ${attempts + 1}/${maxAttempts})`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`useUserProfile: Profile not found, retrying in 2 seconds... (attempt ${attempts + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
 
           attempts++;
         }
 
         if (profileData) {
-          console.log("Profile data received:", profileData);
+          console.log("useUserProfile: Profile data received:", profileData);
           const userProfile: UserProfile = {
             id: profileData.id,
             name: profileData.name ?? user.user_metadata?.full_name ?? null,
@@ -70,7 +70,7 @@ export const useUserProfile = () => {
           };
           setProfile(userProfile);
         } else {
-          console.log("No profile data found after retries, creating fallback from auth metadata");
+          console.log("useUserProfile: No profile data found after retries, creating fallback from auth metadata");
           // Create a fallback profile from auth metadata if database profile doesn't exist yet
           const userProfile: UserProfile = {
             id: user.id,
@@ -79,9 +79,12 @@ export const useUserProfile = () => {
             email: user.email ?? null,
           };
           setProfile(userProfile);
+          
+          // Log this situation for debugging
+          console.warn("useUserProfile: Using fallback profile - database trigger may not have fired");
         }
       } catch (err: any) {
-        console.error("Unexpected profile fetch error:", err);
+        console.error("useUserProfile: Unexpected profile fetch error:", err);
         setError(err?.message || "Failed to fetch user profile");
       } finally {
         setLoading(false);
