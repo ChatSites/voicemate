@@ -3,24 +3,44 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Mail, Loader2, Home } from 'lucide-react';
+import { Check, Mail, Loader2, Home, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { supabase } from '@/integrations/supabase/client';
 
 const RegistrationSuccess = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { profile, loading: profileLoading, error: profileError } = useUserProfile();
   const [countdown, setCountdown] = useState(10);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     document.title = 'Registration Successful | VoiceMate';
   }, []);
 
+  // Debug: Check user and profile information
+  useEffect(() => {
+    if (user) {
+      console.log('RegistrationSuccess: User data:', {
+        id: user.id,
+        email: user.email,
+        confirmed_at: user.email_confirmed_at,
+        metadata: user.user_metadata
+      });
+      
+      setDebugInfo({
+        userId: user.id,
+        email: user.email,
+        confirmed: !!user.email_confirmed_at,
+        metadata: user.user_metadata
+      });
+    }
+  }, [user]);
+
   // Redirect countdown
   useEffect(() => {
     if (!user) {
-      // If no user, redirect to auth page immediately
       navigate('/auth');
       return;
     }
@@ -44,6 +64,19 @@ const RegistrationSuccess = () => {
 
   const handleGoToAuth = () => {
     navigate('/auth');
+  };
+
+  const handleCheckProfile = async () => {
+    if (user) {
+      console.log('Manually checking profile for user:', user.id);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      console.log('Manual profile check result:', { data, error });
+    }
   };
 
   if (!user) {
@@ -105,14 +138,47 @@ const RegistrationSuccess = () => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 space-y-2">
                   <div className="flex items-center justify-center space-x-2 text-yellow-500">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-sm">Profile not created yet</span>
+                  </div>
+                  {profileError && (
+                    <p className="text-xs text-red-400">Error: {profileError}</p>
+                  )}
+                  <Button 
+                    onClick={handleCheckProfile}
+                    variant="outline" 
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Check Profile Again
+                  </Button>
+                </div>
+              )}
+
+              {!user.email_confirmed_at && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-center justify-center space-x-2 text-blue-400">
                     <Mail className="w-4 h-4" />
-                    <span className="text-sm">Profile setup in progress...</span>
+                    <span className="text-sm">Please check your email for verification</span>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Debug information */}
+            {debugInfo && (
+              <div className="bg-gray-800/50 rounded-lg p-3 text-left">
+                <p className="text-xs text-gray-400 mb-2">Debug Info:</p>
+                <div className="text-xs space-y-1">
+                  <p>User ID: {debugInfo.userId}</p>
+                  <p>Email: {debugInfo.email}</p>
+                  <p>Confirmed: {debugInfo.confirmed ? 'Yes' : 'No'}</p>
+                  <p>PulseID: {debugInfo.metadata?.pulse_id || 'Not set'}</p>
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-gray-700 pt-6 space-y-4">
               <p className="text-sm text-gray-400">

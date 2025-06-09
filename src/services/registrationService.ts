@@ -30,7 +30,6 @@ export const registerUser = async (
     
     if (pulseIdTaken) {
       console.log('Registration service: PulseID is taken');
-      // Generate suggestions
       const suggestions = generatePulseIdSuggestions(pulseId);
       return {
         success: false,
@@ -60,13 +59,13 @@ export const registerUser = async (
     console.log('Registration service: Supabase response received', {
       hasUser: !!data.user,
       hasSession: !!data.session,
+      userConfirmed: data.user?.email_confirmed_at ? 'confirmed' : 'unconfirmed',
       error: error?.message
     });
 
     if (error) {
       console.error('Registration service: Supabase error:', error);
       
-      // Handle specific error cases
       if (error.message.includes('already registered') || error.message.includes('already exists')) {
         return {
           success: false,
@@ -94,13 +93,37 @@ export const registerUser = async (
       };
     }
 
-    console.log('Registration service: User created successfully');
+    console.log('Registration service: User created successfully, checking profile creation...');
+    
+    // Check if the profile was created by the trigger
+    const checkProfile = async () => {
+      console.log('Checking if profile was created for user:', data.user.id);
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error('Error checking profile:', profileError);
+      } else if (profile) {
+        console.log('Profile found:', profile);
+      } else {
+        console.log('No profile found - trigger may not have executed');
+      }
+    };
+
+    // Check profile immediately and after a short delay
+    await checkProfile();
+    setTimeout(checkProfile, 2000);
     
     // Clear PulseID caches since we've successfully registered
     clearAllPulseIdCaches();
 
     // Check if email confirmation is needed
-    const emailConfirmNeeded = !data.session;
+    const emailConfirmNeeded = !data.session && !data.user.email_confirmed_at;
+    
+    console.log('Registration service: Email confirmation needed?', emailConfirmNeeded);
 
     return {
       success: true,
@@ -135,5 +158,5 @@ const generatePulseIdSuggestions = (originalPulseId: string): string[] => {
     suggestions.push(`${base}${suffix}`);
   });
   
-  return suggestions.slice(0, 5); // Return top 5 suggestions
+  return suggestions.slice(0, 5);
 };
