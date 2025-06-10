@@ -68,17 +68,17 @@ export default function Navbar() {
           </a>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#how-it-works" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+            <a href="/how-it-works" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
               How It Works
             </a>
-            <a href="#use-cases" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+            <a href="/use-cases" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
               Use Cases
             </a>
 
             {user ? (
               <>
                 <a href="/dashboard" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Dashboard</a>
-                <a href="/create" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Send Pulse</a>
+                <a href="/send-pulse" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Send Pulse</a>
                 <a href="/inbox" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Inbox</a>
                 {profile?.name && (
                   <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} italic`}>{profile.name}</span>
@@ -140,7 +140,7 @@ export default function Navbar() {
               <a href="/dashboard" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Dashboard
               </a>
-              <a href="/create" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+              <a href="/send-pulse" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Send Pulse
               </a>
               <a href="/inbox" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
@@ -160,6 +160,12 @@ export default function Navbar() {
             </>
           ) : (
             <>
+              <a href="/how-it-works" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+                How It Works
+              </a>
+              <a href="/use-cases" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+                Use Cases
+              </a>
               <a href="/reserve" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Reserve PulseID
               </a>

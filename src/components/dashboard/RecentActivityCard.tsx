@@ -27,7 +27,7 @@ const RecentActivityCard: React.FC = () => {
             </p>
             <Button 
               className="mt-4 bg-voicemate-purple hover:bg-purple-700"
-              onClick={() => navigate('/create')}
+              onClick={() => navigate('/send-pulse')}
             >
               Create Your First Pulse
             </Button>

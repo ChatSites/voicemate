@@ -31,7 +31,7 @@ const SendPulseCard: React.FC = () => {
         <CardFooter>
           <Button 
             className="bg-voicemate-red hover:bg-red-600 text-white w-full hover:text-white"
-            onClick={() => navigate('/create')}
+            onClick={() => navigate('/send-pulse')}
           >
             Create New Pulse
           </Button>
