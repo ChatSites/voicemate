@@ -77,7 +77,7 @@ const router = createBrowserRouter([
     element: <HowItWorks />,
   },
   {
-    path: "/how-it-works-profile",
+    path: "/profile/how-it-works",
     element: <HowItWorksProfile />,
   },
   {
