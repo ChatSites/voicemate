@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RefreshCw, User, AlertTriangle, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -110,7 +111,7 @@ const UserTable: React.FC = () => {
         Unconfirmed Email
       </Badge>;
     }
-    return <Badge variant="default" className="flex items-center gap-1">
+    return <Badge variant="default" className="flex items-center gap-1 bg-green-600">
       <CheckCircle className="w-3 h-3" />
       Complete
     </Badge>;
@@ -149,54 +150,52 @@ const UserTable: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-2">Status</th>
-                <th className="text-left py-2 px-2">Email</th>
-                <th className="text-left py-2 px-2">Name</th>
-                <th className="text-left py-2 px-2">Pulse ID</th>
-                <th className="text-left py-2 px-2">Registered</th>
-                <th className="text-left py-2 px-2">Email Confirmed</th>
-                <th className="text-left py-2 px-2">Profile Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-b hover:bg-muted/50">
-                  <td className="py-2 px-2">
-                    {getStatusBadge(user)}
-                  </td>
-                  <td className="py-2 px-2 font-mono text-sm">
-                    {user.email}
-                  </td>
-                  <td className="py-2 px-2">
-                    {user.profile_name || user.full_name || '-'}
-                  </td>
-                  <td className="py-2 px-2 font-mono text-sm">
-                    {user.profile_pulse_id || user.pulse_id || '-'}
-                  </td>
-                  <td className="py-2 px-2 text-sm">
-                    {formatDate(user.auth_created_at)}
-                  </td>
-                  <td className="py-2 px-2 text-sm">
-                    {formatDate(user.email_confirmed_at)}
-                  </td>
-                  <td className="py-2 px-2 text-sm">
-                    {user.profile_exists ? formatDate(user.profile_created_at) : 'Missing'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {users.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No users found
-            </div>
-          )}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Status</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Pulse ID</TableHead>
+              <TableHead>Registered</TableHead>
+              <TableHead>Email Confirmed</TableHead>
+              <TableHead>Profile Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>
+                  {getStatusBadge(user)}
+                </TableCell>
+                <TableCell className="font-mono text-sm">
+                  {user.email}
+                </TableCell>
+                <TableCell>
+                  {user.profile_name || user.full_name || '-'}
+                </TableCell>
+                <TableCell className="font-mono text-sm">
+                  {user.profile_pulse_id || user.pulse_id || '-'}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {formatDate(user.auth_created_at)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {formatDate(user.email_confirmed_at)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {user.profile_exists ? formatDate(user.profile_created_at) : 'Missing'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+        {users.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            No users found
+          </div>
+        )}
         
         {/* Summary Statistics */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
