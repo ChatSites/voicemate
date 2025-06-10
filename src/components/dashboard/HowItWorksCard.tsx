@@ -30,7 +30,7 @@ const HowItWorksCard: React.FC = () => {
           </p>
 
           <Button 
-            onClick={() => navigate('/how-it-works-profile')}
+            onClick={() => navigate('/profile/how-it-works')}
             className="w-full bg-blue-500 hover:bg-blue-600"
             size="sm"
           >
