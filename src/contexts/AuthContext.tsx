@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, cleanupAuthState } from '@/integrations/supabase/client';
 import { toast } from "@/hooks/use-toast";
@@ -26,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isInitializing = useRef(true);
 
   // Function to refresh the session state
   const refreshSession = async () => {
@@ -99,7 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(currentSession?.user ?? null);
             setLoading(false);
             
-            if (event === 'SIGNED_IN' && currentSession?.user) {
+            // Only show success toast for actual sign-in events, not during initialization or session restoration
+            if (event === 'SIGNED_IN' && currentSession?.user && !isInitializing.current) {
               console.log('User signed in successfully');
               toast({
                 title: "Signed in successfully",
@@ -121,6 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(data.session);
           setUser(data.session?.user ?? null);
           setLoading(false);
+          // Mark initialization as complete after checking for existing session
+          isInitializing.current = false;
         }
 
         return () => {
@@ -130,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error in auth setup:', err);
         if (mounted) {
           setLoading(false);
+          isInitializing.current = false;
         }
       }
     };
