@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
@@ -5,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { Menu, X, User, Send, Inbox, BarChart3 } from 'lucide-react';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = React.useState(false);
@@ -36,6 +38,14 @@ export default function Navbar() {
     window.location.href = '/auth';
   }, []);
 
+  // Simplified navigation items for authenticated users
+  const authNavItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { href: '/send-pulse', label: 'Send', icon: Send },
+    { href: '/inbox', label: 'Inbox', icon: Inbox },
+    { href: '/profile', label: 'Profile', icon: User },
+  ];
+
   return (
     <>
       <header 
@@ -66,51 +76,66 @@ export default function Navbar() {
             )}
           </a>
 
-          <nav className="hidden md:flex items-center space-x-8">
-            <a href="/how-it-works" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-              How It Works
-            </a>
-            <a href="/use-cases" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-              Use Cases
-            </a>
-
-            {user ? (
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            {!user ? (
               <>
-                <a href="/dashboard" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Dashboard</a>
-                <a href="/send-pulse" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Send Pulse</a>
-                <a href="/inbox" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Inbox</a>
-                <a href="/profile" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Profile</a>
-                {profile?.name && (
-                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} italic`}>{profile.name}</span>
-                )}
-                <ThemeToggle />
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  className="bg-voicemate-red hover:bg-red-500 transition-colors"
-                  onClick={signOut}
-                >
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
+                <a href="/how-it-works" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+                  How It Works
+                </a>
+                <a href="/use-cases" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+                  Use Cases
+                </a>
                 <a href="/reserve" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                   Reserve PulseID
                 </a>
-                <ThemeToggle />
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  className="bg-voicemate-red hover:bg-red-500 transition-colors"
-                  onClick={handleNavigateToAuth}
-                >
-                  Login / Claim ID
-                </Button>
               </>
+            ) : (
+              <>
+                {authNavItems.map((item) => (
+                  <a 
+                    key={item.href}
+                    href={item.href} 
+                    className={`text-sm flex items-center gap-2 ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors ${
+                      location.pathname === item.href ? 'text-voicemate-purple' : ''
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </a>
+                ))}
+                {profile?.name && (
+                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} italic hidden lg:block`}>
+                    {profile.name}
+                  </span>
+                )}
+              </>
+            )}
+
+            <ThemeToggle />
+            
+            {user ? (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="bg-voicemate-red hover:bg-red-500 transition-colors"
+                onClick={signOut}
+              >
+                Logout
+              </Button>
+            ) : (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="bg-voicemate-red hover:bg-red-500 transition-colors"
+                onClick={handleNavigateToAuth}
+              >
+                Login / Claim ID
+              </Button>
             )}
           </nav>
 
+          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-4">
             <ThemeToggle />
             <Button 
@@ -119,69 +144,71 @@ export default function Navbar() {
               className={isDark ? "border-gray-700" : "border-gray-300"}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" x2="20" y1="12" y2="12" />
-                <line x1="4" x2="20" y1="6" y2="6" />
-                <line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
           </div>
         </div>
       </header>
 
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className={`md:hidden ${isDark ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} border-t px-4 py-6 space-y-4 transition-all duration-300 ease-in-out`}>
-          {user ? (
-            <>
-              <div className={isDark ? "text-white text-sm" : "text-gray-900 text-sm"}>
-                <span className="block font-semibold">@{profile?.pulse_id || 'loading'}</span>
-                <span className="block text-muted-foreground">{profile?.name}</span>
-              </div>
-              <a href="/dashboard" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-                Dashboard
-              </a>
-              <a href="/send-pulse" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-                Send Pulse
-              </a>
-              <a href="/inbox" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-                Inbox
-              </a>
-              <a href="/profile" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-                Profile
-              </a>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                className="w-full bg-voicemate-red hover:bg-red-500 transition-colors"
-                onClick={() => {
-                  signOut();
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Logout
-              </Button>
-            </>
-          ) : (
-            <>
-              <a href="/how-it-works" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-                How It Works
-              </a>
-              <a href="/use-cases" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-                Use Cases
-              </a>
-              <a href="/reserve" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
-                Reserve PulseID
-              </a>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                className="w-full bg-voicemate-red hover:bg-red-500 transition-colors"
-                onClick={handleNavigateToAuth}
-              >
-                Login / Claim ID
-              </Button>
-            </>
-          )}
+        <div className={`md:hidden fixed top-20 left-0 right-0 z-40 ${isDark ? 'bg-black/95 border-gray-800' : 'bg-white/95 border-gray-200'} border-t backdrop-blur-md`}>
+          <div className="container mx-auto px-4 py-6 space-y-4">
+            {user ? (
+              <>
+                <div className={`${isDark ? "text-white" : "text-gray-900"} pb-4 border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                  <span className="block font-semibold text-voicemate-purple">@{profile?.pulse_id || 'loading'}</span>
+                  <span className="block text-sm text-muted-foreground">{profile?.name}</span>
+                </div>
+                
+                {authNavItems.map((item) => (
+                  <a 
+                    key={item.href}
+                    href={item.href} 
+                    onClick={() => setMobileMenuOpen(false)} 
+                    className={`flex items-center gap-3 text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors py-2 ${
+                      location.pathname === item.href ? 'text-voicemate-purple' : ''
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </a>
+                ))}
+                
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="w-full bg-voicemate-red hover:bg-red-500 transition-colors mt-4"
+                  onClick={() => {
+                    signOut();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <a href="/how-it-works" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors py-2`}>
+                  How It Works
+                </a>
+                <a href="/use-cases" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors py-2`}>
+                  Use Cases
+                </a>
+                <a href="/reserve" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors py-2`}>
+                  Reserve PulseID
+                </a>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="w-full bg-voicemate-red hover:bg-red-500 transition-colors mt-4"
+                  onClick={handleNavigateToAuth}
+                >
+                  Login / Claim ID
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </>

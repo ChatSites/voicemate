@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import DashboardCards from '@/components/dashboard/DashboardCards';
+import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import DashboardLoading from '@/components/dashboard/DashboardLoading';
 import DashboardError from '@/components/dashboard/DashboardError';
 import Footer from '@/components/Footer';
@@ -63,9 +63,9 @@ export default function Dashboard() {
       />
       <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
         <Navbar />
-        <div className="container mx-auto px-4 pt-24 pb-12">
+        <div className="container mx-auto px-4 pt-24 pb-12 max-w-6xl">
           <DashboardHeader displayName={displayName} displayPulseId={displayPulseId} />
-          <DashboardCards />
+          <DashboardOverview />
         </div>
         <Footer />
       </div>
