@@ -115,21 +115,25 @@ export const useRegistrationHandler = (
       
       if (result.emailConfirmNeeded) {
         toast({
-          title: "Registration successful",
-          description: "Please check your email to verify your account before signing in.",
+          title: "Registration successful!",
+          description: "Please check your email and click the verification link to complete your registration.",
         });
+        
+        // Navigate to success page which will show email confirmation instructions
+        setTimeout(() => {
+          navigate('/registration-success');
+        }, 1000);
       } else {
         toast({
-          title: "Registration successful",
-          description: "Welcome to VoiceMate! Your profile is being set up...",
+          title: "Registration successful!",
+          description: "Welcome to VoiceMate! Your account is ready.",
         });
+        
+        // Navigate to dashboard if already confirmed
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       }
-      
-      // Navigate to success page
-      console.log('Navigating to registration success page...');
-      setTimeout(() => {
-        navigate('/registration-success');
-      }, 1000);
       
     } catch (error: any) {
       console.error('=== REGISTRATION HANDLER EXCEPTION ===', error);

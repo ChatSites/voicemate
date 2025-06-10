@@ -93,35 +93,13 @@ export const registerUser = async (
       };
     }
 
-    console.log('Registration service: User created successfully, checking profile creation...');
-    
-    // Check if the profile was created by the trigger
-    const checkProfile = async () => {
-      console.log('Checking if profile was created for user:', data.user.id);
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .maybeSingle();
-      
-      if (profileError) {
-        console.error('Error checking profile:', profileError);
-      } else if (profile) {
-        console.log('Profile found:', profile);
-      } else {
-        console.log('No profile found - trigger may not have executed');
-      }
-    };
-
-    // Check profile immediately and after a short delay
-    await checkProfile();
-    setTimeout(checkProfile, 2000);
+    console.log('Registration service: User created successfully');
     
     // Clear PulseID caches since we've successfully registered
     clearAllPulseIdCaches();
 
-    // Check if email confirmation is needed
-    const emailConfirmNeeded = !data.session && !data.user.email_confirmed_at;
+    // Check if email confirmation is needed (this is the normal flow)
+    const emailConfirmNeeded = !data.user.email_confirmed_at;
     
     console.log('Registration service: Email confirmation needed?', emailConfirmNeeded);
 
