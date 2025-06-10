@@ -67,7 +67,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ activeTab, onTabChange 
           <Button
             variant="ghost"
             className="w-full justify-start px-3 py-2 h-auto text-muted-foreground hover:text-white hover:bg-gray-800"
-            onClick={() => navigate('/profile/how-it-works')}
+            onClick={() => navigate('/how-it-works')}
           >
             <BookOpen className="w-4 h-4 mr-3" />
             <span className="text-sm font-medium">How It Works</span>
