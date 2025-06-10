@@ -29,6 +29,7 @@ const Terms = lazy(() => import('@/pages/Terms'));
 const RegistrationSuccess = lazy(() => import('@/pages/RegistrationSuccess'));
 const HowItWorks = lazy(() => import('@/pages/HowItWorks'));
 const UseCases = lazy(() => import('@/pages/UseCases'));
+const Profile = lazy(() => import('@/pages/Profile'));
 
 // Create a client for React Query with error handling
 const queryClient = new QueryClient({
@@ -129,6 +130,11 @@ function App() {
                   <Route path="/send-pulse" element={
                     <LazyLoadWrapper>
                       <SendPulse />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/profile" element={
+                    <LazyLoadWrapper>
+                      <Profile />
                     </LazyLoadWrapper>
                   } />
                   <Route path="/pulse/:id" element={

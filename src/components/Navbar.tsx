@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
@@ -80,6 +79,7 @@ export default function Navbar() {
                 <a href="/dashboard" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Dashboard</a>
                 <a href="/send-pulse" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Send Pulse</a>
                 <a href="/inbox" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Inbox</a>
+                <a href="/profile" className={`text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>Profile</a>
                 {profile?.name && (
                   <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} italic`}>{profile.name}</span>
                 )}
@@ -145,6 +145,9 @@ export default function Navbar() {
               </a>
               <a href="/inbox" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
                 Inbox
+              </a>
+              <a href="/profile" onClick={() => setMobileMenuOpen(false)} className={`block text-sm ${isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-black'} transition-colors`}>
+                Profile
               </a>
               <Button 
                 variant="destructive" 
