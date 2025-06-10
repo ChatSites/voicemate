@@ -21,7 +21,7 @@ export const registerUser = async (
   password: string
 ): Promise<RegistrationResult> => {
   try {
-    console.log('Registration service: Starting registration process');
+    console.log('=== REGISTRATION SERVICE START ===');
     console.log('Registration data:', { fullName, email, pulseId, passwordLength: password.length });
 
     // First, validate that the PulseID is still available
@@ -44,6 +44,7 @@ export const registerUser = async (
     console.log('Registration service: PulseID is available, proceeding with registration');
 
     // Attempt to register the user with Supabase
+    console.log('Registration service: Calling supabase.auth.signUp...');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -59,7 +60,10 @@ export const registerUser = async (
     console.log('Registration service: Supabase response received', {
       hasUser: !!data.user,
       hasSession: !!data.session,
+      userId: data.user?.id,
+      userEmail: data.user?.email,
       userConfirmed: data.user?.email_confirmed_at ? 'confirmed' : 'unconfirmed',
+      userMetadata: data.user?.user_metadata,
       error: error?.message
     });
 
@@ -93,7 +97,7 @@ export const registerUser = async (
       };
     }
 
-    console.log('Registration service: User created successfully');
+    console.log('Registration service: User created successfully with ID:', data.user.id);
     
     // Clear PulseID caches since we've successfully registered
     clearAllPulseIdCaches();
@@ -103,6 +107,48 @@ export const registerUser = async (
     
     console.log('Registration service: Email confirmation needed?', emailConfirmNeeded);
 
+    // Wait a moment for the trigger to potentially run
+    console.log('Registration service: Waiting 2 seconds for database trigger to complete...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Check if profile was created by the trigger
+    console.log('Registration service: Checking if profile was created by trigger...');
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .select('id, name, pulse_id, email')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Registration service: Error checking profile creation:', profileError);
+      } else if (profileData) {
+        console.log('Registration service: Profile successfully created by trigger:', profileData);
+      } else {
+        console.warn('Registration service: Profile not found after trigger should have run');
+        
+        // Try to manually create the profile as fallback
+        console.log('Registration service: Attempting manual profile creation as fallback...');
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            name: fullName,
+            pulse_id: pulseId,
+            email: email
+          });
+
+        if (insertError) {
+          console.error('Registration service: Manual profile creation failed:', insertError);
+        } else {
+          console.log('Registration service: Manual profile creation succeeded');
+        }
+      }
+    } catch (profileCheckError) {
+      console.error('Registration service: Unexpected error during profile check:', profileCheckError);
+    }
+
+    console.log('=== REGISTRATION SERVICE SUCCESS ===');
     return {
       success: true,
       user: data.user,
@@ -111,7 +157,7 @@ export const registerUser = async (
     };
 
   } catch (error: any) {
-    console.error('Registration service: Unexpected error:', error);
+    console.error('=== REGISTRATION SERVICE ERROR ===', error);
     return {
       success: false,
       error: {

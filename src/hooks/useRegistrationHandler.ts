@@ -116,7 +116,7 @@ export const useRegistrationHandler = (
       if (result.emailConfirmNeeded) {
         toast({
           title: "Registration successful!",
-          description: "Please check your email and click the verification link to complete your registration.",
+          description: "Please check your email and click the verification link to complete your registration. Your profile is being set up in the background.",
         });
         
         // Navigate to success page which will show email confirmation instructions
@@ -126,7 +126,7 @@ export const useRegistrationHandler = (
       } else {
         toast({
           title: "Registration successful!",
-          description: "Welcome to VoiceMate! Your account is ready.",
+          description: "Welcome to VoiceMate! Your account is ready and your profile has been created.",
         });
         
         // Navigate to dashboard if already confirmed

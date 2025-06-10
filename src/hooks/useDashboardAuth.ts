@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,11 +31,18 @@ export const useDashboardAuth = () => {
 
   // Add debugging information
   useEffect(() => {
+    console.log("=== DASHBOARD AUTH DEBUG ===");
     console.log("Dashboard auth hook - Auth loading:", authLoading);
-    console.log("Dashboard auth hook - User:", user ? 'authenticated' : 'not authenticated');
+    console.log("Dashboard auth hook - User:", user ? {
+      id: user.id,
+      email: user.email,
+      confirmed: !!user.email_confirmed_at,
+      metadata: user.user_metadata
+    } : 'not authenticated');
     console.log("Dashboard auth hook - Profile loading:", profileLoading);
     console.log("Dashboard auth hook - Profile:", profile);
     console.log("Dashboard auth hook - Profile error:", profileError);
+    console.log("=== END DASHBOARD AUTH DEBUG ===");
   }, [authLoading, user, profileLoading, profile, profileError]);
 
   // Redirect to auth page if not authenticated and not still loading
@@ -100,7 +108,7 @@ export const useDashboardAuth = () => {
         ...prev,
         isProfileLoading: false,
         hasProfileError: true,
-        profileErrorMessage: "There was a problem loading your profile data."
+        profileErrorMessage: "There was a problem loading your profile data. This might be temporary - please try refreshing the page."
       }));
       return;
     }
@@ -109,6 +117,8 @@ export const useDashboardAuth = () => {
       // Default value for username in case profile data is incomplete
       const displayName = profile.name || user.email?.split('@')[0] || 'User';
       const displayPulseId = profile.pulse_id || 'loading...';
+
+      console.log("Profile loaded successfully:", { displayName, displayPulseId });
 
       setState(prev => ({
         ...prev,

@@ -27,13 +27,16 @@ export const useUserProfile = () => {
         }
 
         console.log("useUserProfile: Fetching profile for user ID:", user.id);
+        console.log("useUserProfile: User metadata:", user.user_metadata);
 
-        // Try to fetch the profile with a shorter retry mechanism
+        // Try to fetch the profile with retries for recently registered users
         let attempts = 0;
-        const maxAttempts = 3;
+        const maxAttempts = 5; // Increased attempts for better reliability
         let profileData = null;
 
         while (attempts < maxAttempts && !profileData) {
+          console.log(`useUserProfile: Attempt ${attempts + 1}/${maxAttempts}`);
+          
           const { data, error: profileError } = await supabase
             .from('users')
             .select('id, name, pulse_id, email')
@@ -48,13 +51,15 @@ export const useUserProfile = () => {
 
           if (data) {
             profileData = data;
+            console.log("useUserProfile: Profile found:", data);
             break;
           }
 
           // If no data found and this is not the last attempt, wait and retry
           if (attempts < maxAttempts - 1) {
-            console.log(`useUserProfile: Profile not found, retrying in 1 second... (attempt ${attempts + 1}/${maxAttempts})`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const waitTime = Math.min(1000 * Math.pow(2, attempts), 5000); // Exponential backoff up to 5 seconds
+            console.log(`useUserProfile: Profile not found, retrying in ${waitTime}ms... (attempt ${attempts + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
           }
 
           attempts++;
@@ -80,8 +85,37 @@ export const useUserProfile = () => {
           };
           setProfile(userProfile);
           
-          // The trigger should have created the profile, but if it didn't, log it for debugging
+          // Log detailed debugging information
           console.warn("useUserProfile: Using fallback profile - database trigger may not have completed yet");
+          console.warn("useUserProfile: User created at:", user.created_at);
+          console.warn("useUserProfile: Current time:", new Date().toISOString());
+          
+          // Try to manually create the profile if we have the required data
+          if (user.user_metadata?.full_name && user.user_metadata?.pulse_id) {
+            console.log("useUserProfile: Attempting to manually create missing profile...");
+            try {
+              const { error: insertError } = await supabase
+                .from('users')
+                .insert({
+                  id: user.id,
+                  name: user.user_metadata.full_name,
+                  pulse_id: user.user_metadata.pulse_id,
+                  email: user.email
+                });
+
+              if (insertError) {
+                console.error("useUserProfile: Manual profile creation failed:", insertError);
+              } else {
+                console.log("useUserProfile: Manual profile creation succeeded, refetching...");
+                // Refetch the profile after manual creation
+                setTimeout(() => {
+                  fetchProfile();
+                }, 1000);
+              }
+            } catch (manualCreateError) {
+              console.error("useUserProfile: Error during manual profile creation:", manualCreateError);
+            }
+          }
         }
       } catch (err: any) {
         console.error("useUserProfile: Unexpected profile fetch error:", err);
