@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Send, Inbox, User, TrendingUp } from 'lucide-react';
+import { Send, Inbox, User, TrendingUp, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,14 @@ const DashboardOverview: React.FC = () => {
       action: () => navigate('/inbox'),
       color: 'bg-voicemate-purple',
       hoverColor: 'hover:bg-purple-700'
+    },
+    {
+      title: 'How It Works',
+      description: 'Learn how to use VoiceMate',
+      icon: BookOpen,
+      action: () => navigate('/profile/how-it-works'),
+      color: 'bg-blue-600',
+      hoverColor: 'hover:bg-blue-700'
     },
     {
       title: 'Profile Settings',
@@ -51,7 +59,7 @@ const DashboardOverview: React.FC = () => {
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, index) => (
             <motion.div
               key={action.title}

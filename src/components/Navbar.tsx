@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useTheme } from '@/components/providers/ThemeProvider';
-import { Menu, X, User, Send, Inbox, BarChart3 } from 'lucide-react';
+import { Menu, X, User, Send, Inbox } from 'lucide-react';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = React.useState(false);
@@ -38,9 +38,9 @@ export default function Navbar() {
     window.location.href = '/auth';
   }, []);
 
-  // Simplified navigation items for authenticated users
+  // Simplified navigation items for authenticated users - removed BarChart3 icon from Dashboard
   const authNavItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { href: '/dashboard', label: 'Dashboard' },
     { href: '/send-pulse', label: 'Send', icon: Send },
     { href: '/inbox', label: 'Inbox', icon: Inbox },
     { href: '/profile', label: 'Profile', icon: User },
@@ -100,7 +100,7 @@ export default function Navbar() {
                       location.pathname === item.href ? 'text-voicemate-purple' : ''
                     }`}
                   >
-                    <item.icon className="w-4 h-4" />
+                    {item.icon && <item.icon className="w-4 h-4" />}
                     {item.label}
                   </a>
                 ))}
@@ -170,7 +170,7 @@ export default function Navbar() {
                       location.pathname === item.href ? 'text-voicemate-purple' : ''
                     }`}
                   >
-                    <item.icon className="w-4 h-4" />
+                    {item.icon && <item.icon className="w-4 h-4" />}
                     {item.label}
                   </a>
                 ))}
