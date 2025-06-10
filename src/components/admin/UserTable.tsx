@@ -1,0 +1,225 @@
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { RefreshCw, User, AlertTriangle, CheckCircle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+
+interface UserData {
+  id: string;
+  email: string;
+  auth_created_at: string;
+  email_confirmed_at: string | null;
+  full_name: string | null;
+  pulse_id: string | null;
+  profile_exists: boolean;
+  profile_created_at: string | null;
+  profile_name: string | null;
+  profile_pulse_id: string | null;
+  profile_email: string | null;
+}
+
+const UserTable: React.FC = () => {
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      setRefreshing(true);
+      
+      // Get all auth users with their metadata
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw authError;
+      }
+
+      // Get all profile users
+      const { data: profileUsers, error: profileError } = await supabase
+        .from('users')
+        .select('*');
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Combine the data
+      const combinedUsers: UserData[] = authUsers.users.map(authUser => {
+        const profile = profileUsers?.find(p => p.id === authUser.id);
+        
+        return {
+          id: authUser.id,
+          email: authUser.email || '',
+          auth_created_at: authUser.created_at,
+          email_confirmed_at: authUser.email_confirmed_at,
+          full_name: authUser.user_metadata?.full_name || null,
+          pulse_id: authUser.user_metadata?.pulse_id || null,
+          profile_exists: !!profile,
+          profile_created_at: profile?.created_at || null,
+          profile_name: profile?.name || null,
+          profile_pulse_id: profile?.pulse_id || null,
+          profile_email: profile?.email || null,
+        };
+      });
+
+      // Sort by creation date (newest first)
+      combinedUsers.sort((a, b) => new Date(b.auth_created_at).getTime() - new Date(a.auth_created_at).getTime());
+      
+      setUsers(combinedUsers);
+      
+      toast({
+        title: "Users refreshed",
+        description: `Found ${combinedUsers.length} total users, ${combinedUsers.filter(u => !u.profile_exists).length} missing profiles`,
+      });
+      
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Error fetching users",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getStatusBadge = (user: UserData) => {
+    if (!user.profile_exists) {
+      return <Badge variant="destructive" className="flex items-center gap-1">
+        <AlertTriangle className="w-3 h-3" />
+        Missing Profile
+      </Badge>;
+    }
+    if (!user.email_confirmed_at) {
+      return <Badge variant="secondary" className="flex items-center gap-1">
+        <AlertTriangle className="w-3 h-3" />
+        Unconfirmed Email
+      </Badge>;
+    }
+    return <Badge variant="default" className="flex items-center gap-1">
+      <CheckCircle className="w-3 h-3" />
+      Complete
+    </Badge>;
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+            Loading users...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            User Management ({users.length} users)
+          </CardTitle>
+          <Button 
+            onClick={fetchUsers} 
+            disabled={refreshing}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-2">Status</th>
+                <th className="text-left py-2 px-2">Email</th>
+                <th className="text-left py-2 px-2">Name</th>
+                <th className="text-left py-2 px-2">Pulse ID</th>
+                <th className="text-left py-2 px-2">Registered</th>
+                <th className="text-left py-2 px-2">Email Confirmed</th>
+                <th className="text-left py-2 px-2">Profile Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-b hover:bg-muted/50">
+                  <td className="py-2 px-2">
+                    {getStatusBadge(user)}
+                  </td>
+                  <td className="py-2 px-2 font-mono text-sm">
+                    {user.email}
+                  </td>
+                  <td className="py-2 px-2">
+                    {user.profile_name || user.full_name || '-'}
+                  </td>
+                  <td className="py-2 px-2 font-mono text-sm">
+                    {user.profile_pulse_id || user.pulse_id || '-'}
+                  </td>
+                  <td className="py-2 px-2 text-sm">
+                    {formatDate(user.auth_created_at)}
+                  </td>
+                  <td className="py-2 px-2 text-sm">
+                    {formatDate(user.email_confirmed_at)}
+                  </td>
+                  <td className="py-2 px-2 text-sm">
+                    {user.profile_exists ? formatDate(user.profile_created_at) : 'Missing'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {users.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              No users found
+            </div>
+          )}
+        </div>
+        
+        {/* Summary Statistics */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-muted/20 p-4 rounded-lg">
+            <div className="text-sm text-muted-foreground">Total Registrations</div>
+            <div className="text-2xl font-bold">{users.length}</div>
+          </div>
+          <div className="bg-green-500/10 p-4 rounded-lg">
+            <div className="text-sm text-muted-foreground">Complete Profiles</div>
+            <div className="text-2xl font-bold text-green-600">
+              {users.filter(u => u.profile_exists && u.email_confirmed_at).length}
+            </div>
+          </div>
+          <div className="bg-red-500/10 p-4 rounded-lg">
+            <div className="text-sm text-muted-foreground">Issues Detected</div>
+            <div className="text-2xl font-bold text-red-600">
+              {users.filter(u => !u.profile_exists || !u.email_confirmed_at).length}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default UserTable;
