@@ -1,4 +1,3 @@
-
 import React, { lazy, useEffect } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -28,6 +27,8 @@ const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 const Terms = lazy(() => import('@/pages/Terms'));
 const RegistrationSuccess = lazy(() => import('@/pages/RegistrationSuccess'));
+const HowItWorks = lazy(() => import('@/pages/HowItWorks'));
+const UseCases = lazy(() => import('@/pages/UseCases'));
 
 // Create a client for React Query with error handling
 const queryClient = new QueryClient({
@@ -78,6 +79,16 @@ function App() {
                   <Route path="/" element={
                     <LazyLoadWrapper>
                       <Index />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/how-it-works" element={
+                    <LazyLoadWrapper>
+                      <HowItWorks />
+                    </LazyLoadWrapper>
+                  } />
+                  <Route path="/use-cases" element={
+                    <LazyLoadWrapper>
+                      <UseCases />
                     </LazyLoadWrapper>
                   } />
                   <Route path="/reserve" element={
