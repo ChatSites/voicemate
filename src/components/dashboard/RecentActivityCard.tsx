@@ -10,24 +10,24 @@ const RecentActivityCard: React.FC = () => {
   
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5, delay: 0.4 }}
-      className="mt-12"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.5 }}
     >
-      <Card className="bg-voicemate-card border-gray-800">
+      <Card className="bg-voicemate-card border-gray-800 hover:border-blue-500/50 transition-colors">
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>Your latest interactions</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
+          <div className="text-center py-4">
+            <p className="text-muted-foreground mb-4">
               No recent activities yet. Start by sending a Pulse!
             </p>
             <Button 
-              className="mt-4 bg-voicemate-purple hover:bg-purple-700"
+              className="bg-voicemate-purple hover:bg-purple-700"
               onClick={() => navigate('/send-pulse')}
+              size="sm"
             >
               Create Your First Pulse
             </Button>
