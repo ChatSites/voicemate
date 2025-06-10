@@ -63,9 +63,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowResetForm }) => {
         // Refresh the session state in the context
         await refreshSession();
         
-        // Navigate to home page
+        // Navigate to dashboard instead of home page
         setTimeout(() => {
-          navigate('/');
+          navigate('/dashboard');
         }, 100);
       }
     } catch (error: any) {
