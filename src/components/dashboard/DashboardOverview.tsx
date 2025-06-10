@@ -2,7 +2,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import DashboardCards from './DashboardCards';
-import UserManagementCard from '@/components/admin/UserManagementCard';
 
 const DashboardOverview: React.FC = () => {
   return (
@@ -13,9 +12,6 @@ const DashboardOverview: React.FC = () => {
       className="space-y-8"
     >
       <DashboardCards />
-      <div className="mt-8">
-        <UserManagementCard />
-      </div>
     </motion.div>
   );
 };
