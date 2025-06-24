@@ -146,7 +146,7 @@ const UserTable: React.FC = () => {
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
             User Management ({users.length} users)
-            <Shield className="w-4 h-4 text-green-600" title="RLS Protected" />
+            <Shield className="w-4 h-4 text-green-600" />
           </CardTitle>
           <Button 
             onClick={fetchUsers} 
