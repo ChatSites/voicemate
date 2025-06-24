@@ -134,7 +134,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_pulse_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      validate_pulse_id_exists: {
+        Args: { pulse_id_input: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -65,7 +65,7 @@ export const isEmailRegistered = async (email: string): Promise<boolean> => {
 };
 
 /**
- * Check if a PulseID is already taken by another user
+ * Check if a PulseID is already taken using the new security definer function
  */
 export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
   try {
@@ -75,7 +75,7 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
     }
     
     const normalizedPulseId = pulseId.toLowerCase().trim();
-    console.log(`Supabase: Checking if PulseID '${normalizedPulseId}' is taken`);
+    console.log(`Supabase: Checking if PulseID '${normalizedPulseId}' is taken using security function`);
     
     // Clear cache if force refresh is requested
     const bypassCache = localStorage.getItem('force_refresh_pulseId') === 'true';
@@ -85,34 +85,21 @@ export const isPulseIdTaken = async (pulseId: string): Promise<boolean> => {
       console.log('Supabase: Force refresh - clearing all caches');
     }
     
-    console.log(`Supabase: Performing fresh database check for PulseID: ${normalizedPulseId}`);
+    console.log(`Supabase: Using validate_pulse_id_exists function for: ${normalizedPulseId}`);
     
-    // Check the public users table for existing pulse_id or name matches
-    console.log(`Supabase: Checking public.users table for: ${normalizedPulseId}`);
-    const { data: publicUsers, error: publicError } = await supabase
-      .from('users')
-      .select('id, pulse_id, name, email')
-      .or(`pulse_id.ilike.${normalizedPulseId},name.ilike.${normalizedPulseId}`)
-      .limit(5);
+    // Use the new security definer function for safe pulse ID validation
+    const { data, error } = await supabase
+      .rpc('validate_pulse_id_exists', { pulse_id_input: normalizedPulseId });
     
-    if (publicError) {
-      console.error('Supabase: Error checking public users table:', publicError);
-      errorReporter.reportError(publicError, 'pulse-id-check-public');
+    if (error) {
+      console.error('Supabase: Error checking pulse ID with security function:', error);
+      errorReporter.reportError(error, 'pulse-id-check-security-function');
       // On error, be conservative and assume not taken so user can attempt registration
       return false;
-    } else {
-      console.log(`Supabase: Public users table check returned:`, publicUsers);
-      console.log(`Supabase: Found ${publicUsers?.length || 0} matches in public.users`);
     }
     
-    // If we found matches in public users table, it's taken
-    if (publicUsers && publicUsers.length > 0) {
-      console.log(`Supabase: PulseID '${normalizedPulseId}' is taken (found in public.users)`);
-      return true;
-    }
-    
-    console.log(`Supabase: PulseID '${normalizedPulseId}' appears to be available`);
-    return false;
+    console.log(`Supabase: Security function returned: ${data}`);
+    return Boolean(data);
     
   } catch (error) {
     console.error('Supabase: Unexpected error checking PulseID:', error);

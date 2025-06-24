@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { RefreshCw, User, AlertTriangle, CheckCircle } from 'lucide-react';
+import { RefreshCw, User, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface UserData {
@@ -31,20 +31,23 @@ const UserTable: React.FC = () => {
     try {
       setRefreshing(true);
       
-      // Get all auth users with their metadata
+      // Get all auth users with their metadata (requires admin privileges)
       const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
       
       if (authError) {
-        throw authError;
+        console.error("Auth admin error:", authError);
+        throw new Error(`Admin access required: ${authError.message}`);
       }
 
-      // Get all profile users
+      // Get all profile users (this now respects RLS - admin users should be able to see all)
       const { data: profileUsers, error: profileError } = await supabase
         .from('users')
         .select('*');
 
       if (profileError) {
-        throw profileError;
+        console.error("Profile fetch error:", profileError);
+        // Don't throw here - continue with limited data
+        console.warn("Could not fetch profile data due to RLS restrictions. Admin privileges may be required.");
       }
 
       // Combine the data
@@ -71,9 +74,15 @@ const UserTable: React.FC = () => {
       
       setUsers(combinedUsers);
       
+      const issuesCount = combinedUsers.filter(u => !u.profile_exists || !u.email_confirmed_at).length;
+      
       toast({
         title: "Users refreshed",
-        description: `Found ${combinedUsers.length} total users, ${combinedUsers.filter(u => !u.profile_exists).length} missing profiles`,
+        description: `Found ${combinedUsers.length} total users${issuesCount > 0 ? `, ${issuesCount} with issues` : ''}`,
+        ...(profileError && { 
+          variant: "destructive" as const,
+          description: "Limited data available due to security restrictions"
+        })
       });
       
     } catch (error: any) {
@@ -137,6 +146,7 @@ const UserTable: React.FC = () => {
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
             User Management ({users.length} users)
+            <Shield className="w-4 h-4 text-green-600" title="RLS Protected" />
           </CardTitle>
           <Button 
             onClick={fetchUsers} 
@@ -150,6 +160,13 @@ const UserTable: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+          <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+            <Shield className="w-4 h-4" />
+            <span>This interface is now protected by Row Level Security (RLS). Admin privileges are required for full access.</span>
+          </div>
+        </div>
+        
         <Table>
           <TableHeader>
             <TableRow>

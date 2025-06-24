@@ -54,12 +54,40 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
     
     try {
       console.log("Sending pulse...");
+      
+      // Get user's pulse_id from the users table using the security function
+      const { data: userPulseId, error: pulseIdError } = await supabase
+        .rpc('get_current_user_pulse_id');
+      
+      if (pulseIdError) {
+        console.error("Error fetching user pulse_id:", pulseIdError);
+        throw new Error(`Failed to get user pulse_id: ${pulseIdError.message}`);
+      }
+      
+      if (!userPulseId) {
+        throw new Error("User pulse_id not found. Please complete your profile setup.");
+      }
+      
       // Upload the audio file to Supabase Storage
       const audioFileName = `${userId}-${Date.now()}.webm`;
       
-      // Check if the bucket exists and upload to it
+      // Create the pulses bucket if it doesn't exist
       const { data: buckets } = await supabase.storage.listBuckets();
       console.log("Available buckets:", buckets?.map(b => b.name));
+      
+      const pulsesBucketExists = buckets?.some(bucket => bucket.name === 'pulses');
+      if (!pulsesBucketExists) {
+        console.log("Creating pulses bucket...");
+        const { error: bucketError } = await supabase.storage.createBucket('pulses', {
+          public: true,
+          allowedMimeTypes: ['audio/webm', 'audio/wav', 'audio/mp3']
+        });
+        
+        if (bucketError) {
+          console.error("Error creating bucket:", bucketError);
+          throw new Error(`Failed to create storage bucket: ${bucketError.message}`);
+        }
+      }
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('pulses')
@@ -77,34 +105,20 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
 
       const audioUrl = publicUrlData.publicUrl;
       console.log("Audio uploaded successfully:", audioUrl);
-
-      // Get user's pulse_id from the users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('pulse_id')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (userError) {
-        console.error("Error fetching user pulse_id:", userError);
-      }
-      
-      const userPulseId = userData?.pulse_id || 'anonymous';
       
       // Convert CTAVariant[] to a JSON-compatible format
-      // This fixes the type error with Supabase's Json type
       const ctasForDb = JSON.parse(JSON.stringify(suggestedCTAs));
 
-      // Insert the record into the pulses table - MODIFIED to match actual schema
-      // Removed both 'title' and 'description' fields which don't exist in the database
-      const { data: pulseData, error: insertError } = await supabase
+      // Insert the record into the pulses table with proper validation
+      const { data: pulseInsertData, error: insertError } = await supabase
         .from('pulses')
         .insert({
           audio_url: audioUrl,
           transcript: transcription || "No transcript available",
           pulse_id: userPulseId,
-          intent: pulseTitle || "Untitled Pulse", // Store title as intent
-          ctas: ctasForDb
+          intent: pulseTitle || "Untitled Pulse",
+          ctas: ctasForDb,
+          status: 'inbox'
         })
         .select();
 
@@ -113,18 +127,18 @@ export function useSendPulse({ userId }: UseSendPulseProps) {
         throw new Error(`Error inserting pulse record: ${insertError.message}`);
       }
       
-      console.log("Pulse data saved successfully:", pulseData);
+      console.log("Pulse data saved successfully:", pulseInsertData);
       
       // Store the pulse data in state
-      setPulseData(pulseData[0]);
+      setPulseData(pulseInsertData[0]);
       
-      // Basic toast notification with success message
+      // Success toast notification
       toast({
         title: "Pulse Sent!",
         description: "Your voice message has been sent successfully.",
       });
       
-      return pulseData[0];
+      return pulseInsertData[0];
     } catch (error) {
       console.error("Error sending pulse:", error);
       toast({

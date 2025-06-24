@@ -18,15 +18,23 @@ export const usePulseData = (pulseId: string | undefined) => {
 
       try {
         setLoading(true);
+        console.log(`Fetching pulse with ID: ${pulseId}`);
+        
+        // The RLS policy will automatically filter results based on the current user's pulse_id
+        // Only pulses sent to the current user will be returned
         const { data, error } = await supabase
           .from('pulses')
           .select('*')
           .eq('id', pulseId)
           .maybeSingle();
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching pulse:', error);
+          throw error;
+        }
         
         if (data) {
+          console.log('Pulse data found:', data);
           // Convert database ctas data to proper format
           const formattedData: Pulse = {
             ...data,
@@ -42,11 +50,19 @@ export const usePulseData = (pulseId: string | undefined) => {
           
           setPulse(formattedData);
         } else {
-          setError(new Error('Pulse not found'));
+          console.log('No pulse found or access denied due to RLS policy');
+          setError(new Error('Pulse not found or access denied'));
         }
       } catch (error) {
         console.error('Error fetching pulse:', error);
-        setError(error instanceof Error ? error : new Error('Failed to load pulse data'));
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load pulse data';
+        
+        // Provide user-friendly error messages for common RLS scenarios
+        if (errorMessage.includes('insufficient privilege') || errorMessage.includes('permission denied')) {
+          setError(new Error('You do not have permission to view this pulse'));
+        } else {
+          setError(new Error(errorMessage));
+        }
       } finally {
         setLoading(false);
       }
